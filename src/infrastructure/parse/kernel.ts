@@ -263,6 +263,39 @@ interface SyntaxNodeLike {
   childForFieldName(name: string): SyntaxNodeLike | null;
   child(index: number): SyntaxNodeLike | null;
   childCount: number;
+  /** tree-sitter 原生 `children`：一次 N-API 取整组子树（可选——测试桩只给 childCount/child） */
+  children?: SyntaxNodeLike[];
+}
+
+/**
+ * ★ 簇 C（tree-sitter 取值器风暴）修复：批量取子节点。
+ *
+ * tree-sitter/index.js 里 `get childCount()` / `child(i)` 各自 `marshalNode` + 一次 native 往返，
+ * `for (i=0;i<childCount;i++) child(i)` = n+1 次跨边界；而 `get children()` 是**一次**跨边界
+ * 拿到整组。实测这两个取值器占 cross_repo 80% / code_health 52% / deprecate_offline ~41% 的自耗时。
+ * 本 helper 优先走 `children`（一次跨界），仅当节点没有该字段（测试桩）才退回逐 child 循环；
+ * 结果按节点对象缓存一次（同一节点在多处 walker 反复取子节点时不再重复跨界）。
+ *
+ * 语义等价：tree-sitter 的 `children` 与 `child(0..childCount-1)` 是同一组、同一顺序（含匿名节点），
+ * 所以把 `for (i<childCount) child(i)` 换成 `for (const c of childrenOf(node))` 行为逐字不变。
+ */
+const _childrenCache = new WeakMap<object, SyntaxNodeLike[]>();
+export function childrenOf(node: SyntaxNodeLike): SyntaxNodeLike[] {
+  const cached = _childrenCache.get(node);
+  if (cached) return cached;
+  let arr: SyntaxNodeLike[];
+  if (Array.isArray(node.children)) {
+    arr = node.children;
+  } else {
+    arr = [];
+    // 这里正是 fallback 本身：不能调 childrenOf（会自递归），直接逐 child 取。
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i);
+      if (c) arr.push(c);
+    }
+  }
+  _childrenCache.set(node, arr);
+  return arr;
 }
 
 function fieldText(node: SyntaxNodeLike | null, fieldName: string): string {
@@ -315,8 +348,7 @@ function nameAtNode(node: SyntaxNodeLike, types: string[], nameField: string, de
 function nameViaTypes(node: SyntaxNodeLike, types: string[], nameField: string, depth = 0): string {
   if (depth > 8) return '';
   for (const t of types) {
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i);
+    for (const c of childrenOf(node)) {
       if (!c || c.type !== t) continue;
       const got = nameAtNode(c, types, nameField, depth);
       if (got) return got;
@@ -330,8 +362,7 @@ function nameViaTypes(node: SyntaxNodeLike, types: string[], nameField: string, 
 function nameStep(node: SyntaxNodeLike, step: string): SyntaxNodeLike | null {
   const byField = node.childForFieldName(step);
   if (byField) return byField;
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (c && c.type === step && c.isNamed !== false) return c;
   }
   return null;
@@ -492,8 +523,7 @@ function traverseAndExtract(
   const isDeclNode = declSymbolName !== null;
   if (declSymbolName) {
     const declarators: SyntaxNodeLike[] = [];
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i);
+    for (const c of childrenOf(node)) {
       if (c && c.type === 'variable_declarator') declarators.push(c);
     }
     if (declarators.length === 1) {
@@ -724,8 +754,7 @@ function traverseAndExtract(
     }
   }
 
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     // ★ T-#94b：**匿名函数也是作用域边界** —— 进它的子树要标「函数内」，
     //   否则它体内的普通 `const` 会被当成模块级符号（"假顶层 const"）。
     if (child) traverseAndExtract(child, lang, symbols, parent, depth + 1, enclosingIsFunction || isFunctionScopeNode(child));
@@ -1079,8 +1108,7 @@ function splitTopLevel(text: string, sep = ','): string[] {
 /** 第 n 个**命名**子节点（无则 null）。用于"字段为空的语法"按结构取位（Julia 的模块/别名）。 */
 function nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null {
   let seen = 0;
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (!c || c.isNamed === false) continue;
     if (seen === n) return c;
     seen += 1;
@@ -1096,8 +1124,7 @@ function nthNamedChild(node: SyntaxNodeLike, n: number): SyntaxNodeLike | null {
  * ★ 只认**命名**节点（`isNamed === false` 的关键字/标点不算）——与 `nthNamedChild` 同一把尺。
  */
 function firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike | null {
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (c && c.isNamed !== false && c.type === type) return c;
   }
   return null;
@@ -1106,8 +1133,7 @@ function firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLi
 /** 同上，取**全部**该类型的命名子节点（php 的 `use A, B;` 是多 clause） */
 function namedChildrenOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike[] {
   const out: SyntaxNodeLike[] = [];
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (c && c.isNamed !== false && c.type === type) out.push(c);
   }
   return out;
@@ -1189,15 +1215,13 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
       return;
     }
     if (t === 'namespace_import') {
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
+      for (const c of childrenOf(n)) {
         if (c?.type === 'identifier' && c.text) out.push(c.text);
       }
       return;
     }
     if (t === 'import_clause') {
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
+      for (const c of childrenOf(n)) {
         // ★★★ 2026-10-27（T-#94a）：**默认导入要记远端名 `<default>`**。
         //   病史（axios 1.7 实测）：`lib/core/AxiosHeaders.js` 写 `import parseHeaders from '../helpers/parseHeaders.js'`，
         //   目标文件是 `export default rawHeaders => {…}`（**匿名**默认导出）⇒ 目标里没有叫 `parseHeaders` 的符号
@@ -1208,8 +1232,7 @@ const TS_LIKE_IMPORT_BINDINGS = (node: SyntaxNodeLike): string[] => {
         if (c?.type === 'identifier' && c.text) out.push(`${DEFAULT_EXPORT_SYMBOL} as ${c.text}`);
       }
     }
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
+    for (const c of childrenOf(n)) {
       if (c) walk(c);
     }
   };
@@ -1416,8 +1439,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
         // `import a.b` / `import a.b as c`：本来就是按 dotted_name 节点取的
         const out: string[] = [];
         const collect = (n: SyntaxNodeLike): void => {
-          for (let i = 0; i < n.childCount; i++) {
-            const c = n.child(i);
+          for (const c of childrenOf(n)) {
             if (!c) continue;
             if (c.type === 'dotted_name') out.push(c.text);
             else if (c.type === 'aliased_import') collect(c);
@@ -1889,8 +1911,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     //     故不需要任何按语言 if（本文件里也没有）。
     extractImportSources(node) {
       const out: string[] = [];
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i);
+      for (const c of childrenOf(node)) {
         if (!c || c.isNamed === false) continue;
         const wraps = c.type === 'selected_import' || c.type === 'import_alias';
         const head = wraps ? nthNamedChild(c, 0) : c;
@@ -1901,8 +1922,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
     },
     extractImportBindings(node) {
       const out: string[] = [];
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i);
+      for (const c of childrenOf(node)) {
         if (!c || c.isNamed === false) continue;
         if (c.type === 'selected_import' || c.type === 'import_alias') {
           // 选项 2..n 是本地名：`import Helper: twice` 的 twice；`… as H` 的 H
@@ -1961,8 +1981,7 @@ export const LANG_ADAPTERS: Record<string, LangImportAdapter> = {
       const names = node.childForFieldName('names');
       if (!names) return [];
       const out: string[] = [];
-      for (let i = 0; i < names.childCount; i++) {
-        const c = names.child(i);
+      for (const c of childrenOf(names)) {
         if (!c || c.isNamed === false) continue;
         const t = lastDotSegment(c.text);
         if (t) out.push(t);
@@ -2188,8 +2207,7 @@ function typedFuncSpecs(
   if (!t || node.type !== t.decl) return [];
   const out: Array<{ name: string; typeNode: SyntaxNodeLike }> = [];
   const specs: SyntaxNodeLike[] = [];
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (!c) continue;
     if (c.type === t.spec) specs.push(c);
     // ★ 块形态（`var ( … )`）多包一层 `specList`：实测 `var_declaration → var_spec_list → var_spec`
@@ -2264,8 +2282,7 @@ function anonymousDefaultExport(node: SyntaxNodeLike, lang: LanguageEntry): { na
 
 function declaredFunctionValue(node: SyntaxNodeLike, lang: LanguageEntry): { name: string; value: SyntaxNodeLike } | null {
   if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(node.type)) return null;
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     if (!child) continue;
     const value = child.childForFieldName('value');
     if (!value || !isFunctionScopeNode(value)) continue;
@@ -2327,8 +2344,7 @@ function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: numb
     const c = node.childForFieldName(f);
     if (c) {
       const out: SyntaxNodeLike[] = [];
-      for (let i = 0; i < c.childCount; i++) {
-        const k = c.child(i);
+      for (const k of childrenOf(c)) {
         if (k) out.push(k);
       }
       return out;
@@ -2336,8 +2352,7 @@ function bodyChildren(node: SyntaxNodeLike, lang: LanguageEntry, nameIndex: numb
   }
   const types = a?.bodyNodeTypes;
   if (types) {
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i);
+    for (const c of childrenOf(node)) {
       if (c && types.includes(c.type)) {
         const out: SyntaxNodeLike[] = [];
         for (let k = 0; k < c.childCount; k++) {
@@ -2391,8 +2406,7 @@ function bodyTextOf(node: SyntaxNodeLike, lang: LanguageEntry): string | undefin
   }
   const types = a?.bodyNodeTypes;
   if (types) {
-    for (let i = 0; i < node.childCount; i++) {
-      const c = node.child(i);
+    for (const c of childrenOf(node)) {
       if (c && types.includes(c.type)) return c.text || undefined;
     }
   }
@@ -2401,8 +2415,7 @@ function bodyTextOf(node: SyntaxNodeLike, lang: LanguageEntry): string | undefin
 
 /** 第一个命名子节点（跳过匿名关键字/标点；isNamed 缺省视为命名节点） */
 function firstNamedChild(node: SyntaxNodeLike): SyntaxNodeLike | null {
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (c && c.isNamed !== false) return c;
   }
   return null;
@@ -2481,8 +2494,7 @@ function declaredSymbolName(node: SyntaxNodeLike, lang: LanguageEntry, opts: { n
   if (!LANG_ADAPTERS[lang.name]?.localBindingNodes?.includes(node.type)) return null;
   let declarator: SyntaxNodeLike | null = null;
   let count = 0;
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (!c || c.type !== 'variable_declarator') continue;
     count++;
     declarator = c;
@@ -2572,8 +2584,7 @@ function fileScopeNames(root: SyntaxNodeLike, lang: LanguageEntry): Set<string> 
   const out = new Set<string>();
   const a = LANG_ADAPTERS[lang.name];
   if (!a?.localBindingNodes) return out;
-  for (let i = 0; i < root.childCount; i++) {
-    const stmt = root.child(i);
+  for (const stmt of childrenOf(root)) {
     if (!stmt || !a.localBindingNodes.includes(stmt.type)) continue;
     // ★ T-#94：**会变成 `const` 符号的声明跳过**（单声明器 + 普通标识符 ⇒ `nodes` 里有它）。
     //   这类名字必须走 `classifyCall` 建边；收进作用域就会被判 local ⇒ **真边丢掉**
@@ -2600,8 +2611,7 @@ function isImportCallNode(n: SyntaxNodeLike | null | undefined): boolean {
   if (n.type === 'import' || n.type === 'import_expression' || n.type === 'dynamic_import') return true;
   // `await import(...)` / `(await import(...))` ⇒ 往里走一层
   if (n.type === 'await_expression' || n.type === 'parenthesized_expression') {
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
+    for (const c of childrenOf(n)) {
       if (c && isImportCallNode(c)) return true;
     }
     return false;
@@ -2644,8 +2654,7 @@ function localBindingsOfDecl(
   const out: Array<{ name: string; isFnValue: boolean }> = [];
   // ── 形态 ① TS/JS：lexical_declaration / variable_declaration → variable_declarator(name,value)
   if (node.type === 'lexical_declaration' || node.type === 'variable_declaration') {
-    for (let i = 0; i < node.childCount; i++) {
-      const dec = node.child(i);
+    for (const dec of childrenOf(node)) {
       if (!dec || dec.type !== 'variable_declarator') continue;
       const nameNode = dec.childForFieldName('name');
       const valueNode = dec.childForFieldName('value');
@@ -2708,8 +2717,7 @@ function localBindingsOfDecl(
       if (left) collectIds(left);
     } else {
       // TS：直接子节点里的 pattern（`object_pattern` / `array_pattern` / `identifier`）
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i);
+      for (const c of childrenOf(node)) {
         if (!c) continue;
         if (c.type === 'object_pattern' || c.type === 'array_pattern' || c.type === 'identifier') {
           collectIds(c);
@@ -2855,8 +2863,7 @@ function extractCallsFromBody(
   // 每访问完一个子语句，就把它的**非函数值绑定**（`collectLocalBindings`：含解构、排除函数值符号）
   // 并进 `runningScope`，后续兄弟语句继承。函数值不收 —— 那是符号，收进来会抢在 classifyCall 前丢真边。
   let runningScope = childScope;
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     if (!child) continue;
     extractCallsFromBody(child, lang, callerQn, calls, symbols, depth + 1, runningScope);
     // ★ **只对声明语句做收集**（`localBindingNodes` 数据门控）：
@@ -2950,8 +2957,7 @@ function traverseAndExtractCalls(
       return;
     }
   }
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     if (!child) continue;
     // 模块顶层调用（无包裹函数的脚本语言）：调用归属 `<module>`；只在不进函数体内时提取（函数内由 extractCallsFromBody 处理）
     // ★★★ T136（2026-10-15 修）：**不能只看"直接子节点是不是 call"** —— `const VALUE = usedTwo();`
@@ -3039,8 +3045,7 @@ function traverseAndExtractTypeRefs(
         ...paramNamesForScope(symbolInner(node, lang), lang),
         ...collectLocalBindings(body ?? [], lang.name),
       ]);
-      for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i);
+      for (const child of childrenOf(node)) {
         if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1, ownScope);
       }
       stack.pop();
@@ -3131,8 +3136,7 @@ function traverseAndExtractTypeRefs(
     }
     return; // type_query 已消费（内层 identifier 不再单独记）
   }
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     if (child) traverseAndExtractTypeRefs(child, lang, symbols, typeRefs, stack, depth + 1, scope);
   }
 }
@@ -3298,8 +3302,7 @@ function isPureSyncExpr(node: SyntaxNodeLike | null, depth = 0): boolean {
   //   这些子节点不在白名单 ⇒ 递归时整条被拒 ⇒ **vm 那一档从没生效**。
   //   ⇒ 字面量按**叶子**处理，不递归。
   if (LITERAL_NODES.has(node.type)) return true;
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (!c) continue;
     // 标点/token 子节点（`(` `)` `,` `.` 等）不是表达式 ⇒ 跳过
     if (!PURE_EXPR_NODES.has(c.type) && !/^[()\[\]{},.:?]$/.test(c.text)) return false;
@@ -3450,8 +3453,7 @@ function foldToPath(node: SyntaxNodeLike | null, consts: Map<string, unknown>, f
     const args = node.childForFieldName('arguments');
     if (ctor?.text === 'URL' && args) {
       const parts: Array<SyntaxNodeLike | null> = [];
-      for (let i = 0; i < args.childCount; i++) {
-        const c = args.child(i);
+      for (const c of childrenOf(args)) {
         if (c && c.type !== '(' && c.type !== ')' && c.type !== ',') parts.push(c);
       }
       const a = foldToPath(parts[0] ?? null, consts, filePath);
@@ -3478,8 +3480,7 @@ function foldCall(
   const args = node.childForFieldName('arguments');
   if (!fn || !args) return null;
   const argsList: SyntaxNodeLike[] = [];
-  for (let i = 0; i < args.childCount; i++) {
-    const c = args.child(i);
+  for (const c of childrenOf(args)) {
     if (c && c.type !== '(' && c.type !== ')' && c.type !== ',') argsList.push(c);
   }
   const foldAll = (): string[] | null => {
@@ -3571,8 +3572,7 @@ function buildConstStringMap(root: SyntaxNodeLike, filePath: string): Map<string
       const v = n.childForFieldName('value');
       if (nm?.type === 'identifier' && v) decls.push({ name: nm.text, value: v });
     }
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
+    for (const c of childrenOf(n)) {
       if (c) walk(c, depth + 1);
     }
   };
@@ -3646,8 +3646,7 @@ function traverseAndExtractImports(
       //   （实测拿 `child(0)` 会得到 `(` ⇒ source 变成 `(`，绑定对但路径错）
       let srcNode: SyntaxNodeLike | null = null;
       if (args) {
-        for (let i = 0; i < args.childCount; i++) {
-          const c = args.child(i);
+        for (const c of childrenOf(args)) {
           if (!c) continue;
           if (c.type === '(' || c.type === ')' || c.type === ',') continue;
           srcNode = c;
@@ -3787,15 +3786,13 @@ function traverseAndExtractImports(
     // ⇒ 它是「导出声明」（不是导出语句）⇒ **必须继续递归**。
     const hasDecl = !!node.childForFieldName('declaration');
     if (sources.values.length === 0 && hasDecl) {
-      for (let i = 0; i < node.childCount; i++) {
-        const child = node.child(i);
+      for (const child of childrenOf(node)) {
         if (child) traverseAndExtractImports(child, lang, imports, depth + 1, foldCtx);
       }
     }
     return; // 真正的 import / 再导出语句内部不再递归
   }
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i);
+  for (const child of childrenOf(node)) {
     if (child) traverseAndExtractImports(child, lang, imports, depth + 1, foldCtx);
   }
 }
@@ -4001,8 +3998,7 @@ function traverseAndExtractIdentifiers(root: SyntaxNodeLike, out: ParsedIdentifi
     if (kind && si !== undefined && ei !== undefined) {
       out.push({ name: n.text, kind, line: n.startPosition.row + 1, col: 0, start_index: si, end_index: ei });
     }
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
+    for (const c of childrenOf(n)) {
       if (c) walk(c);
     }
   };

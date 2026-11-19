@@ -121,19 +121,82 @@ export interface DeprecateSink {
   written?: string[];
 }
 
+// ─────────────────────────────────────────────────────────────
+// 簇 E：per-run 读盘记忆化
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * ★ 簇 E 修复：per-run 的 `Map<absPath, {mtimeMs,size,content}>` 读记忆层。
+ *
+ * 病史（latency-ds-1 §3.1）：一次 `deprecate_offline` 调用读 11 808 次 / 128.2 MB，
+ * 其中 `go.mod` 525 次、每个 `.go` 文件 23 次 —— 源码树总量才 17 MB ⇒ IO 放大 7.5×。
+ * 每个候选项都重新扫一遍全部源文件（`hasActiveReference` / `remainingImporters`），
+ * 且 `goModulePrefix` 每次解析 import 都重读 go.mod。
+ *
+ * 解法：一次工具调用（run）内共享一个 cache；按 (mtimeMs,size) 校验，
+ * 中途文件被改写也能看到新内容（与直接 readFileSync 语义一致）。缓存**只活一次调用**，
+ * 不跨进程、不写盘，不存在陈旧读。
+ */
+export class RunReadCache {
+  private map = new Map<string, { mtimeMs: number; size: number; text: string }>();
+  private missing = new Set<string>();
+  /** 记忆化读：命中（mtime+size 未变）直接返回内存文本；否则真读一次并记下指纹 */
+  readText(abs: string): string {
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(abs);
+    } catch {
+      // ★ 文件不存在也要记住（`go.mod` 在一个无 Go 的项目里被探 525 次 ⇒ 525 次失败 readFileSync）。
+      //   仍调一次真 readFileSync 以保持"抛错"语义（调用方 try/catch 判 null）；之后直接抛缓存的 ENOENT。
+      if (!this.missing.has(abs)) {
+        this.missing.add(abs);
+        return fs.readFileSync(abs, 'utf-8'); // 抛原错（ENOENT）
+      }
+      throw Object.assign(new Error(`ENOENT: no such file or directory, open '${abs}'`), { code: 'ENOENT', path: abs });
+    }
+    this.missing.delete(abs);
+    const hit = this.map.get(abs);
+    if (hit && hit.mtimeMs === st.mtimeMs && hit.size === st.size) return hit.text;
+    const text = fs.readFileSync(abs, 'utf-8');
+    this.map.set(abs, { mtimeMs: st.mtimeMs, size: st.size, text });
+    return text;
+  }
+  private modules = new Map<string, string | null>();
+  /** go.mod module 前缀的记忆化（一个 run 内项目根不变；undefined = 未查过） */
+  goModule(project_dir: string): string | null | undefined {
+    return this.modules.get(project_dir);
+  }
+  setGoModule(project_dir: string, value: string | null): void {
+    this.modules.set(project_dir, value);
+  }
+  /** 记忆化 existsSync（同路径同 run 内文件系统不变即可；stat 本身很便宜，主要省重复 readFile） */
+  exists(abs: string): boolean {
+    return fs.existsSync(abs);
+  }
+  get stats(): { entries: number } {
+    return { entries: this.map.size };
+  }
+}
+
 // ─────────────────────────────────────────────
 // 项目内源解析（source 相对"每个消费者文件"，非项目根）
 // ─────────────────────────────────────────────
 
 /** 读 go.mod 的 module 名（首行 `module <path>`），无则 null。Go 包路径→项目内解析的唯一锚。 */
-export function goModulePrefix(project_dir: string): string | null {
+export function goModulePrefix(project_dir: string, cache?: RunReadCache): string | null {
+  const c = cache ?? new RunReadCache();
+  const cached = c.goModule(project_dir);
+  if (cached !== undefined) return cached;
+  let result: string | null = null;
   try {
-    const goMod = fs.readFileSync(path.join(project_dir, 'go.mod'), 'utf-8');
+    const goMod = c.readText(path.join(project_dir, 'go.mod'));
     const m = goMod.match(/^\s*module\s+(\S+)/m);
-    return m ? m[1] : null;
+    result = m ? m[1] : null;
   } catch {
-    return null;
+    result = null;
   }
+  c.setGoModule(project_dir, result);
+  return result;
 }
 
 /** Go 包目录 `sub`（相对 project_dir、posix）→ 目录内首选 .go 文件（代表该包源码）；无返回 null。 */
@@ -151,8 +214,8 @@ function resolveGoPackageFile(project_dir: string, sub: string): string | null {
 }
 
 /** 目标模块文件（相对 project_dir）所属 Go 包路径（module 前缀 + 其目录）；非 Go 或读不到 go.mod 返回 null。 */
-export function goPackageOfFile(project_dir: string, moduleRel: string): string | null {
-  const mod = goModulePrefix(project_dir);
+export function goPackageOfFile(project_dir: string, moduleRel: string, cache?: RunReadCache): string | null {
+  const mod = goModulePrefix(project_dir, cache);
   if (!mod) return null;
   const dir = path.posix.dirname(moduleRel.replace(/\\/g, '/'));
   return dir === '.' || dir === '' ? mod : `${mod}/${dir}`;
@@ -160,10 +223,10 @@ export function goPackageOfFile(project_dir: string, moduleRel: string): string 
 
 /** 把 import 说明符（相对某消费者文件）resolve 为项目内源文件；返回相对 project_dir 的 posix 路径，失败 null。
  *  相对 source 按消费者目录解析；非相对 source 走 Go 包路径（命中 go.mod module 前缀才视为自研）。 */
-export function resolveConsumerSource(project_dir: string, consumerRel: string, source: string): string | null {
+export function resolveConsumerSource(project_dir: string, consumerRel: string, source: string, cache?: RunReadCache): string | null {
   if (!source.startsWith('.')) {
     // Go 包路径 / node 内置 / 三方包：仅当命中当前 module 前缀才是项目内自研包。
-    const mod = goModulePrefix(project_dir);
+    const mod = goModulePrefix(project_dir, cache);
     if (mod && (source === mod || source.startsWith(mod + '/'))) {
       const sub = source === mod ? '' : source.slice(mod.length + 1);
       return resolveGoPackageFile(project_dir, sub);
@@ -201,13 +264,14 @@ export function resolveConsumerSource(project_dir: string, consumerRel: string, 
 export function aggregateProjectSources(
   project_dir: string,
   dead: DeadDepCandidate[],
+  cache?: RunReadCache,
 ): Map<string, { moduleFile: string; consumers: number }> {
   const out = new Map<string, { moduleFile: string; consumers: number }>();
   for (const d of dead) {
     const hits = new Set<string>();
     let allResolve = true;
     for (const f of d.files) {
-      const rf = resolveConsumerSource(project_dir, f, d.source);
+      const rf = resolveConsumerSource(project_dir, f, d.source, cache);
       if (rf === null) {
         allResolve = false;
         break;
@@ -227,6 +291,7 @@ export function remainingImporters(
   project_dir: string,
   moduleRel: string,
   scannedFiles: string[],
+  cache?: RunReadCache,
 ): number {
   const proj = path.resolve(project_dir);
   const mod = moduleRel.replace(/\\/g, '/');
@@ -239,13 +304,13 @@ export function remainingImporters(
     if (rel.replace(/\\/g, '/') === mod) continue; // 自身不算
     let src: string;
     try {
-      src = fs.readFileSync(path.join(proj, rel), 'utf-8');
+      src = (cache ?? new RunReadCache()).readText(path.join(proj, rel));
     } catch {
       continue;
     }
     // Go：按目标模块所属包路径匹配（Go 包级 import；命中即视为该 .go 文件仍引用目标包）。
     if (/\.go$/.test(rel)) {
-      const tgt = goPackageOfFile(proj, mod);
+      const tgt = goPackageOfFile(proj, mod, cache);
       if (tgt && parseGoImportQualifiers(src).has(tgt)) {
         n++;
         break;
@@ -254,7 +319,7 @@ export function remainingImporters(
     }
     for (const source of enumerateDeriveSources(src).keys()) {
       if (!source.startsWith('.')) continue;
-      if (resolveConsumerSource(proj, rel, source) === mod) {
+      if (resolveConsumerSource(proj, rel, source, cache) === mod) {
         n++;
         break;
       }
@@ -281,7 +346,7 @@ function enumerateDeriveSources(src: string): Set<string> {
  * 文件级判定（parseTsImportQualifiers + qualifierLines）。Go：保守视为有活跃引用
  * （与 remainingImporters 的 Go 策略一致，不判可下线）。返回 true = 有活跃消费。
  */
-export function hasActiveReference(project_dir: string, moduleRel: string, scannedFiles: string[]): boolean {
+export function hasActiveReference(project_dir: string, moduleRel: string, scannedFiles: string[], cache?: RunReadCache): boolean {
   const proj = path.resolve(project_dir);
   const mod = moduleRel.replace(/\\/g, '/');
   for (const raw of scannedFiles) {
@@ -292,13 +357,13 @@ export function hasActiveReference(project_dir: string, moduleRel: string, scann
     if (rel.replace(/\\/g, '/') === mod) continue; // 自身不算
     let src: string;
     try {
-      src = fs.readFileSync(path.join(proj, rel), 'utf-8');
+      src = (cache ?? new RunReadCache()).readText(path.join(proj, rel));
     } catch {
       continue;
     }
     // Go：按"目标模块所属包路径"匹配 .go 消费者的 import（Go 是包级 import，非相对文件路径）。
     if (/\.go$/.test(rel)) {
-      const tgt = goPackageOfFile(proj, mod);
+      const tgt = goPackageOfFile(proj, mod, cache);
       if (!tgt) continue;
       for (const [source, quals] of parseGoImportQualifiers(src)) {
         if (source !== tgt) continue;
@@ -311,7 +376,7 @@ export function hasActiveReference(project_dir: string, moduleRel: string, scann
     const scan = stripTsImportLines(src);
     for (const source of enumerateDeriveSources(src).keys()) {
       if (!source.startsWith('.')) continue;
-      if (resolveConsumerSource(proj, rel, source) !== mod) continue;
+      if (resolveConsumerSource(proj, rel, source, cache) !== mod) continue;
       const quals = parseTsImportQualifiers(src, source);
       if (quals === null) return true; // 副作用导入/语法不认识 → 保守当活跃
       if (quals.some((q) => qualifierLines(scan, q, 'ts').length > 0)) return true; // 有活跃引用
@@ -329,9 +394,11 @@ async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: Depreca
   const proj = path.resolve(opts.project_dir);
   const dryRun = opts.dry_run ?? true;
   const removeFile = opts.remove_file ?? false;
+  // ★ 簇 E：一次工具调用共享一份读缓存（go.mod 只读一次、每个 .go 文件只读一次）
+  const cache = new RunReadCache();
 
   const detect = detectDeadImports({ project_dir: proj, files: opts.files });
-  const projectSources = aggregateProjectSources(proj, detect.dead);
+  const projectSources = aggregateProjectSources(proj, detect.dead, cache);
 
   // 候选集：显式 plans 限定，否则全量自研源
   const want = new Set<string>(
@@ -345,7 +412,7 @@ async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: Depreca
   const items: DeprecateOfflineItem[] = [];
   for (const [source, { moduleFile }] of candidates) {
     const consumers = projectSources.get(source)!.consumers;
-    const offlineable = moduleFile !== null && !hasActiveReference(proj, moduleFile, scannedFiles);
+    const offlineable = moduleFile !== null && !hasActiveReference(proj, moduleFile, scannedFiles, cache);
     items.push({
       source,
       module_file: moduleFile,
@@ -439,7 +506,7 @@ async function deprecateOfflineCore(opts: DeprecateOfflineOptions, sink: Depreca
     const scannedFiles = scanProjectSourceFiles(proj, opts.files);
     const trulyRemovable = new Set<string>();
     for (const f of removableFiles) {
-      const n = remainingImporters(proj, f, scannedFiles);
+      const n = remainingImporters(proj, f, scannedFiles, cache);
       const it = items.find((i) => i.module_file === f);
       if (n === 0) {
         trulyRemovable.add(f);

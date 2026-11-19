@@ -34,7 +34,7 @@
  *     宁漏不误报；跨文件的模块级调用仍会漏——报 info 级仅提示，不自动删）。
  */
 
-import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
+import { parseFileFull, parseAstRoot, parseAstRootSync, listSupportedExtensions, resolveProjectImport, childrenOf, type ParsedSymbol, type SyntaxNodeLike } from '../../parse/index.js';
 import { codeSourceExts, isTestFileName, partitionByCodeLang, classifyUnreadable, describeUnmatchedExt, type UnmatchedExtFact } from '../../parse/source_exts.js';
 import { boundsSkipFromExcluded, type ScanBounds } from '../../scan_bounds.js';
 import { missingLanguageHint } from '../../parse/lang_hint.js';
@@ -59,6 +59,9 @@ import {
 import { limitNotice } from '../../../domain/payload_budget.js';
 import { buildWiringLedger, type WiringEntry } from './wiring_ledger.js';
 import { collectAllWiringProbes } from './wiring_enumerate.js';
+import { fileFingerprint, healthKey, readHealthCache, writeHealthCache } from './health_cache.js';
+import path from 'node:path';
+import crypto from 'node:crypto';
 import type { SourceReport } from './wiring_claims.js';
 export { classifyLayer } from '../../../domain/health_spec.js';
 export type { HealthKind, HealthSeverity, Layer } from '../../../domain/health_spec.js';
@@ -172,6 +175,8 @@ export interface HealthReport {
 export interface HealthOptions {
   /** 复杂度阈值（默认 10） */
   complexityThreshold?: number;
+  /** ★ 簇 D：true = 跳过体检缓存强制全量重扫（消融/判据用；缺省 false） */
+  noCache?: boolean;
   /**
    * 可达性根（项目内相对路径）。P0-②，2026-09-28。
    *
@@ -355,8 +360,7 @@ export async function estimateComplexity(filePath: string, body: string): Promis
       const t = op ? op.text : '';
       if (t === '&&' || t === '||' || t === 'and' || t === 'or') c += 1;
     }
-    for (let i = 0; i < n.childCount; i++) {
-      const child = n.child(i);
+    for (const child of childrenOf(n)) {
       if (child) walk(child);
     }
   };
@@ -413,8 +417,7 @@ function isValidBindName(name: string): boolean {
  * ★ 只认命名节点（`isNamed === false` 的关键字/标点不算）。
  */
 function firstNamedChildOfType(node: SyntaxNodeLike, type: string): SyntaxNodeLike | null {
-  for (let i = 0; i < node.childCount; i++) {
-    const c = node.child(i);
+  for (const c of childrenOf(node)) {
     if (c && c.isNamed !== false && c.type === type) return c;
   }
   return null;
@@ -445,8 +448,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
         const module = srcNode ? stripQuotes(srcNode.text) : '';
         const line = n.startPosition.row + 1;
         const sub = (m: SyntaxNodeLike): void => {
-          for (let i = 0; i < m.childCount; i++) {
-            const c = m.child(i);
+          for (const c of childrenOf(m)) {
             if (!c) continue;
             if (c.type === 'import_specifier') {
               const b = c.childForFieldName('alias') ?? c.childForFieldName('name');
@@ -479,8 +481,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
         }
         // 不 return——继续递归（声明内部无嵌套 import）
       }
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
+      for (const c of childrenOf(n)) {
         if (c) walk(c);
       }
     };
@@ -491,8 +492,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
         const line = n.startPosition.row + 1;
         const modNode = n.childForFieldName('module_name');
         const module = modNode ? modNode.text : '';
-        for (let i = 0; i < n.childCount; i++) {
-          const c = n.child(i);
+        for (const c of childrenOf(n)) {
           if (!c || c === modNode) continue;
           if (c.type === 'aliased_import') {
             const b = c.childForFieldName('alias') ?? c.childForFieldName('name');
@@ -505,8 +505,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
       }
       if (n.type === 'import_statement') {
         const line = n.startPosition.row + 1;
-        for (let i = 0; i < n.childCount; i++) {
-          const c = n.child(i);
+        for (const c of childrenOf(n)) {
           if (c && c.type === 'dotted_name') {
             // import os.path → 绑定名 os（module 记录完整 dotted 名）
             const name = c.text.split('.')[0];
@@ -515,8 +514,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
         }
         return;
       }
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
+      for (const c of childrenOf(n)) {
         if (c) walk(c);
       }
     };
@@ -553,8 +551,7 @@ function collectImportBinds(root: SyntaxNodeLike, lang: string): AstImportBind[]
         }
         return;
       }
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i);
+      for (const c of childrenOf(n)) {
         if (c) walk(c);
       }
     };
@@ -627,8 +624,7 @@ function importBindingFactsFromRoot(root: SyntaxNodeLike, langName: string): Imp
     if (n.type === 'identifier' || n.type === 'type_identifier') {
       if (!bindingRanges.has(n.startIndex ?? -1)) used.add(n.text);
     }
-    for (let i = 0; i < n.childCount; i++) {
-      const c = n.child(i);
+    for (const c of childrenOf(n)) {
       if (c) walk(c);
     }
   };
@@ -878,6 +874,27 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
   const unparsed = [...unmatchedExts.entries()]
     .map(([ext, count]) => ({ ...describeUnmatchedExt(ext), count }))
     .sort((a, b) => (b.count === a.count ? (a.ext < b.ext ? -1 : 1) : b.count - a.count));
+
+  // ★★ 簇 D 修复：`health_cache.ts` 现成缓存接入 code_health 主路径。
+  //   指纹 = 参与体检的源码文件 (rel,size,mtimeMs) + 阈值 + reachableRoots（这些都是会改变报告的参数）。
+  //   命中即返回整份 HealthReport（≈毫秒级），跳过下面 175s 的全量 AST 解析。
+  //   失败不致命：read/write 异常由 health_cache 内部吞掉，退化为全量体检（行为不变）。
+  let cacheKey: string | null = null;
+  if (!options.noCache) {
+    const srcFp = fileFingerprint(files.map((f) => ({ abs: path.join(root, f.rel), rel: f.rel })));
+    // ★ reachableRoots 是 60+ 条路径（≈2.5 KB）——直接拼进 key 会超过 255 字节文件名上限
+    //   ⇒ writeFileSync ENAMETOOLONG 被 health_cache 静默吞掉 ⇒ **缓存永远写不进去**（实测坑）。
+    //   先散列成 12 位短指纹再入 key（顺序无关：先排序）。
+    const rootsFp = crypto
+      .createHash('sha1')
+      .update([...(options.reachableRoots ?? [])].sort().join('|'))
+      .digest('hex')
+      .slice(0, 12);
+    cacheKey = healthKey('code_health', [threshold, srcFp, rootsFp]);
+    const cached = readHealthCache<HealthReport>(cacheKey, root);
+    if (cached) return cached;
+  }
+
   const rels = new Set(files.map((f) => f.rel));
   const parses = await Promise.all(
     files.map(async (f) => ({ rel: f.rel, parsed: await parseFileFull(f.rel, f.content) })),
@@ -1273,7 +1290,7 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         //   ⇒ 分两类显示、**不合并**：处置完全不同（一类是设计如此，一类要补包）。
         unreadLine;
 
-  return {
+  const result: HealthReport = {
     root,
     fileCount: files.length,
     issues,
@@ -1314,6 +1331,8 @@ export async function analyzeHealth(root: string, options: HealthOptions = {}): 
         : {}),
     },
   };
+  if (cacheKey) writeHealthCache(cacheKey, result, root);
+  return result;
 }
 
 /**

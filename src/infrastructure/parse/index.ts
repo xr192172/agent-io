@@ -20,6 +20,7 @@ export {
   findLanguageByExt,
   isLanguageInstalled,
   isTypeOnlyModuleStatement,
+  childrenOf,
 } from './kernel.js';
 
 export type { ParsedSymbol, ParsedImport, ParsedCall, ParsedTypeRef, ParsedFile, LanguageEntry, SyntaxNodeLike } from './kernel.js';
