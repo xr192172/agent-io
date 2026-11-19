@@ -77,7 +77,7 @@
 【任务卡 · TQ-20261119-001-LEAD】
   from: lead（本机/配合端）  →  to: 托管机（引擎队）
   目标: 引擎 HTTP 写端落地——serve 绑定 Tailscale 接口（100.84.123.38），支持远程调用 41 工具面
-  判据: ① serve 监听 100.84.123.38（不绑 0.0.0.0）；② 本机（100.69.222.28）经 tailnet 调 invokeTool 一次成功（如 get_dsl 读册）；③ 共享 token 可后置为纵深防御（tailnet-only 绑定已是安全边界）
+  判据: ① serve 监听 100.84.123.38（不绑 0.0.0.0）；② 本机（100.69.222.28）经 tailnet 调 invokeTool 一次成功（如 get_dsl 读册）；③ 共享 token 可后置为纵深防御（tailnet-only 绑定已是安全边界）；④ **验收加一条**：lead 经 tailnet 成功执行一次 ledger query（读数回帖）——验证跨机知识同步链（权威 tasks.db 住托管机，配合端经 HTTP 调 ledger action 读写挂账，本地 tasks.db 退役）——这同时解决 T-#LEDGER-CROSS-CHECKOUT（22 条挂账经 hangRow 收录进权威库）
   边界: 只动 src/presentation/http/serve.ts（或 daemon）；不改设计册判据；token 中间件可后置
   验收: lead 从 100.69.222.28 发一次 invokeTool HTTP 调用成功 + 回帖读数
   优先级: P0（解锁 T-#SHEET-HOST 远程写路径 + 阶段 2 引擎互调）
