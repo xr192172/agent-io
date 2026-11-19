@@ -1,0 +1,198 @@
+{
+  "id": "imported_vp-life-ZDsw8s",
+  "type": "feature_diagram",
+  "feature": "vp-life-ZDsw8s",
+  "version": "1.0.0",
+  "title": "vp-life-ZDsw8s",
+  "source_root": "D:\\dev_hzy\\ao-worktrees\\cashier-gate\\.agent-io\\scratch\\tmp\\vp-life-ZDsw8s",
+  "geometry": {
+    "layout": "free",
+    "width": 830,
+    "height": 458,
+    "nodes": [
+      {
+        "id": "dir_src",
+        "label": "📁 src",
+        "x": 450,
+        "y": 60,
+        "width": 280,
+        "height": 238,
+        "type": "module",
+        "style": {
+          "bg": "#152141",
+          "color": "#90caf9",
+          "borderRadius": 8
+        }
+      },
+      {
+        "id": "dir_test",
+        "label": "📁 test",
+        "x": 60,
+        "y": 60,
+        "width": 280,
+        "height": 238,
+        "type": "module",
+        "style": {
+          "bg": "#152141",
+          "color": "#90caf9",
+          "borderRadius": 8
+        }
+      },
+      {
+        "id": "file_src_a_ts",
+        "label": "a.ts",
+        "x": 470,
+        "y": 110,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/a.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_src_b_ts",
+        "label": "b.ts",
+        "x": 470,
+        "y": 214,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "src/b.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "core"
+      },
+      {
+        "id": "file_test_a_test_ts",
+        "label": "a.test.ts",
+        "x": 80,
+        "y": 110,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "test/a.test.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "test"
+      },
+      {
+        "id": "file_test_b_test_ts",
+        "label": "b.test.ts",
+        "x": 80,
+        "y": 214,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "path": "test/b.test.ts",
+        "style": {
+          "bg": "#1565c0",
+          "color": "#ffffff",
+          "borderRadius": 4
+        },
+        "arch_layer": "test"
+      }
+    ],
+    "edges": [
+      {
+        "id": "contains_src_src_a_ts",
+        "from": "dir_src",
+        "to": "file_src_a_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_src_src_b_ts",
+        "from": "dir_src",
+        "to": "file_src_b_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_test_test_a_test_ts",
+        "from": "dir_test",
+        "to": "file_test_a_test_ts",
+        "label": "contains"
+      },
+      {
+        "id": "contains_test_test_b_test_ts",
+        "from": "dir_test",
+        "to": "file_test_b_test_ts",
+        "label": "contains"
+      },
+      {
+        "id": "dep_dir_test_dir_src",
+        "from": "dir_test",
+        "to": "dir_src",
+        "label": "imports ×2",
+        "type": "dashed"
+      }
+    ]
+  },
+  "semantic": {
+    "files": [
+      {
+        "id": "file_src_a_ts",
+        "path": "src/a.ts",
+        "responsibility": "",
+        "lines": 3,
+        "layer": "core"
+      },
+      {
+        "id": "file_src_b_ts",
+        "path": "src/b.ts",
+        "responsibility": "",
+        "lines": 3,
+        "layer": "core"
+      },
+      {
+        "id": "file_test_a_test_ts",
+        "path": "test/a.test.ts",
+        "responsibility": "",
+        "lines": 6,
+        "layer": "test"
+      },
+      {
+        "id": "file_test_b_test_ts",
+        "path": "test/b.test.ts",
+        "responsibility": "",
+        "lines": 6,
+        "layer": "test"
+      }
+    ]
+  },
+  "layers": [
+    {
+      "id": "core",
+      "name": "核心层",
+      "description": "核心/未归类文件",
+      "color": "#65707e",
+      "count": 2
+    },
+    {
+      "id": "test",
+      "name": "测试层",
+      "description": "测试文件与测试工具",
+      "color": "#788291",
+      "count": 2
+    }
+  ],
+  "_dsl_rev": 1,
+  "_sync": {
+    "saved_at": "2026-11-19T13:16:57.370Z",
+    "source": "design_sheet",
+    "feature": "vp-life-ZDsw8s",
+    "scanRev": 1795094217097,
+    "age": 273,
+    "dbSchemaVersion": 18,
+    "via": "import:import_project"
+  }
+}
