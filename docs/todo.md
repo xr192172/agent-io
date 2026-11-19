@@ -696,6 +696,8 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#LEDGER-CROSS-CHECKOUT** | 跨检出点/跨机器的台账与任务事件需要明确移交载体 | tasks.db 不进 Git，另一检出点的写无法自然互通；当前 SHEET-HOST/ Tailscale 续接与此相关。 | 优先复用单托管权威或既有文本事件投影；不得默认复制多份可写台账。 |
 
 
+
+| **T-#LANG-ECOSYSTEM** | ★★★ 注册表由**生态驱动**（胡梓阳 2026-11-19 拍板）：现状 55 条=手抄清单（本机可装 33），而 tree-sitter 生态约 **200 种语言**语法树齐备（tree-sitter org / tree-sitter-grammars org / nvim-treesitter / 社区仓）。引擎的接入路径已是标准的（pkgSpec 注册→pkg 安装→原生或 WASM 装载→symbol_nodes 配置→判据），**任何生态语法树都可小范围适配接入**。方案三件套：①install_grammar 工具（环境处理内建：devdir/cache 重定向、allowScripts、peer-deps、VS env、编译→加载→解析三重验证——2026-11-19 深夜手工实证过的全流程）；②loader 增 web-tree-sitter WASM 模式（预编译生态零工具链，derek/vue/css/html 直接可用）；③**生态发现**（枚举 npm/GitHub 可用 grammar→按扩展名匹配→自动生成注册候选→探针验证 symbol_nodes→人审后入册）。判据：任选 3 个册外生态语法树（如 crystal/swift/lua）经三件套接入→探针出符号→判据绿；断链（卸包）→红 | 待施工（结构卡，与 T-#SQLXML-NATIVE 合并推进） |
 ## §J · 语言适配队待引擎收录行（2026-11-19 · batch 11 合并后投影丢失，git 历史恢复）
 
 | 编号 | 内容 | 佐证 |
