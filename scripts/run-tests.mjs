@@ -86,6 +86,36 @@ const jobs = (() => {
 /** ★ 并行档（`--jobs >1`）：唯一的语义差异是"产者护栏判不了是谁"（见文件头与末尾那段） */
 const PARALLEL = jobs > 1;
 
+// ════════════════════════════════════════════════════════════════════════
+// ★★★ T-#INC-TEST-SEL（2026-11-19）：`--changed <path>` —— 可信增量选量
+//
+// 四根柱子的落点（缺一就不信）：
+//   ① 测试↔源码覆盖映射：`src/infrastructure/analysis/facts/test_coverage.ts#buildCoverageMap`
+//      —— 从 cache.db 的 import 边（test→src + src→src 传递闭包）自动聚合；
+//   ② 选量：`selectChangedTests` = impactOfChanged(changed) ∩ 测试 coverage；
+//      ★ 保守方向：覆盖未知 / impact 失败 ⇒ 包含（宁多不漏），非代码改动 ⇒ 零测试；
+//   ③ 源码指纹缓存：`.agent-io/scratch/test-sel-cache.json`（derived，不进 git）——
+//      每个测试记"上次通过时覆盖源码的 sha 集合"；改动源码 sha 全在缓存 ⇒ 跳过；
+//   ④ 消融：`scripts/incsel-audit.mjs`（全量 vs 增量逐文件对照，漏选红）。
+//
+// ★ 本文件**不是判据的第二处真相**：选量由 `scripts/incsel-select.mjs`（带 --import tsx 的
+//   独立进程）调 src 真实现算，本文件只解析它的 JSON + 过滤 files；落盘指纹走 incsel-record.mjs。
+// ★ `--changed` 与 `--filter` 联用：filter 先收窄候选（定向口径），changed 再在其上选（交集）；
+//   —— 两者都给时两者都生效（保守），但**两者都不给**时行为逐字不变（全量）。
+// ════════════════════════════════════════════════════════════════════════
+const changedArgs = (() => {
+  const out = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] !== '--changed') continue;
+    const v = args[i + 1] ?? '';
+    for (const p of v.split(',')) if (p.trim()) out.push(p.trim());
+  }
+  return [...new Set(out)];
+})();
+const noCacheSel = args.includes('--no-cache');
+/** 选量回执（`--changed` 时非空）；缺/坏 ⇒ 响亮判红（判不了 ≠ 没选，绝不静默全跑当没事） */
+let SEL = null;
+
 // ★★★ 2026-10-30（T-#REG-POLLUTE）：**测试跑在自己的数据根里** —— 与 `certs/run-all-certs.mjs` 同一笔修法。
 // 病：测试若 `importProject` 一个 temp 夹具项目，登记会落进**真数据仓**（`<包根>/.agentio-data/projects.json`），
 //     而运行期一过那条登记就永远指向一个不存在的目录 ⇒ 注册表（总任务视图的钥匙）被幽灵条目弄脏。
@@ -479,7 +509,38 @@ function fingerprint(file) {
   }
 }
 
-const files = testFiles();
+const filesAll = testFiles();
+let files = filesAll;
+if (changedArgs.length > 0) {
+  // ★ 调真实现算选量（独立进程 + --import tsx）；失败 ⇒ 响亮判红（判不了 ≠ 没选）
+  const selArgs = [];
+  for (const c of changedArgs) { selArgs.push('--changed', c); }
+  if (noCacheSel) selArgs.push('--no-cache');
+  const r = spawnSync(process.execPath, ['--import', 'tsx', path.join(ROOT, 'scripts/incsel-select.mjs'), '--root', ROOT, ...selArgs], {
+    cwd: ROOT, encoding: 'utf8', shell: false, maxBuffer: 16 * 1024 * 1024,
+  });
+  let parsed = null;
+  try { parsed = JSON.parse(String(r.stdout ?? '').trim().split('\n').pop() ?? ''); } catch { /* 判不了 */ }
+  if (r.status !== 0 || !parsed || parsed.ok !== true) {
+    console.log(`${C.r}✗ --changed 选量失败（判不了 ≠ 没选 ⇒ 拒绝静默全跑）：${C.x}`);
+    console.log(`   rc=${r.status}  stderr=${String(r.stderr ?? '').trim().split('\n').slice(-3).join(' | ')}`);
+    console.log(`   stdout=${String(r.stdout ?? '').trim().slice(0, 300)}`);
+    process.exit(1);
+  }
+  SEL = parsed;
+  const selSet = new Set((SEL.selected ?? []).map((t) => String(t).replace(/^tests\//, '')));
+  files = filesAll.filter((f) => selSet.has(f));
+  const d = SEL.denominator ?? {};
+  console.log(`${C.y}★ --changed ${JSON.stringify(changedArgs)}：选量 ${files.length} / ${filesAll.length} 个测试文件` +
+    `（覆盖映射可信=${SEL.coverage?.trusted} · 影响面 ${SEL.impact?.files?.length ?? 0} 文件 / ${SEL.impact?.calls ?? 0} 次波及计算）${C.x}`);
+  console.log(`${C.d}  分母：全量 ${d.total} · 选中 ${d.selected} · 覆盖未知保守纳入 ${d.conservative} · 指纹缓存跳过 ${d.skippedByCache}` +
+    ` · 影响关系不可用=${d.impactUnavailable}${C.x}`);
+  if (files.length === 0) {
+    // ★ 非代码改动 ⇒ 零测试跑（秒回）：不进规模棘轮、不判空跑（0.12：0 是被选出的真值，不是没跑）
+    console.log(`${C.g}⇒ 增量选量为空：本轮改动没有任何测试覆盖（无代码波及面）⇒ 零测试跑（不进规模/空跑判据）${C.x}`);
+    process.exit(0);
+  }
+}
 console.log(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
 if (filter) console.log(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
 console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<w槽位>/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
@@ -511,6 +572,8 @@ console.log('');
 
 let bad = 0;
 let tot = { tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0 };
+/** ★ 柱 3：`--changed` 模式里判 PASS 的测试文件（跑完批量落"源码指纹"缓存） */
+const passedForCache = new Set();
 /** ★ 源码声明的用例条数（下限守卫的分子/分母都从这里来；见文件头"两条口径"） */
 let totStatic = 0;
 /**
@@ -541,6 +604,7 @@ function reportRun(f, stat, r) {
   const cnt = r.tests === null ? '计数缺失' : `用例 ${r.pass}/${r.tests}${stat.n > 0 ? `（源码 ${stat.n}）` : ''}`;
   const extra = r.skipped || r.todo ? `  ${C.y}skip ${r.skipped} / todo ${r.todo}${C.x}` : '';
   console.log(`  ${tag}  ${f.padEnd(34)} ${C.d}${String(r.ms).padStart(5)}ms  ${cnt}${C.x}${extra}`);
+  if (ok && SEL) passedForCache.add(`tests/${f}`); // ★ 柱 3：只给真 PASS 的测试落指纹（失败/跳过的绝不落）
   if (r.tests === null) {
     // ★ 汇总行都没有 = 文件根本没跑起来（导入失败 / 语法错 / 进程崩）⇒ 不许当 0 处理
     console.log(`        ${C.r}没有 TAP 汇总行（文件没跑起来）⇒ 前 3 行：${C.x}`);
@@ -666,6 +730,23 @@ if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryCl
   );
   process.exit(1);
 }
+// ════════════════════════════════════════════════════════════════════════
+// ★ 柱 3：`--changed` 全绿 ⇒ 给判 PASS 的测试批量落"源码指纹"缓存。
+//   一次进程写完（不逐文件 spawn）：把 pass 列表交给 incsel-record.mjs 一次算好覆盖映射 + 落盘。
+//   ★ 只在全绿时写：任何一个红都不写（失败测试的旧指纹留着会比没有更坏——它伪装成"上次通过"）。
+//   ★ 写失败不判红（derived 缓存坏了下次 fail-closed 不跳过，不是被测逻辑失败）——但要显形。
+// ════════════════════════════════════════════════════════════════════════
+if (SEL && passedForCache.size > 0) {
+  try {
+    const recArgs = [];
+    for (const t of passedForCache) recArgs.push('--test', t);
+    const rr = spawnSync(process.execPath, ['--import', 'tsx', path.join(ROOT, 'scripts/incsel-record.mjs'), '--root', ROOT, '--mode', 'changed', ...recArgs], {
+      cwd: ROOT, encoding: 'utf8', shell: false, maxBuffer: 8 * 1024 * 1024,
+    });
+    if (rr.status === 0) console.log(`${C.g}✓ 源码指纹缓存已更新：${passedForCache.size} 个测试（.agent-io/scratch/test-sel-cache.json，derived 不进 git）${C.x}`);
+    else console.log(`${C.y}★ 源码指纹缓存写入失败（不影响本轮判定；下次会 fail-closed 不跳过）：${String(rr.stderr ?? '').trim().split('\n').slice(-1)[0]}${C.x}`);
+  } catch { /* derived 缓存：写失败不判红 */ }
+}
 // ════════════════════════════════════════════════════════════════════
 // ★★★ 测试规模棘轮（E-2 2026-10-31 第八轮复核 / E-3 第九轮复核）
 //   E-2：**没有文件数/用例数棘轮** —— 删掉一个守卫测试（如 `tests/p0_gate_table.test.ts`）⇒ 门报「文件 39 / 用例 171 / 失败 0」**绿**，
@@ -705,9 +786,9 @@ function nameDelta(list) {
 }
 
 if (wantUpdate) {
-  if (filter) {
+  if (filter || SEL) {
     console.log(
-      `${C.r}✗ --update-baseline 不许与 --filter 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
+      `${C.r}✗ --update-baseline 不许与 ${SEL ? '--changed' : '--filter'} 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
     );
     process.exit(1);
   }
@@ -780,24 +861,26 @@ if (wantUpdate) {
   process.exit(0);
 }
 
-// ── a) 定向跑（--filter）：**不判规模**，但覆盖缺口必须打印，退出码只看用例通过/失败 ──
+// ── a) 定向跑（--filter）/ 增量跑（--changed）：**不判规模**，但覆盖缺口必须打印，退出码只看用例通过/失败 ──
 //   判据：子集天然小于全量 ⇒ 拿全量基线判规模会**恒红**（实测：被测文件 9/9 全 PASS 仍 exit 1）
 //   ⇒ 那不是"发现回归的嘴"，是"永远张着的嘴"（0.16）⇒ 把它缩小到只在全量跑上生效，
 //   并把"本轮只验了 N / M"这条分母留下（否则定向跑会静默读成"全绿"）。
-if (filter) {
+if (filter || SEL) {
+  const modeLabel = SEL ? `--changed ${JSON.stringify(changedArgs)}` : `--filter ${JSON.stringify(filter)}`;
   const all = testFiles(false);
   const uncovered = all.length - files.length;
   console.log(
-    `${C.y}★ 定向跑（--filter ${JSON.stringify(filter)}）：本次 ${files.length} 个文件 / 用例 ${tot.tests}；` +
+    `${C.y}★ ${SEL ? '增量' : '定向'}跑（${modeLabel}）：本次 ${files.length} 个文件 / 用例 ${tot.tests}；` +
       `全量 ${all.length} 个文件 ⇒ 未覆盖 ${uncovered} 个（全量 ${all.length} − 本次 ${files.length}）${C.x}`,
   );
   console.log(
     `${C.d}  规模棘轮本轮不判（子集天然小于全量，判了就恒红）⇒ 退出码只看用例通过/失败` +
       `；基线（全量口径）${base.ok ? `文件 ${base.data.files} / 用例 ${base.data.cases}` : `**读不到**（${base.why}）`}${C.x}`,
   );
+  const tail = SEL ? `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验；` +
+      `增量选择的判据见 scripts/incsel-audit.mjs 的消融对照）${C.x}` : `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验）${C.x}`;
   console.log(
-    `${C.g}⇒ 定向跑绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过` +
-      `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验）${C.x}`,
+    `${C.g}⇒ ${SEL ? '增量' : '定向'}跑绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过` + tail,
   );
   process.exit(0);
 }
