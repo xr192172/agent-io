@@ -694,3 +694,15 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#MYBATIS-TOOLFACE** | mybatis_contracts 是否接 MCP 工具面须由真实消费者决定 | 现仅验收链消费；工具面扩张不能仅凭“存在”。 | 先证明真实用户场景与断开入口会红，再决定是否注册 ToolDef。 |
 | **T-#MAPPER-EDGE-IMPACT** | mapper_statement 边的影响闭包传播（改 XML 波及 Java） | 已有 mapper_statement 边，但增量影响集是否消费它尚未证明。 | 反例：改 mapper XML 时波及对应 Java 接口方法；砍边则读数退回。 |
 | **T-#LEDGER-CROSS-CHECKOUT** | 跨检出点/跨机器的台账与任务事件需要明确移交载体 | tasks.db 不进 Git，另一检出点的写无法自然互通；当前 SHEET-HOST/ Tailscale 续接与此相关。 | 优先复用单托管权威或既有文本事件投影；不得默认复制多份可写台账。 |
+
+
+## §J · 语言适配队待引擎收录行（2026-11-19 · batch 11 合并后投影丢失，git 历史恢复）
+
+| 编号 | 内容 | 佐证 |
+|---|---|---|
+| **T-#CALLEXISTS-EDGE-GAP** | ★★ card-vue-sfc 收尾发现：**call 边抽取缺口**——consistency.ts `checkConsistencyReport()` L987 真实调用 `parseFile(file.path, content)`（origin/main 与本地源码均在），但 cache.db 的 call 边**不存在**（callees 21 项里无 parseFile），call-exists 判据因此假红；自索引重建后依旧缺失 ⇒ 非「索引陈旧」，是抽取/建边链路的真实缺口。Vue SFC 修复与解析无关（kernel 3 条 Vue 判据 pass） | 待查：traverseAndExtract 对 `await parseFile(...)` 形态的覆盖（L987 在 try 块内、跨多层作用域）；修法候选 = call 抽取对该形态的反例修复（§十二 第 3 档）；修复后 call-exists 应转绿 |
+| **T-#CLOTH-RESERVATION** | ★★★ 批 2 判据底稿（布料/手作店改造 · 设备域+预约+券化，**21 条机器可验**）：【设备容量】①任意时刻占用缝纫机≤4、印花机≤1（并发第 5 人引导排队）；②全天券=硬锁[购买时刻,20:00]，同设备同日第二个全天券拒；③20:00 硬墙：占用/加时/计费全截断；【预约状态机】④远程约=软意图不锁设备；⑤即约即用=意图+签到同刻（人到场天然优先）；⑥签到起算时长=购买套餐 durationHours（1/2/3/全天，不写死）；⑦签退=资源回空闲池（全天券 16:00 走、资源立刻可用）；⑧候补 FIFO：设备满时签到进候补，释放自动激活+小程序通知；【迟到/释放——店主板定】⑨预约时段+30min 未签到⇒提醒任务：**APP 推送(主)+短信(辅)+收银台人工兜底**（不忙时人工打，平时推送即可）；⑩+60min 未签到⇒意图失效、软配额释放（券不失效可再约/退）；⑪失效后到店：有空位即约即用/满则候补/**或自选原路退现金**；【券化】⑫套餐=CouponGroup（1h/2h/3h/全天/材料包，带 durationHours+设备类型）；⑬UserCoupon 有效期 30 天（第 30 天可约可核销、过期不可）；⑭核销绑签到（未核销才可退）；⑮未核销退券=**原路退现金**（禁止退会员卡中转——店主板定，二次操作伤客）；⑯已核销不可退；【迁移】⑰桌台域→设备域（TableArea/Table→EquipmentType/Equipment 语义平移）；⑱riderApi 隐藏不删；⑲参数模板端点 {id} 不建边只计数（T-#API-PARAM-EDGES 领地） | 全部 behavior-cases 机器可验；批 2 三卷施工卡（卷 A 设备域迁移/卷 B 预约状态机/卷 C 券化改造）的验收面 |
+| **T-#CLOTH-DECOMPOSE** | ★★★ 布料/手作店改造**领域拆解矩阵**（111 Controller 全量清单锚定）：✅保留 30（会员 8/系统 8/店铺 4/报表 3/分销 4/装修 5）；🔧改造 8 域（Goods/Cate→物料成品、Stock→物料库存按米、Order 系→定制单+体验单、Book→预约、Coupon 系→套餐券载体、Cart、DoConfirm→核销、GoodsComment）；➕新增 4（量体档案/物料 BOM/工序工单/手作场次）；❌移除（桌台系→迁移为设备域、riderApi 隐藏）；批次：批 0 退役隐藏→批 1 商品物料化→批 2 量体+预约（本卡）→批 3 订单改造→批 4 工单 BOM 日报 | 待胡梓阳审定矩阵后开工；每批=施工卡组+判据挂载+机器验收；拆解基于真实索引（111 Controller 清单见 agent-io scratch/closeout/controller_inventory.cjs） |
+| **T-#API-PARAM-EDGES** | ★ card-api-edges 挂账：**REST 路径参数（`:id` / `{id}`）两端不建边**——首轮口径写死为「只计数不建边」：前端 `'backendApi/order/info/' + orderId` 是**拼接表达式**，`{orderId}` 段的绑定语义要求前端拼接表达式的求值（变量从哪来、可能是什么），这已属**语义扩展**而非字面匹配；本轮猜了就是把猜测当事实。fuintAdmin+fuintCashierWeb 实测：url 382 · 端点 424 · 精确相等 241 · **参数类 69**（逐条点名进回执 `api_reconcile.paramPathUnmatched`）| 待决：接前端数据流（拼接右操作数的类型与取值范围）后再建边，或引入「参数段通配 + 方法一致」的**显式**口径并给出反例。**反例口径**：参数模板两端**不建边**但**计数可见**（`p1_api_edges.test.ts` ⑤ 钉住这一条——建了边即红、静默即红） |
+
+> ★ 本节各行 = T-#LEDGER-CROSS-CHECKOUT 的实测受害者：batch 11 合并后 ledger 投影重算，我方手挂行丢失。内容从 git 历史（75b2997/6de19b6/1d56f55）逐字恢复。请引擎侧 hangRow 收录后本节归档。
