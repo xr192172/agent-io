@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=683 events=458 body_sha256=2dc8ba76190063d4` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=683 events=459 body_sha256=08f2f201cbb5c591` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -748,6 +748,7 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 > ↳ lead 2026-11-17：↳ **P0 落地进度（2026-11-18 凌晨）**：✅ A1 tasks.db 并发档（WAL+busy_timeout，并发 hangRow 39/120 失败→0/120，`ffe40318`）✅ A2 源码 pre-hash + E-WRITE-CONFLICT（rollback 拒绝覆盖他人写入，拒绝 force 逃生口，`dab8cdb1`）✅ 磁盘 gc（三类回收+dry-run 默认+保护边界有牙；真根 3078.7→291.2MB，`0eff5f7a`）✅ judge-all 单 spawn+执行池（104→24.4s；席纠正卡面病因：spawn 只占 4%，真热点 behavior-cases 80%）✅ C3b 误导注释。剩余 P0：能力矩阵实测派生 / 悬空文档引用判据 / skipped 点名 / README 五步（已派席）。新挂 T-#DIGEST-LOAD-CAP。
 > ↳ lead 2026-11-18：↳ **过夜总收口（2026-11-18 上午 `08826102`）**：两次 Windows 自动更新重启打断，子代理持久化存活全部续完。P0 九件全部落地：①磁盘 gc 3078→291MB②A1 并发档③A2 pre-hash④judge-all 104→24.4s⑤C3b⑥能力矩阵实测派生（33/55 恒等式+消融实证）⑦悬空文档引用判据（lint:prose 规则 I，首跑掃4 处真悬空）⑧skipped 点名⑨README 五步（git-bash 逐字跑通）。附加落地：review-gate（零消费点闭口）· evidence 棘轮（130 基线）· **禁 eval 结构卡（T4 旁路改后 unsupported，误役 Buffer/100ms 两回归被 judge-all 量出修正；宿主对象 constructor 边界如实上报 = B1/B2 后续）**· globals 针强化（needle-power 抓到真弱点，改调用形态）· 判据迁回属主册（batch1 不变量恢复）· 批 2-5 总数 826 显式更新。验收：**167 文件 / 1031 用例 / 0 失败**（基线 +6/+40）。待办：tsbuildinfo 缓存老问题一次性修（今晨又咬一次 build）· B1/B2 宿主 realm 边界· D4 resolve 理由。mc-eval 工作随首批入库（归属涉本行，台账此注）。
 > ↳ lead 2026-11-18：↳ **延迟普查交卷（latency-ds-1.md，IDE 级预算 = 热 ≤100ms）**：41/41 全超，被同一笔 **1,325ms 入场费**锁死（931ms ESM 图加载（725 脚本/370 模块，11.7% = validator.ts import 期 ajv.compile 96KB）+ 384ms 无条件 55 语言预热）——这笔钱跟调用内容无关。七个分钟级：deprecate_offline 241s · cross_repo 226s（输出 5.1MB）· code_health 175s（现成缓存零接线）等。根因聚类 A-G：簇 C = tree-sitter 取值器风暴（每属性读一次 N-API 跨界，childCount+child(i) = n+1 次 vs node.children 1 次——平方级，一次覆盖 6 工具）。快赢 8 条各 ≤0.5 天。另报可复现写端缺陷：**design_intent 无视 project_dir 锚包安装根**（沙箱探针写真仓，已还原）——单独立卡。频次诚实边界：账本 32K 条里 24K 是合成探针（via gate/sweep），真实频次 = get_dsl 418.5/天、其余工具 0-几十/天。
+> ↳ lead 2026-11-19：↳ **簇 C/D/E 修复落地（walker-hy，2026-11-19）**：① tree-sitter 遍历改写（children 数组批量 vs 逐子节点 N-API，一次改动覆盖 6 工具）② code_health 接 health_cache（存量零调用→接线，冷 178s→热 1.73s = 103×）③ deprecate_offline 读盘记忆化（go.mod 525→0）。剩余 cross_repo 163s 的 40% 在 node_modules tree-sitter getter（第三方库，按纪律不动）——如需进一步可 upstream PR 或 patch-package。
 | **T-#DIGEST-LOAD-CAP** | query=digest 自截断数元素不数载荷（批 6 席报产品 P1） | （引擎挂账，待裁） | — |
 > ↳ lead 2026-11-17：病：`lines.length > 205` 数的是数组元素而非字节/物理行，元素数 26-205 区间时 message 可涨到 137,367 字符/652 行且不自截断（P0-2 载荷爆炸要防的形态）。修法：改为字节/物理行预算 + 上限判据（src/ 改动需 build）。
 | **T-#TWO-TEAM-SPLIT** | 双队分工协议（2026-11-18 用户指示：另一台电脑 = 语言适配队友） | （引擎挂账，待裁） | — |
