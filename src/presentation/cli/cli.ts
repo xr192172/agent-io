@@ -42,7 +42,10 @@ import {
 } from '../../application/design/dsl_ops/op_data_spec.js';
 // ★ 只为 `coerceKeyValues` 的形参标注用（type-only ⇒ 运行时零成本）
 import type { ToolDef } from '../../application/types.js';
-import { invokeTool } from '../mcp/server_registry.js';
+// ★★ 2026-11-19（延迟簇 A · 元数据/实现分家）：`invokeTool` 改成**用到时才加载**。
+//   `server_registry.ts` 的运行时闭包 = 全部 41 个工具的实现链（实测 371 个 dist 模块 / ≈750 ms）。
+//   而 `--help` / `list` / `--schema` 一个字都不需要它 —— 那三个分支在下面**之前**就 `exit` 了
+//   ⇒ 把它们从"入场税"里摘出来（`await import()` 放在调用点前一行，语义一字不变）。
 
 function die(msg: string): never {
   process.stderr.write(msg.endsWith('\n') ? msg : msg + '\n');
@@ -297,6 +300,7 @@ try {
 // ★ 走**唯一调用入口** —— 保鲜 / 首触 / 纠错 / 狗食 / 告警注入全在这里，与 MCP 面逐字同路径。
 // ★ 2026-10-21：**显式声明来源 = `cli`** —— 账本要分得清「agent 从 MCP 面用的」与
 //   「命令行跑的」（`npm run tool` / 脚本 / 扫射都可能走这条，它们不是同一件事）。
+const { invokeTool } = await import('../mcp/server_registry.js');
 const r = await invokeTool(def, args, 'cli');
 // ★ 2026-10-07：缺参数时**把该工具的全部必填项一并列出**。原先一次只报一个 ⇒
 //   调用方要反复裸调去"试"缺哪个（当时就是这么发现的）。

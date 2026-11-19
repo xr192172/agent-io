@@ -54,35 +54,12 @@ import {
 import { requireProjectRoot } from '../../../infrastructure/storage.js';
 import { optionalBool, optionalNum, optionalStr, requireStr } from '../../plumbing.js';
 
-/**
- * 台账动作闭集 —— **唯一住处**（`ToolDef.inputSchema` 的 `z.enum` 由它派生，别手抄第二份）。
- * 与引擎的对应（一眼可核，改一处必须改这里）：
- *   hang→`hangRow` · annotate→`annotateRow` · close→`closeRow` · reopen→`reopenRow` ·
- *   supersede→`supersedeRow` · verdict→`writeVerdict` · list→`listActive`+`ledgerAvailability` ·
- *   get→`getRow`+`ledgerAvailability` · conflicts→`subjectConflicts` ·
- *   review_queue→`readReviewQueue` · resolve_review→`resolveReview`
- */
-export const LEDGER_ACTIONS = [
-  'hang',
-  'annotate',
-  'close',
-  'reopen',
-  'supersede',
-  'verdict',
-  'list',
-  'get',
-  'conflicts',
-  'review_queue',
-  'resolve_review',
-] as const;
-export type LedgerAction = (typeof LEDGER_ACTIONS)[number];
+// ★ 2026-11-19（延迟簇 A）：工具面常量已搬到零依赖叶子 `tool_schema.ts`（元数据不许拖实现图）。
+//   handler 仍要用的两个（动作闭集 / 行种类枚举）照旧 import；公开 API 经 re-export 不变。
+import { LEDGER_ACTIONS, RECORD_KINDS, LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION, type LedgerAction } from './tool_schema.js';
+export { LEDGER_ACTIONS, LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION, type LedgerAction };
 
-/**
- * 值域**镜像**（引擎只导出类型、没导出值数组 ⇒ zod 这边只能列一遍）。
- * ★ 改引擎闭集时这几行必须一起改；**判定权仍在引擎**（handler 不拿它们判语义，
- *   只用来把 zod 的窄类型接过去）—— 所以它们是"面的形状"，不是"第二份判据"。
- */
-const RECORD_KINDS = ['task', 'prose', 'ruling', 'discipline', 'meta'] as const;
+
 /**
  * ★★★ 2026-11-18（二席驳斥 #1 · origin 后门）：**工具面只许造 `engine` 行**。
  * `origin='import'` 的行**只能由 importer 产生**（`ledger.ts#insertLedgerRow` 的导入侧）；
@@ -93,7 +70,6 @@ const RECORD_KINDS = ['task', 'prose', 'ruling', 'discipline', 'meta'] as const;
  *    ★ 两条都要：只删 schema 不够 —— schema 是 loose object（未知键保留），键仍在 `handler` 的眼里。
  */
 const ORIGIN_ENGINE_ONLY = 'engine';
-const REVIEW_REASONS = ['half-escaped', 'subject-conflict', 'multi-anchor', 'ragged', 'drift'] as const;
 
 /** 动作闭集校验（形状错 / 名字错 ⇒ 当场抛，并列出全部合法值） */
 function actionOf(a: Record<string, unknown>): LedgerAction {
@@ -406,54 +382,4 @@ export function ledgerHandler(a: Record<string, unknown>): { message: string; da
   }
 }
 
-/**
- * 工具面 schema —— 与 handler **住同一个文件**（一处权威：动作、参数、语义说明不分离）。
- * ★ 描述刻意极短：工具面是**每个请求重付**的固定成本（`mcp_scan` 的字节棘轮），
- *   长文只许有一处 —— `LEDGER_TOOL_DESCRIPTION` 与本文件头注。
- */
-export const LEDGER_INPUT_SCHEMA: Record<string, z.ZodType> = {
-  // ★ describe 必须**列全 enum 取值**（`tests/i1_doc_alignment.test.ts` 的那条判据：枚举里有、
-  //   describe 里没有 ⇒ 模型在 `tools/list` 上读不到这个取值）。由 LEDGER_ACTIONS 派生，别手抄。
-  action: z.enum(LEDGER_ACTIONS).describe(`动作：${LEDGER_ACTIONS.join(' / ')}`),
-  project_dir: z.string().describe('台账库所在项目根（`<root>/.agent-io/tasks.db`）'),
-  ref_id: z.string().optional().describe('台账 id（除 list / conflicts / review_queue 外必填；活跃期唯一）'),
-  section: z.string().optional().describe('章节，如 §I'),
-  title: z.string().optional().describe('标题（hang 必填）'),
-  problem: z.string().optional().describe('原问题（逐字）'),
-  proposal: z.string().optional().describe('原提案（逐字）'),
-  by: z.string().optional().describe('署名（写动作必填）'),
-  body: z.string().optional().describe('正文（逐字存）'),
-  state: z.enum(['done', 'void']).optional().describe('close 结局：只有 done / void（无 wontfix）'),
-  reason: z.string().optional().describe('close 必填：为什么销（逐字入事件）'),
-  evidence: z.string().optional().describe('close 必填：证据（逐字入事件）'),
-  superseded_by: z.string().optional().describe('取代者 ref_id（不能自指）'),
-  subject_path: z.string().optional().describe('关系锚点：仓库相对路径'),
-  subject_symbol: z.string().optional().describe('锚点符号（须与 path 同给）'),
-  declare_supersedes: z.string().optional().describe('hang：显式取代谁（同 subject 冲突时唯一出路）'),
-  record_kind: z
-    .enum([...RECORD_KINDS, 'all'])
-    .optional()
-    .describe(`行种类：${RECORD_KINDS.join(' / ')}（默认 task；all 只给 list）`),
-  // ★ `origin` **故意不声明**（二席驳斥 #1）：工具面只许造 engine 行；import 行只能由 importer 产生。
-  //   键不给、handler 还拦（`originGuardOf`）—— 因为 schema 是 loose object，光删键拦不住直调。
-  include_closed: z.boolean().optional().describe('list：附 closed_count'),
-  review_reason: z.enum(REVIEW_REASONS).optional().describe(`队列原因过滤：${REVIEW_REASONS.join(' / ')}`),
-  open_only: z.boolean().optional().describe('缺省 true = 只看未消项'),
-  review_id: z.number().int().optional().describe('队列项 id'),
-};
 
-/**
- * 台账工具的 `description` —— **模型读的那一面**。
- * ★ 语义口径的唯一住处就这两处（本常量 + 文件头注）；**各动作的必填键不在这里复述**
- *   （它们住在 schema 的 `describe` 里）—— 工具面是每请求重付的固定成本，字节棘轮会看着它。
- */
-export const LEDGER_TOOL_DESCRIPTION =
-  '**台账唯一入口**：单工具 + action 枚举，每个 action **直映一个引擎 API**（纯透传 + 参数校验）。' +
-  '台账住 `<project_dir>/.agent-io/tasks.db`，**不是**设计册 ⇒ `writes:false`。' +
-  '★ **销账 = 状态翻转**（`close` 置 state=done/void + `closed_*` + close 事件）；' +
-  '**`annotate` 不改 state** —— 只挂批注的账永远留在活跃集（实测 315 行全 active）。' +
-  '★ `close` 结局**闭集只有 done / void**（DB CHECK）：**没有 wontfix** —— ' +
-  '不做 / 不修 ⇒ void，理由写 `reason`（与 `evidence` 均必填、逐字留痕）。' +
-  '★ 台账写 = **真相状态变更**，不是日志：`write_log` / dogfood 账本不覆盖它' +
-  '（审计链 = `tasks.db` 的 append-only 事件）。' +
-  '★ 读动作同时给 `availability`（ok 以外都不是"0 条"）；★ 拒绝报文逐字来自引擎。';

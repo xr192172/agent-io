@@ -58,28 +58,11 @@ import {
   type AuthorityEntry,
 } from '../../../infrastructure/authority/scan_authorities.js';
 
-export const LANE_IDS = ['design', 'refactor', 'observe', 'cross', 'meta'] as const;
-export type LaneId = (typeof LANE_IDS)[number];
+// ★ 2026-11-19：LANE_IDS / LaneId 已搬到零依赖叶子 `lane_ids.ts`（元数据不许拖实现图）；本文件 re-export 保持 API 不变。
+import { LANE_IDS, type LaneId } from './lane_ids.js';
+export { LANE_IDS, type LaneId };
 
 /** 工具目录项：注册表里能拿到的元信息（只取派生日录需要的字段） */
-export interface ToolCatalogEntry {
-  name: string;
-  title?: string;
-  description?: string;
-  /**
-   * ★★ 该工具**声明入参**里的**全部属性名**（**深层**收集，含数组元素对象里的键）—— 2026-10-06 加。
-   * ★ 为什么必须"深层"：`rename_symbols` 的对象入参**不在顶层** —— 它是
-   *   `renames: z.array(z.object({ file, symbol, to }))` ⇒ 只看顶层键会得到 `renames`（一个 `context` 词）
-   *   ⇒ **判成"下游不要对象"（假阴性）**。★ 与记过的 `touched` 盲区**同一个病：量具只量到顶层**。
-   * ★ 由 `application/meta/index.ts` 在注入目录时用 {@link collectInputKeys} 算好（那层拿得到 zod）。
-   */
-  inputKeys?: readonly string[];
-  /**
-   * ★★★ 该工具**顶层必填**入参名（2026-10-09，T81 配套；口径见 {@link collectRequiredKeys}）。
-   * ★ 它是「接续」段能说清"**还差哪些必填**"的依据 —— 否则"直接可用（零手工）"会误导。
-   */
-  requiredKeys?: readonly string[];
-}
 
 export interface LaneTool {
   /** 工具注册名（与 server_registry TOOL_DEFS 一致） */
@@ -109,15 +92,12 @@ export interface Lane {
   direct: string[];
 }
 
-/**
- * 工具 → 线归属。**由 lane 文件派生后注入**（`bindLaneOf`），不是本文件的数据。
- * when 省略 = 走 `WHEN_OVERRIDES`；再省略 = 由注册描述自动摘要。
- */
-export interface LaneAssign {
-  lane: LaneId;
-  /** 需要人工语义时才写（导航价值高于注册描述时）；一般不必——策展文本请写进 WHEN_OVERRIDES */
-  when?: string;
-}
+// ★ 2026-11-19（延迟簇 A）：`LaneAssign` 与两个注入槽（目录 / 归属）搬到零依赖叶子
+//   `tool_catalog_ref.ts` —— 写端 `tool_registry` 因此不必再 import 本模块（那会拖进 ≈400 ms 的实现图）。
+//   本文件仍是**判定**那一侧：未注入 ⇒ 抛错（叶子只存值，不判）。
+import type { LaneAssign } from './tool_catalog_ref.js';
+import { clearLaneOf, getLaneOf, getToolDefs, setLaneOf, setToolDefs } from './tool_catalog_ref.js';
+export type { LaneAssign };
 
 /**
  * 线元信息（静态：线 id / 展示名 / 说明 / **门**名单）。
@@ -129,58 +109,6 @@ export interface LaneAssign {
  * ★★ 但**"零手写"这个目标对它不成立也不该成立**：`direct` 同时是**线视图**的数据源（"直接可用"那一行）
  *   ⇒ 派生链覆盖的名字**照样要留在这里**（删了线视图就丢入口）。详见 `Lane.direct` 的注释。
  */
-export const LANE_META: ReadonlyArray<Omit<Lane, 'tools'>> = [
-  {
-    id: 'design',
-    label: '设计 / 活文档',
-    desc: 'DSL 读写、feature 生命周期、渲染与一致性。',
-    // ★★ 2026-10-08 补 `import_project` + `design_intent`（**这是"门"，原来不在面上**）。
-    //   实测（`facesOf` 输出）：编排面 9 个工具里 design 线**只露了 `get_dsl` / `edit_dsl`**，
-    //   而 `import_project`（扫描代码生成 DSL —— **这条线的入口**）不在 direct 也不在派生链
-    //   ⇒ 编排面上是"能读能写、**没有门**"。调用方看到两个读写工具却不知从哪进来，
-    //   只能退到 `atomic_call` 先 list 才发现入口 ⇒ **门在门后面**。
-    //   `design_intent` 同理：它是"改 why/方向先请人批"的那道闸（本仓核心纪律），
-    //   不可见就等于不存在。★ 这三条是**结构性判据**（面无门 ⇒ 该线不可达），不是偏好。
-    direct: ['get_dsl', 'edit_dsl', 'import_project', 'design_intent'],
-  },
-  {
-    id: 'refactor',
-    label: '重构 / 改名',
-    desc: '确定性改造：符号改名、文件移动、引用联动、影响面。',
-    direct: ['rename_symbols', 'rename_files', 'find_references'],
-  },
-  {
-    id: 'observe',
-    label: '观测 / 验证',
-    desc: '运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。',
-    // ★★ 2026-10-14 补 `recommend_observe_points` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
-    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
-    //   为什么是它：它是**起点** —— 先用索引/图 + AST 打分算出「该在哪打点」（产出可编辑清单），
-    //   再把清单交给 `observe_instrument`（contractProbes）只插这些点 ⇒ 「先定位、再插桩」的第一步。
-    direct: ['recommend_observe_points'],
-  },
-  {
-    id: 'cross',
-    label: '跨仓 / 翻译 / 健康',
-    desc: '重量级分析：跨仓符号索引、代码健康度、跨语言翻译（Go→TS）。',
-    // ★★ 2026-10-14 补 `code_health` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
-    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
-    //   为什么是它：四个工具里**最常被「想起来」**的那个（体检 —— 给一个 `project_dir` 就出健康分 + 问题清单）；
-    //   另三个（`cross_repo_symbol_index` / `translate_go_ts` / `go_originals`）都**先要知道要做什么**
-    //   （两个项目根 / 一个 Go 源文件）才动得了。
-    direct: ['code_health'],
-  },
-  {
-    id: 'meta',
-    label: '元信息 / 探索',
-    desc: '代码理解入口、诊断、画布笔记、归档与网关说明。',
-    // ★★ 2026-10-08 补 `capability_map` —— **地图必须出现在它自己要省的那段路上**。
-    //   它自己的描述写着"agent 开工前先定位"，但它既不在 direct 也不在派生链
-    //   ⇒ 面设成 `composed` 时它**是隐身的**：要拿到地图得先 `atomic_call(action=list)`
-    //   列全 61 个、再 describe、再 call —— **用 4 跳去换一个"省跳数"的工具**，正好相反。
-    direct: ['explore_code', 'capability_map'],
-  },
-];
 
 /**
  * ★★ 「读之前先看哪儿」段（2026-10-09，`docs/todo.md` T68 的收尾）。
@@ -359,26 +287,19 @@ export const WHEN_OVERRIDES: Readonly<Record<string, string>> = {
 
 // ─────────────────────────────────────────────────────────────
 // 工具目录注入（P1b 起）：目录来自真实注册表，本模块**不 import 注册表**
+//   ★ 2026-11-19（延迟簇 A · 元数据/实现分家）：**槽**（写端只碰它）已搬到零依赖叶子
+//     `tool_catalog_ref.ts` —— 否则 `tool_registry` 为了"写两个变量"必须静态 import 本模块，
+//     把 `scan_authorities → storage` 那条 ≈400 ms 的实现图拖进 `cli --help` 的加载路径。
+//     ★ 判据不变：目录/归属**未注入 ⇒ 抛错**（叶子只存值、不判定；判定留在这里）。
 // ─────────────────────────────────────────────────────────────
-
-/**
- * 注入的工具目录（null = 还没注入）。模块级单值 —— 与下面的 `_laneOf` 同一模式。
- *
- * ★★ 为什么这份 ref 住在**本叶子模块**而不是 `meta/index.ts`（2026-10-01，④-2）：
- *   目录的注入点是「谁需要读注册表却不能被注册表 import」的那一层。
- *   `meta/index.ts` 会被 `tool_registry.ts`（聚合 6 条 lane 数组）import ⇒
- *   任何**从 meta/index.ts 出发能走到 tool_registry.ts** 的模块，都会和聚合器成环。
- *   `sync_contracts`（同属 meta 线，要读目录）正是这样一个模块 ⇒ 它必须改从叶子取目录。
- *   放在本文件后，`sync_contracts.ts → capability_map.ts`（叶子，无出边）⇒ **环结构性不存在**。
- */
-let _toolDefs: ToolDef[] | null = null;
 
 /**
  * 注入工具目录。由 **`application/tool_registry.ts`** 在汇总完 6 条 lane 数组后调用一次
  * （模块加载期 ⇒ 早于任何 handler 执行）。
+ * ★ 2026-11-19：值存在零依赖叶子 `tool_catalog_ref.ts`（本模块只做判定，见 `listToolDefs`）。
  */
 export function bindToolDefs(defs: ToolDef[]): void {
-  _toolDefs = defs;
+  setToolDefs(defs);
 }
 
 /**
@@ -388,30 +309,31 @@ export function bindToolDefs(defs: ToolDef[]): void {
  *   把"加载期接线漏了"伪装成"注册表里真没有工具"。
  */
 export function listToolDefs(): ToolDef[] {
-  if (!_toolDefs) {
+  const defs = getToolDefs();
+  if (!defs) {
     throw new Error('capability_map：工具目录未注入 —— tool_registry 应在汇总后调用 bindToolDefs()');
   }
-  return _toolDefs;
+  return defs;
 }
 
 // ─────────────────────────────────────────────────────────────
 // 归属表注入（P1c）：lane 文件的归属由 server_registry 汇总后送进来
 // ─────────────────────────────────────────────────────────────
 
-/** 注入的归属表（null = 还没注入）。模块级单值 —— 与上面的 `_toolDefs` 同一模式。 */
-let _laneOf: Readonly<Record<string, LaneAssign>> | null = null;
+/** 注入的归属表。★ 2026-11-19：值存在零依赖叶子 `tool_catalog_ref.ts`（见下面 `resolveAssign`）。 */
 
 /**
  * 注入「工具 → 线」归属表。由 **server_registry** 在汇总各 lane 文件后调用一次。
  * 为什么是注入而不是本文件持有：归属已由 lane 文件所在表达，在本文件再存一份 = 第二份清单，必然漂移。
+ * ★ 2026-11-19：值存在零依赖叶子 `tool_catalog_ref.ts`（同 `bindToolDefs` 的理由）。
  */
 export function bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void {
-  _laneOf = table;
+  setLaneOf(table);
 }
 
 /** 测试隔离用：清掉注入的归属表（回到"未注入"状态） */
 export function resetLaneOfForTest(): void {
-  _laneOf = null;
+  clearLaneOf();
 }
 
 /**
@@ -424,13 +346,14 @@ export function resetLaneOfForTest(): void {
  */
 function resolveAssign(assign?: Readonly<Record<string, LaneAssign>>): Readonly<Record<string, LaneAssign>> {
   if (assign) return assign;
-  if (!_laneOf) {
+  const bound = getLaneOf();
+  if (!bound) {
     throw new Error(
       'capability_map：归属表未注入。归属由 lane 文件（application/*/index.ts）表达，' +
         '需在 server_registry 汇总后调用 bindLaneOf()；测试请显式传第二参。',
     );
   }
-  return _laneOf;
+  return bound;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -822,186 +745,76 @@ export interface CapabilityMapInput {
  * ★ 取不到 `isOptional` 时**当作可选**（= **宁可少报"必填"，不凭空报必填**）：
  *   多报一个"必填"会让调用方去填一个其实不必填的字段；少报只会让它多试一次。
  */
-export function collectRequiredKeys(schema: unknown): string[] {
-  if (!schema || typeof schema !== 'object') return [];
-  const out: string[] = [];
-  for (const [k, v] of Object.entries(schema as Record<string, unknown>)) {
-    const probe = (v as { isOptional?: () => boolean } | null)?.isOptional;
-    const optional = typeof probe === 'function' ? (v as { isOptional: () => boolean }).isOptional() : true;
-    if (!optional) out.push(k);
-  }
-  return out;
-}
 
-export function collectInputKeys(schema: unknown): string[] {
-  if (!schema || typeof schema !== 'object') return [];
-  const top = schema as Record<string, unknown>;
-  const out = new Set<string>(Object.keys(top));
-  const walk = (t: unknown, d: number): void => {
-    if (!t || d > 8) return;
-    const shape = (t as { shape?: unknown }).shape as Record<string, unknown> | undefined;
-    if (shape && typeof shape === 'object' && !Array.isArray(shape)) {
-      for (const [k, v] of Object.entries(shape)) {
-        out.add(k);
-        walk(v, d + 1);
-      }
-      return;
-    }
-    const def = (t as { _def?: Record<string, unknown> })._def;
-    if (!def) return;
-    // ★ 逐一走**已知承载子类型**的字段（v3 与 v4 取并集）——
-    //   `type`（v3 的 array/innerType 位置；v4 退化成字符串 ⇒ 无害 no-op）
-    //   `element`（v4 的 ZodArray）、`innerType`（optional/nullable/default/effects）、
-    //   `valueType`（record）、`options` / `items`（union / tuple）
-    walk(def.type, d + 1);
-    walk(def.element, d + 1);
-    walk(def.innerType, d + 1);
-    walk(def.valueType, d + 1);
-    for (const key of ['options', 'items'] as const) {
-      const arr = def[key];
-      if (Array.isArray(arr)) for (const o of arr) walk(o, d + 1);
-    }
-  };
-  for (const v of Object.values(top)) walk(v, 0);
-  return [...out].sort();
-}
 
-/**
- * ★★★ 一个 [B] 声明入参的**深层路径**表（含**必填与否** + **容器与否** + **下游自己的说明**）。
- *
- * ## 为什么需要它（`collectInputKeys` / `collectRequiredKeys` 不够用）
- * 那两个只给**扁平名字**与**顶层必填**：`rename_symbols` 得到 `renames`（一个**容器**名），
- * 而"`renames[]` 里的 `to` 是不是必填"这件事**丢了** ⇒ 无法据此拼出一个**可跑的入参 JSON**
- * （`next_hop_args` 的职责：能填的填、意图位**显式留空并标注** —— 见
- * `application/meta/explore/next_hop_args.ts`）。
- * ★ 路径形态**刻意与 `CHAIN_EDGES.toPath` 同形**（数组元素用 `[]`）⇒ 两边能**逐字比对**，
- *   不必在这里再定一套"路径怎么写"（本仓头号病：一处判断住两处）。
- *
- * ## 与 `collectInputKeys` 同一套遍历口径（v3 与 v4 取并集）
- *   · v4：`_def.type` 是**类型名字符串**，数组元素在 `_def.element`、对象体在 `_def.shape`；
- *   · v3：`_def.typeName` 是 `ZodArray` / `ZodObject`，数组元素在 `_def.type`、`shape` 可能是函数。
- *   ★ **取不到的形态直接跳过**（宁可少收，也不猜）—— 与 `collectInputKeys` 同款纪律。
- *
- * ## 必填口径**复用** {@link collectRequiredKeys} 的那一条
- * `isOptional()` 取不到 ⇒ **当作可选**（宁可少报"必填"，不凭空报必填 —— 那会逼调用方填一个不必填的字段）。
- */
-export interface InputPath {
-  /** 点路径；数组元素用 `[]`（如 `renames[].file`）。★ 与 `CHAIN_EDGES.toPath` **同形**。 */
-  path: string;
-  /** 是否必填。★ `isOptional()` 取不到 ⇒ `false`（当可选）。 */
-  required: boolean;
-  /** 是否是**容器**（对象 / 数组的元素对象）—— 容器本身不是"要填的槽位"，其叶子才是。 */
-  container: boolean;
-  /** 下游自己的说明（zod `.describe` 原样）；取不到 = 空串。 */
-  description: string;
-}
+// ★ 2026-11-19：`InputPath` / `collectInputPaths` / `declaredRequiredMembersOf` 已搬到零依赖叶子
+//   `input_paths.ts`（元数据不许拖实现图）；本文件 re-export 保持 API 不变。
+import { collectInputPaths, declaredRequiredMembersOf, type InputPath } from './input_paths.js';
+// ★ 2026-11-19：目录派生三件（ToolCatalogEntry / LANE_META / catalogOf + collect*Keys）已搬到零依赖叶子
+//   `catalog.ts`（元数据不许拖实现图）；本文件 re-export 保持公开 API 不变。
+import { catalogOf, collectInputKeys, collectRequiredKeys, type ToolCatalogEntry } from './catalog.js';
+export { catalogOf, collectInputKeys, collectRequiredKeys, type ToolCatalogEntry };
 
-export function collectInputPaths(schema: unknown): InputPath[] {
-  if (!schema || typeof schema !== 'object') return [];
-  const out: InputPath[] = [];
-  const optionalOf = (n: unknown): boolean => {
-    const probe = (n as { isOptional?: () => boolean } | null)?.isOptional;
-    return typeof probe === 'function' ? (n as { isOptional: () => boolean }).isOptional() : true;
-  };
-  const descOf = (n: unknown): string => {
-    const d = (n as { description?: unknown } | null)?.description;
-    return typeof d === 'string' ? d : '';
-  };
-  const dget = (n: unknown): Record<string, unknown> | undefined =>
-    (n as { _def?: Record<string, unknown> } | null)?._def;
-  const visit = (node: unknown, path: string, required: boolean, inheritedDesc: string): void => {
-    let cur = node;
-    let desc = descOf(cur) || inheritedDesc;
-    for (let i = 0; i < 8; i++) {
-      const def = dget(cur);
-      if (!def) break;
-      const t = def.type;
-      const typeName = def.typeName;
-      const isArray = t === 'array' || typeName === 'ZodArray';
-      const isObject = t === 'object' || typeName === 'ZodObject';
-      if (isArray) {
-        // v4 元素在 `element`；v3 的 `type` 就是元素节点（与 `collectInputKeys` 同款并集）
-        const el = def.element ?? (typeof t === 'object' ? t : undefined);
-        const elDef = dget(el);
-        const shape = elDef && (elDef.type === 'object' || elDef.typeName === 'ZodObject') ? elDef.shape : undefined;
-        const shapeObj = typeof shape === 'function' ? (shape as () => unknown)() : shape;
-        if (elDef && shapeObj && typeof shapeObj === 'object') {
-          out.push({ path: path + '[]', required, container: true, description: desc });
-          for (const [k, v] of Object.entries(shapeObj as Record<string, unknown>)) {
-            visit(v, path + '[].' + k, !optionalOf(v), '');
-          }
-        } else if (el !== undefined && el !== null) {
-          visit(el, path + '[]', required, desc);
-        } else {
-          out.push({ path: path + '[]', required, container: false, description: desc });
-        }
-        return;
-      }
-      if (isObject) {
-        const rawShape = def.shape;
-        const shapeObj = typeof rawShape === 'function' ? (rawShape as () => unknown)() : rawShape;
-        if (shapeObj && typeof shapeObj === 'object') {
-          out.push({ path, required, container: true, description: desc });
-          for (const [k, v] of Object.entries(shapeObj as Record<string, unknown>)) {
-            visit(v, path + '.' + k, !optionalOf(v), '');
-          }
-          return;
-        }
-      }
-      const inner = def.innerType;
-      if (inner !== undefined && inner !== null) {
-        if (!desc) desc = descOf(inner);
-        cur = inner;
-        continue;
-      }
-      break;
-    }
-    out.push({ path, required, container: false, description: desc });
-  };
-  for (const [k, v] of Object.entries(schema as Record<string, unknown>)) visit(v, k, !optionalOf(v), '');
-  return out;
-}
 
-/**
- * ★★★ 该路径表里**必填的槽位叶子**（容器剔除）—— 取**两种"必填"来源的并**：
- *   ① **schema 必填**（`isOptional()===false`，即 {@link collectRequiredKeys} 的口径）—— 如 `rename_symbols.renames[].to`；
- *   ② **下游自己在 `.describe` 里显式写「必填」** —— 覆盖 **zod 表达不了的模式相关必填**。
- *
- * ## 为什么必须补 ②（实测，T140，2026-10-11；这是本笔的核心）
- * `find_references` 的 `file` / `symbol` 是 **`mode=symbol` 必填**，而 **zod 里只能写成 `.optional()`**
- * （模式相关 ⇒ schema 表达不了；下游自己在 `.describe` 写「mode=symbol 必填」、并在 [B] 体里前置校验 —— 见
- * `refactor/index.ts` 该工具的两个字段说明 + `find/find_references.ts` 的 `reqStr`）。
- * ⇒ 只按 ① 判 ⇒ `find_references` **一个必填都收不到** ⇒ `next_hop_args` 报 **"意图位 0"**，
- *   而拿它的产出**真跑**却报 **"缺少必需参数 symbol"** ⇒ ★★★ **「看着备好了，其实没备好」**
- *   —— **比"没备"更坏**（没备你会去备，"备好了"你不会，而它给的是**假的信心**）。
- *
- * ## 这是"读下游自己的说明"，不是本工具凭空判必填
- * 下游在自己文本里声明"必填" ⇒ 与"意图位提示语**逐字取下游 `.describe`**"**同源**，**不新增第二份必填清单**。
- *
- * ## 已知代价（如实记，不静默）
- * `find_references.field`（`mode=field 必填`）**也会被列出** —— 因为**本函数不替你判 `mode`**。
- * ★ 这是**故意的**：本仓的坏形态是**漏列**（漏了 `symbol` ⇒ 跑不起来）；**多列一格**只是让你忽略它，
- *   而且每格的 `note` **逐字带着下游自己的条件**（"mode=field 必填：…"），调用方一眼能看出它不适用于当前 mode。
- *   ★ 与 `applyChainEdge` 在 `pick` 上**不替人选下标**是同一条立论。
- */
-export function declaredRequiredMembersOf(paths: readonly InputPath[]): InputPath[] {
-  return paths.filter((p) => !p.container && (p.required || /必填/.test(p.description)));
-}
+export const LANE_META: ReadonlyArray<{ id: LaneId; label: string; desc: string; direct: string[] }> = [
+  {
+    id: 'design',
+    label: '设计 / 活文档',
+    desc: 'DSL 读写、feature 生命周期、渲染与一致性。',
+    // ★★ 2026-10-08 补 `import_project` + `design_intent`（**这是"门"，原来不在面上**）。
+    //   实测（`facesOf` 输出）：编排面 9 个工具里 design 线**只露了 `get_dsl` / `edit_dsl`**，
+    //   而 `import_project`（扫描代码生成 DSL —— **这条线的入口**）不在 direct 也不在派生链
+    //   ⇒ 编排面上是"能读能写、**没有门**"。调用方看到两个读写工具却不知从哪进来，
+    //   只能退到 `atomic_call` 先 list 才发现入口 ⇒ **门在门后面**。
+    //   `design_intent` 同理：它是"改 why/方向先请人批"的那道闸（本仓核心纪律），
+    //   不可见就等于不存在。★ 这三条是**结构性判据**（面无门 ⇒ 该线不可达），不是偏好。
+    direct: ['get_dsl', 'edit_dsl', 'import_project', 'design_intent'],
+  },
+  {
+    id: 'refactor',
+    label: '重构 / 改名',
+    desc: '确定性改造：符号改名、文件移动、引用联动、影响面。',
+    direct: ['rename_symbols', 'rename_files', 'find_references'],
+  },
+  {
+    id: 'observe',
+    label: '观测 / 验证',
+    desc: '运行时插桩、行为基线、测试与契约对账（执行类，按需触发）。',
+    // ★★ 2026-10-14 补 `recommend_observe_points` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
+    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
+    //   为什么是它：它是**起点** —— 先用索引/图 + AST 打分算出「该在哪打点」（产出可编辑清单），
+    //   再把清单交给 `observe_instrument`（contractProbes）只插这些点 ⇒ 「先定位、再插桩」的第一步。
+    direct: ['recommend_observe_points'],
+  },
+  {
+    id: 'cross',
+    label: '跨仓 / 翻译 / 健康',
+    desc: '重量级分析：跨仓符号索引、代码健康度、跨语言翻译（Go→TS）。',
+    // ★★ 2026-10-14 补 `code_health` —— **这条线的门**（原来 `direct: []` ⇒ 编排面上不可达）。
+    //   依据同 `design` / `meta` 两处：**每条线要有门**，面无门 ⇒ 该线在编排面上不可达（原话见 `tool_faces.ts`）。
+    //   为什么是它：四个工具里**最常被「想起来」**的那个（体检 —— 给一个 `project_dir` 就出健康分 + 问题清单）；
+    //   另三个（`cross_repo_symbol_index` / `translate_go_ts` / `go_originals`）都**先要知道要做什么**
+    //   （两个项目根 / 一个 Go 源文件）才动得了。
+    direct: ['code_health'],
+  },
+  {
+    id: 'meta',
+    label: '元信息 / 探索',
+    desc: '代码理解入口、诊断、画布笔记、归档与网关说明。',
+    // ★★ 2026-10-08 补 `capability_map` —— **地图必须出现在它自己要省的那段路上**。
+    //   它自己的描述写着"agent 开工前先定位"，但它既不在 direct 也不在派生链
+    //   ⇒ 面设成 `composed` 时它**是隐身的**：要拿到地图得先 `atomic_call(action=list)`
+    //   列全 61 个、再 describe、再 call —— **用 4 跳去换一个"省跳数"的工具**，正好相反。
+    direct: ['explore_code', 'capability_map'],
+  },
+];
+export { collectInputPaths, declaredRequiredMembersOf, type InputPath };
 
 /**
  * ★★ 把注册表转成「面 / 完整判定」要用的目录（**单点**，2026-10-06）。
  * ★ 为什么立它：`collectInputKeys` 的调用原先**会散在两处**（`meta/index.ts` 的注入点 +
  *   `server_registry` 按面过滤时）⇒ 再抄一份就是第三份（本仓头号病根：判据分叉）。
  */
-export function catalogOf(defs: readonly ToolDef[]): ToolCatalogEntry[] {
-  return defs.map((d) => ({
-    name: d.name,
-    title: d.title,
-    description: d.description,
-    inputKeys: collectInputKeys(d.inputSchema),
-    requiredKeys: collectRequiredKeys(d.inputSchema),
-  }));
-}
 
 /** 某 [B] 的**对象类入参**名（= 声明入参（深）∩ 词表 `anchor` − **作用域锚点**）。 */
 export function objectInputsOf(name: string, catalog: readonly ToolCatalogEntry[]): readonly string[] {

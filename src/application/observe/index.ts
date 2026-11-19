@@ -28,24 +28,14 @@
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
-import { z } from 'zod';
+import { z } from "zod";
 // ★ T179：**仓根**用仓里已有的『向上找』（git 根 → 最近 manifest）—— 别手算 '..' 级数。
-import { resolveProjectRoot } from '../../infrastructure/analysis/project_root/index.js';
-import { wrap, wrapData, requireStr } from '../plumbing.js';
-import path from 'node:path';
-import { rebuildChains } from '../../infrastructure/analysis/observe/chain.js';
-import { getFeatureLine } from './capture/feature_line.js';
-import { ensureProjectIndex } from '../../infrastructure/index/index_freshness.js';
+import { wrapData } from "../plumbing.js";
+import path from "node:path";
 // ★ 第⑬项第三刀：memory_observe 退役出 MCP 面 ⇒ 本文件的 2 个 memory import 不再使用（执行核在 capture/memory_observe.js，CLI 仍可直达）。
-import { recommendObservePoints } from './capture/observe_points.js';
-import { reconcileEffects } from './reconcile/reconcile_effects.js';
 import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
-import { runTests } from './runtime/run_tests.js';
-import { checkStaleBuild, formatStaleText } from './runtime/stale_check.js';
-import { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler, reconcileChainHandler } from './handlers.js';
 // ★ 2026-10-28：observe_proposals 的执行核（从 meta/index.ts 抽出一份实现，注册已并进本入口）
-import { observeProposalsHandler } from '../meta/proposals/handler.js';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath } from "node:url";
 import type { ToolDef } from '../types.js';
 
 export const OBSERVE_TOOLS: ToolDef[] = [
@@ -70,6 +60,8 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       write_dsl: z.boolean().optional().describe('false=只对账预演不写回，默认 true'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { reconcileEffects } = await import('./reconcile/reconcile_effects.js');
       const project_dir = requireStr(a, 'project_dir');
       const feature = requireStr(a, 'feature');
       const r = await reconcileEffects({ ...(a as unknown as ReconcileEffectsInput), project_dir, feature });
@@ -167,7 +159,10 @@ export const OBSERVE_TOOLS: ToolDef[] = [
     //   实测 `action=log` 加上 `events_path`（那是 trace 的参数）时，只报"需要 events_file"，
     //   用户会以为自己给对了路径。⇒ 入口先做**按 action 的参数守卫**：
     //   ① 缺必填 ⇒ 列出该 action 需要的字段；② 给了别的 action 的专属字段 ⇒ **点名**是谁的。
-    handler: ((a: unknown) => {
+    handler: (async (a: unknown) => {
+      const { getFeatureLine } = await import('./capture/feature_line.js');
+      const { observeInstrumentHandler, observeJudgeHandler, observeLogHandler, observeTraceHandler } = await import('./handlers.js');
+      const { observeProposalsHandler } = await import('../meta/proposals/handler.js');
       const args = a as Record<string, unknown>;
       const action = String(args.action ?? 'log');
       // 每个 action 认哪些字段（白名单：只列该动作真正会读的）
@@ -286,7 +281,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       force: z.boolean().optional().describe('true=忽略缓存强制重新派生链（默认 false，已有链则跳过派生）'),
       max_steps: z.number().optional().describe('派生入链函数上限（默认 12，仅需派生时生效）'),
     },
-    handler: reconcileChainHandler,
+    handler: (a) => import('./handlers.js').then((m) => m.reconcileChainHandler(a)),
   },
 
   
@@ -317,6 +312,9 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       write: z.boolean().optional().describe('false=只返回不落盘（默认 true，写 observe-points.json）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { ensureProjectIndex } = await import('../../infrastructure/index/index_freshness.js');
+      const { recommendObservePoints } = await import('./capture/observe_points.js');
       const project_dir = requireStr(a, 'project_dir');
       const input = a as unknown as {
         project_dir: string;
@@ -359,6 +357,9 @@ export const OBSERVE_TOOLS: ToolDef[] = [
       timeout_ms: z.number().optional().describe('超时毫秒（默认 120000）'),
     },
     handler: wrapData(async (a) => {
+      const { resolveProjectRoot } = await import('../../infrastructure/analysis/project_root/index.js');
+      const { runTests } = await import('./runtime/run_tests.js');
+      const { checkStaleBuild, formatStaleText } = await import('./runtime/stale_check.js');
       // 跑测试前置：检本服务自身 dist 是否 stale（改 src 忘 build → 提示先重建，防测旧产物）
       const staleHint = (() => {
         try {

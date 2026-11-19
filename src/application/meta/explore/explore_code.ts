@@ -60,25 +60,10 @@ import { parseFileFull, type ParsedSymbol } from '../../../infrastructure/parse/
 import { splitKeepEnds } from '../../../infrastructure/text/line_utils.js';
 import { matchSymbols, describeSymbol } from '../../refactor/edit/edit_code.js';
 
-export const EXPLORE_ACTIONS = [
-  'search',
-  'read',
-  // ★ facts：**选择性读 DB**（索引事实），与 read（读源码）是两条互不替代的读法。
-  'facts',
-  'arch_layer',
-  'guided_tour',
-  'check_monolith',
-  'derive_mind_map',
-  'run_simulation',
-  'reset_simulation',
-  'watch',
-  // ★ 2026-10-28（吸收 impact_analysis）：改前看波及 —— 反向可达闭包 + 风险排序
-  'impact',
-  // ★ 2026-10-28（吸收 read_project_docs）：读项目文档（清单 / 单篇 / 按目标集命中）
-  'docs',
-] as const;
-
-export type ExploreAction = (typeof EXPLORE_ACTIONS)[number];
+// ★ 2026-11-19（延迟簇 A）：动作闭集已搬到零依赖叶子 `explore_actions.ts`（元数据不许拖实现图）；
+//   本文件 re-export 保持公开 API 与 `i1_doc_alignment` 的读法不变。
+import { EXPLORE_ACTIONS, type ExploreAction } from './explore_actions.js';
+export { EXPLORE_ACTIONS, type ExploreAction };
 
 
 /** catch 里如实记下「跳过了什么/为什么」时用的错误文本（§2d：少做的事不许不说） */

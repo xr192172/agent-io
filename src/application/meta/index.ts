@@ -44,105 +44,63 @@
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
-import { z } from 'zod';
-import path from 'node:path';
-import { CALL_FIELDS_SPEC, requireStr, wrapData } from '../plumbing.js';
+import { z } from "zod";
+import path from "node:path";
+import { CALL_FIELDS_SPEC, wrapData } from "../plumbing.js";
 // ★ T202：诊断闭环的 [B]（`optionalBool/Num` 与 `requireStr` 是**同一处**判据 —— `plumbing`）。
-import { optionalBool, optionalNum } from '../plumbing.js';
 import type { DiagnoseLoopInput } from './diagnosis/diagnose_loop.js';
-import { diagnoseLoop } from './diagnosis/diagnose_loop.js';
 import type { DiagnoseInput } from '../../infrastructure/analysis/diagnosis/contract.js';
-import { formatDiagnoseText, runDiagnosis } from '../../infrastructure/analysis/diagnosis/diagnose.js';
-import { getDSL, saveDSL, requireProjectRoot } from '../../infrastructure/storage.js';
 // ★ 事实权威导航：采集端（读盘的只有它这一侧；capability_map 侧保持零 IO）
-import { scanAuthorities } from '../../infrastructure/authority/scan_authorities.js';
 // ★ 2026-10-23 画布三格（annotations / user_nodes / canvas_notes）与批注层**整体退场**：前端只是显示屏、人不直接插手（用户裁定）。DSL 字段已删、HTTP 端点已删、**没有替代住家** —— 详见 docs/ROOTS.md §8。
-import { readStructureConfig } from '../../infrastructure/analysis/structure/structure_gap.js';
 // ★★★ 2026-11-02（收逻辑写口 ②）：`archive` 的**写端已并入 `edit_dsl`** ⇒ 本工具降为**别名**，
 //   转发到同一个写端（`updateFeature` 的 `file/lifecycle.status='archived'`）。别名因此拿到
 //   `checkOpSpec`（形状闸）+ 写授权闸 + `validateDSL` 自洽闸 + 乐观锁；★ 唯独 L1–L4 变更原因闸**仍不执行**
 //   （它住在 `design/handlers.ts#editDslHandler`，而本别名没有 reason / evidence 入参 ⇒ 结构上无法执行）。
 //   ★ 归档的执行核仍是 `meta/archive/archive_node.ts#archiveNode`（由 `file_ops.ts#updateFile` 调），**没搬家**。
-import { updateFeature } from '../design/dsl_ops/update_feature.js';
-import { queryFeature } from './explore/query_feature.js';
 // ★ 只在"路径翻不到 id"那一支用：把权威拒绝（已归档过 / 不存在）交回执行核，别在别名里重写文案。
-import { archiveNode } from './archive/archive_node.js';
 // ★ T186（2026-10-12）：「待确认的 PR」的读与定 —— ★ **PR 的确认人是下一个接手的 Agent**，不是人
 // ★ T186b（2026-10-12）：observe 侧那套提案（此前**只有 HTTP**）的 MCP 口。
 //   ★ 四层门 (`approveGated`) **自己就是判据**；`ProposalStore` / `DesignDSLStore` / `defaultDSLDir`
 //     都**复用**仓储层已有的那几处（★ 不在这里再推一遍"提案库在哪"）。
-import { ProposalStore } from '../../infrastructure/analysis/observe/proposal_store.js';
-import { approveGated } from '../../infrastructure/analysis/observe/approve_gated.js';
-import { DesignDSLStore, defaultDSLDir } from '../../infrastructure/analysis/observe/dsl_store.js';
-import { validateProjectRoot } from '../../infrastructure/dictionary.js';
 // ★ T15 切片（2026-10-06）：版本升级契约差（检测 + 局部重写闭环）—— 核心与两个 CLI 同源，
 //   现归位到 `meta/upgrade/upgrade.ts`（见本文件头注）。
-import { upgradeHandler } from './upgrade/upgrade.js';
-import {
-  bindDomains,
-  bindAuthorities,
-  listAuthorities,
-  countStaleAuthorities,
-  resetAuthoritiesForTest,
-  LANE_IDS,
-  listToolDefs,
-  makeCapabilityMapHandler,
-  catalogOf,
-  collectInputPaths,
-  declaredRequiredMembersOf,
-  resetDomainsForTest,
-} from './registry/capability_map.js';
-import type { DomainNavView, InputPath, LaneId } from './registry/capability_map.js';
+import type { DomainNavView, LaneId } from './registry/capability_map.js';
+// ★ 2026-11-19（延迟簇 A · 元数据/实现分家）：**模块求值期**只要这三样元数据常量/纯函数，
+//   它们现在住零依赖叶子（原先分别住 `capability_map` / `explore_code` / `ledger/tool`
+//   —— 那三个模块的运行时闭包合计 ≈900 ms 的实现图，只为一个枚举 / 一张 zod shape 被拖进 `--help`）。
+import { LANE_IDS } from "./registry/lane_ids.js";
+import { declaredRequiredMembersOf, type InputPath } from "./registry/input_paths.js";
 // ★ T15 切片（2026-10-05）：`capability_audit` 的核心（与 `capability_cli` 同源）。
-import { probeInstalledLanguages } from '../../infrastructure/parse/probe.js';
 // ★★★ P0-1（2026-11-17 · 审计 `ea-func-ds-1` §1.1）：**能力矩阵必须由 probe 实测派生**。
 //   原实现两条分支都只问"声明"（`default: full_ast`）⇒ 对全部 55 门打 🟢，而实测只有 33 门可解析。
 //   实测口只有一处：`parse/parser_presence.ts`（判据 = `probe.isLanguageInstalled` ∩ 注册表 `pkgSpec`）。
-import { formatParserRatio, measureParserPresence, parserSupportProbe } from '../../infrastructure/parse/parser_presence.js';
-import {
-  allCapabilities,
-  aggregateGaps,
-  diagnoseCapabilities,
-  diagnoseCapabilitiesByEntries,
-  languageCatalog,
-  renderAuditText,
-} from '../../infrastructure/analysis/capability/capability_matrix.js';
 // ★ T-#96：「全局声明来源」覆盖率读数（哪些语言适配器还没声明 `globals`）
-import { LANG_ADAPTERS } from '../../infrastructure/parse/kernel.js';
-import { languagesWithoutGlobals } from '../../infrastructure/parse/globals.js';
 // ★ 触发默认登记（**side-effect import**，确保矩阵被填充）—— 与 `capability_cli` 同款；
 //   漏了它会报"空矩阵"（`allCapabilities().length === 0`），那是**静默少报**而不是报错。
 import '../../infrastructure/analysis/capability/register_capabilities.js';
-import { EXPLORE_ACTIONS } from './explore/explore_code.js';
+import { EXPLORE_ACTIONS } from "./explore/explore_actions.js";
 // ★★★ 2026-11-18（台账写面 · R53 族实证）：**台账引擎的唯一工具面**（单工具 + action 枚举）。
 //   `closeRow` / `reopenRow` 从 L1 就在，而此前**全仓零工具面** ⇒ 销账只能"在批注里说已落地"
 //   （实测：台账 task 行 315 条全 active，含已完成的 —— `T-#LEDGER-STATE-HYGIENE`）。
 //   ★ 面字节 +2-4KB 属**有意识变更**（`T-#FACE-STABILITY` §I / `¶§I#581`）：基线随
 //     `node scripts/mcp/mcp_scan.mjs --update` 显式上调，diff 在评审里现形。
-import { LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION, ledgerHandler } from './ledger/tool.js';
+import { LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION } from "./ledger/tool_schema.js";
 // ★ 契约页 / 类型页（2026-10-11）：给定符号名一次给全（定义/成员/产者/消费者/接法边/词表口径）——
 //   聚合既有权威（内核 AST · find_references · CHAIN_EDGES · b_terms），**不新算**。
-import { contractPage, renderContractPage } from './explore/contract_page.js';
 // ★ 生成「下一棒入参」（2026-10-11）：把上一步的 `touched` **组装成**下一步**可跑的入参 JSON** ——
 //   能填的替它填好、意图位（如新名 `to`）**显式留空并标注**。判据全部复用 `chain_wiring` 的
 //   `nextHopsOf`/`applyChainEdge` 与 `capability_map` 的 `collectInputPaths`（**只端，不新做**）。
-import { nextHopArgs, renderNextHopArgs } from './explore/next_hop_args.js';
 // ★ 起手入参（2026-10-11）：把"知道用哪个工具 → 到把第一棒入参凑齐"那一步端上来 ——
 //   `next_hop_args` 的**同族**（一个管"下一棒"、一个管"第一棒"）。判据全部复用 `CHAINS`/`hopsOf`
 //   与 `collectInputPaths`/`declaredRequiredMembersOf`（**只端，不新做**）。
-import { firstHopArgs, renderFirstHopArgs } from './explore/first_hop_args.js';
 // ★ 第⑬项第三刀：gateway_provider 退役出 MCP 面 ⇒ 本文件的 5 个 gateway import 不再使用（执行核在 llm_gateway.js，CLI 仍可直达）。
-import { indexIntegrity, renderIntegrity } from './integrity/index_integrity.js';
 // ★ BB 笔（2026-10-11）：把「什么被用过 / 覆盖缺口」接进**工具面** ——
 //   `npm run dogfood`（`dogfood_stats.ts`）此前是**唯一**读得到那份日志的入口，而它**不在工具面**里
 //   ⇒ agent 拿不到。本工具**复用**它的统计（一行都不重造），只补「注册表 − 用过的 / 用过的 − 注册表」两维。
-import { computeDogfoodCoverage, renderDogfoodCoverage } from '../../infrastructure/dogfood_coverage.js';
-import { buildDocsPromptBlock, listProjectDocs, matchDocsForTargets, readProjectDoc } from './docs/project_docs.js';
 import type { DocTargetSet } from './docs/project_docs.js';
-import { exploreCodeHandler, syncContractsHandler } from './handlers.js';
 import type { ToolDef } from '../types.js';
 // ★ T54：接续段的三件套 —— **规则住在 domain，这里只渲染**（别在本文件重推一遍）
-import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from '../../domain/chain_wiring.js';
+import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from "../../domain/chain_wiring.js";
 
 
 /**
@@ -223,6 +181,9 @@ async function runDiagnoseEntry(a: Record<string, unknown>): Promise<{
   data: unknown;
   touched?: unknown;
 }> {
+  const { requireStr, optionalBool, optionalNum } = await import('../plumbing.js');
+  const { diagnoseLoop } = await import('./diagnosis/diagnose_loop.js');
+  const { formatDiagnoseText, runDiagnosis } = await import('../../infrastructure/analysis/diagnosis/diagnose.js');
   const project_dir = requireStr(a, 'project_dir');
   const symptom = requireStr(a, 'symptom');
   const apply = optionalBool(a, 'apply');
@@ -297,7 +258,7 @@ export const META_TOOLS: ToolDef[] = [
         .optional()
         .describe('★ 兼容别名（仅 watch 子动作需要，如 args:{action:"status"}）；平铺形态不必给'),
     },
-    handler: exploreCodeHandler,
+    handler: (a) => import('./handlers.js').then((m) => m.exploreCodeHandler(a)),
   },
 
   // ★★★ 2026-11-06（T-t27）：`archive` 工具**已退役**（注册项摘除；写端/读端早于 2026-11-02 就并入既有入口）
@@ -429,6 +390,10 @@ export const META_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
+      const { scanAuthorities } = await import('../../infrastructure/authority/scan_authorities.js');
+      const { readStructureConfig } = await import('../../infrastructure/analysis/structure/structure_gap.js');
+      const { bindDomains, bindAuthorities, listAuthorities, countStaleAuthorities, resetAuthoritiesForTest, listToolDefs, makeCapabilityMapHandler, catalogOf, resetDomainsForTest } = await import('./registry/capability_map.js');
+      const { collectInputPaths } = await import('./registry/input_paths.js');
       // ★★★ 2026-10-09（T54）：**接续段** —— 把"上一步的产物"算成"下一步的入参"。
       //   为什么放在本工具：本工具**本来就画着接法表**（"链的接法"段），而它自称"新用户第一站"
       //   ⇒ "我手上这份 touched 下一步怎么用"放这儿最自然，且**不新增工具**（不增面、不增 8 处登记）。
@@ -518,6 +483,11 @@ export const META_TOOLS: ToolDef[] = [
       gaps_only: z.boolean().optional().describe('true = 只回缺口汇总（不返回全量矩阵文本，省上下文）'),
     },
     handler: wrapData(async (a) => {
+      const { probeInstalledLanguages } = await import('../../infrastructure/parse/probe.js');
+      const { formatParserRatio, measureParserPresence, parserSupportProbe } = await import('../../infrastructure/parse/parser_presence.js');
+      const { allCapabilities, aggregateGaps, diagnoseCapabilities, diagnoseCapabilitiesByEntries, languageCatalog, renderAuditText } = await import('../../infrastructure/analysis/capability/capability_matrix.js');
+      const { LANG_ADAPTERS } = await import('../../infrastructure/parse/kernel.js');
+      const { languagesWithoutGlobals } = await import('../../infrastructure/parse/globals.js');
       const useInstalled = a.installed_only === true;
       // ★★★ P0-1：**实测口**（唯一实现住 `parse/parser_presence.ts`）—— 两条分支都要带上它，
       //   否则 `parserBound` 的能力又退回"声明即实测"（全绿 55 门）。
@@ -606,7 +576,7 @@ export const META_TOOLS: ToolDef[] = [
       feature: z.string().describe('feature 名（已存在的 DSL feature）'),
       include_all: z.boolean().optional().describe('为 DSL 中缺失的工具文件补全契约节点（默认 false）'),
     },
-    handler: syncContractsHandler,
+    handler: (a) => import('./handlers.js').then((m) => m.syncContractsHandler(a)),
   },
 
   {
@@ -638,6 +608,7 @@ export const META_TOOLS: ToolDef[] = [
     //   IndexIntegrityResult（trustworthy / counts / refs.stale_resolved / issues …
     //   索引可信度是**结构化产物**）在通道层丢掉，agent 只能读散文。
     handler: wrapData(async (a) => {
+      const { indexIntegrity, renderIntegrity } = await import('./integrity/index_integrity.js');
       // ★ T47（2026-10-06）：本工具的入参 `project_dir` 是**可选**的，省略即用 cwd「自定位」读索引
       //   （**既有行为**，描述里明说）—— 但必须把"是否显式"如实传给 Core：否则那个 cwd 会被填进
       //   `touched.project_dir`，**冒充**成"调用方声明的项目根"（全族其余 13 处都守着
@@ -690,7 +661,7 @@ export const META_TOOLS: ToolDef[] = [
         .describe('apply 用：编辑清单（精确串替换；歧义/未命中整批拒绝）。建议先跑 action=scan、照它的 data.plan 取建议'),
       skip_verify: z.boolean().optional().describe('apply 用：跳过验证（★ 未验证的改动不自动提交）'),
     },
-    handler: upgradeHandler,
+    handler: (a) => import('./upgrade/upgrade.js').then((m) => m.upgradeHandler(a)),
   },
 
   {
@@ -719,6 +690,8 @@ export const META_TOOLS: ToolDef[] = [
       feature: z.string().optional().describe('可选：feature（仅作上下文回显）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { contractPage, renderContractPage } = await import('./explore/contract_page.js');
       const r = await contractPage({
         symbol: requireStr(a, 'symbol'),
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
@@ -768,6 +741,9 @@ export const META_TOOLS: ToolDef[] = [
       project_dir: z.string().optional().describe('目标项目根目录（缺省 = 当前工作目录）'),
     },
     handler: wrapData(async (a) => {
+      const { listToolDefs } = await import('./registry/capability_map.js');
+      const { nextHopArgs, renderNextHopArgs } = await import('./explore/next_hop_args.js');
+      const { firstHopArgs, renderFirstHopArgs } = await import('./explore/first_hop_args.js');
       // ★ direction 判定：显式给 > 按字段推断（touched/from_tool 出现 ⇒ next；否则 first）。
       //   显式给 'next' 但缺必填 ⇒ 当场报（不静默回落 first——"没说清"不许被读成"起手"）。
       const dir = a.direction === 'next' ? 'next' : a.direction === 'first' ? 'first' : a.touched || a.from_tool ? 'next' : 'first';
@@ -822,7 +798,7 @@ export const META_TOOLS: ToolDef[] = [
     title: 'Ledger: 台账唯一入口（挂账 / 批注 / 销账 / 重开 / 取代 / 裁定 / 列 / 取 / 待人工队列 / 消项）',
     description: LEDGER_TOOL_DESCRIPTION,
     inputSchema: LEDGER_INPUT_SCHEMA,
-    handler: wrapData(ledgerHandler),
+    handler: wrapData((a) => import('./ledger/tool.js').then((m) => m.ledgerHandler(a))),
   },
 ];
 

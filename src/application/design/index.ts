@@ -35,82 +35,39 @@
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
-import { z } from 'zod';
-import { requireStr, wrapData } from '../plumbing.js';
+import { z } from "zod";
+import { wrapData } from "../plumbing.js";
 // ★★★ 2026-10-22：OPL（Optimization Pipeline Loop）此前**只有 HTTP 入口**（`POST /api/opl`）——
 //   它是「你提一条愿望，产线自驱推进到收敛」的 **LLM 驱动产线**，却让模型调不到自己该用的东西。
 //   ⇒ 补成工具：注册一次，MCP / CLI / HTTP(`/api/tool/opl`) 三面同时获得。
-import {
-  oplAdd,
-  oplAuto,
-  oplLocate,
-  oplDeclare,
-  oplImplement,
-  oplCheck,
-  oplIntegrate,
-  oplList,
-  type OplState,
-} from './derive/opl.js';
+import { type OplState } from "./derive/opl.js";
 // ★ T170：`operations[]` 各 type 的 data 契约表（**唯一判据**）—— edit_dsl 描述**只指向它**（2026-11-02 起不再复刻那张表）。
 // ★★★ 2026-10-23（批注层退场）：`APPROVAL_STATUSES` / 审批能力一并删除。
-import fs from 'node:fs';
-import path from 'node:path';
-import { getProjectCacheDb } from '../../infrastructure/index/db.js';
+import fs from "node:fs";
+import path from "node:path";
 // ★ 2026-11-01：`getDesignSheetFile` 供 judge 回执的 `sheet` 字段用（『CLI 判的是哪一份册』的唯一事实）。
-import { getDSL, getDesignSheetFile, requireProjectRoot } from '../../infrastructure/storage.js';
 // ★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量的唯一实现**在 domain（`selectExpectationsForChanged`）——
 //   本文件只负责"把它接到 judge 分支上"，不重写任何选量规则（0.9.1）。
-import { collectExpectations, selectExpectationsForChanged } from '../../domain/expectation.js';
-import { detectDrift } from './intent/detect_drift.js';
-import { judgeExpectations } from './intent/expectations.js';
 // ★★★ 2026-11-17（T-#N4）：§9.5.5 第 2 条的**生成侧入口** —— `design_line action=compile` 调它。
 //   ★ 本文件只做「册 → §9.5.2 契约」的适配与回执；八步判定与真跑仍在 `behavior_contract.ts` / `behavior_compile.ts`
 //     （0.9.1：同一件事一处权威 —— 这里不重写任何一步）。
-import { compileBehaviorContracts } from './intent/behavior_compile.js';
 // ★ 2026-10-31：judge 回执的「旧 dist」提示 —— 提示语义住 `domain/stale_verdict`（零依赖 ⇒ 4 条 behavior-cases 现跑判），
 //   dist 新旧的事实住 `observe/runtime/stale_check#checkStaleBuild`（与 MCP 的 STALE_SOURCE 告警**同一把尺**）。
 //   ★ 不新造第二把尺、不新建门、不新建棘轮：`unsupported` 与"整批跑在旧代码上"在读数上长得一样，不提示就分不开（0.12）。
-import { staleJudgeCaveat } from '../../domain/stale_verdict.js';
-import { checkStaleBuild } from '../observe/runtime/stale_check.js';
 // ★ 2026-10-28（重写计划层）：判据与读写**全部复用**既有实现（`rewrite_plan` / `write_gate`），不在这里重写
-import {
-  readRewritePlan,
-  writeRewritePlan,
-  planGaps,
-  planUntouchedGaps,
-  planCoverageGapsOf,
-  planJudgementGaps,
-  planDependencyGaps,
-  planKindGaps,
-  planTopoOrder,
-  prunePlans,
-  orphanPlans,
-  planCardClearGap,
-  type RewritePlan,
-  type RewritePlanEntry,
-  type PlansPruneReport,
-} from './db/rewrite_plan.js';
-import { resolveJudgementKind, symbolsInFileOf, symbolFpsOf } from '../write_gate.js';
-import { syncPlanStatuses, planChangeSetOfCard } from './db/rewrite_plan.js';
-import { checkRewriteExit } from './db/plan_exit_check.js';
-import { runPlanJudgements, renderJudgementLine } from './db/judgement_run.js';
-import { contentHash } from '../../infrastructure/index/symbols.js';
+import { type RewritePlan, type RewritePlanEntry, type PlansPruneReport } from "./db/rewrite_plan.js";
+// ★ 2026-11-19（延迟簇 A · 元数据/实现分家）：**类型侧**改 type-only ——
+//   `Awaited<ReturnType<typeof runPlanJudgements>>` 那种写法会让 `judgement_run.ts` 的实现闭包
+//   （实测 ≈470 ms / 69 个 dist 模块）留在**模块求值期**。值 import 留着（handler 真调它）。
+import type { PlanJudgementVerdict } from './db/judgement_run.js';
 
-import { importProject } from '../../infrastructure/graph/import_project.js';
 import type { ImportProjectInput } from '../../infrastructure/graph/import_project.js';
 // ★ T15 切片（2026-10-05）：把「混合文件解耦」这对能力从 CLI 面接进 MCP 面 ——
 //   两者共用同一批 application 层核心（与 `brickify_cli` 同源；`split_stage_cli` 已于 2026-10-06 删除），CLI 只是 argv 薄壳。
 // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：`setDesignIntent` 已不再由本文件直接调用 ——
 //   `design_intent` 改为**转发** `updateFeature` 的 `goal` / `edge_intent` op（同一个写端）。
-import { updateFeature } from './dsl_ops/update_feature.js';
 // ★★ 2026-11-09：目标 → 设计 → 施工项（把 changeset_draft 接进既有 opl 产线；不新增公共工具）
-import { oplPropose, oplAdopt, oplAdvance } from './derive/opl_goal_entry.js';
-import { consistencyHandler, detectDriftHandler, editDslHandler, getDslHandler, renderDesignHandler } from './handlers.js';
-import { designLineHandler, briefHandler } from './line/design_line.js';
-import { genDesignDb, loadDesignSheetsForGate, type DesignSheetLike } from './db/gen_design_db.js';
-import { rewriteSymbols } from './rewrite/rewrite.js';
-import { gateHumanLines } from '../refactor/gate_note.js';
-import { designDiff } from './line/design_diff.js';
+import { type DesignSheetLike } from "./db/gen_design_db.js";
 
 import type { ToolDef } from '../types.js';
 
@@ -135,6 +92,11 @@ export async function judgeBookReceipt(input: {
   feature?: unknown;
   changed?: unknown;
 }): Promise<{ message: string; data: Record<string, unknown> }> {
+  const { getDSL, getDesignSheetFile, requireProjectRoot } = await import('../../infrastructure/storage.js');
+  const { collectExpectations, selectExpectationsForChanged } = await import('../../domain/expectation.js');
+  const { judgeExpectations } = await import('./intent/expectations.js');
+  const { staleJudgeCaveat } = await import('../../domain/stale_verdict.js');
+  const { checkStaleBuild } = await import('../observe/runtime/stale_check.js');
   const feature = String(input.feature ?? '');
   if (!feature) throw new Error('design_line action=judge 需要 feature');
   const dsl = getDSL(feature);
@@ -389,7 +351,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
       feature_b: z.string().optional().describe('query=diff 时：目标 feature'),
       view_b: z.enum(['design', 'live']).optional().describe('query=diff 时：feature_b 视图层级，默认跟随 view（design）；对比"设计 vs 代码现状"时传 live'),
     },
-    handler: getDslHandler,
+    handler: (a) => import('./handlers.js').then((m) => m.getDslHandler(a)),
   },
 
   {
@@ -521,7 +483,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         .optional()
         .describe('证据链（L4 回溯）：可选。传入后程序会到 observe 线真实录制的事件（events JSONL）复算验证，查不到或不符则打回'),
     },
-    handler: editDslHandler,
+    handler: (a) => import('./handlers.js').then((m) => m.editDslHandler(a)),
   },
 
 
@@ -659,6 +621,20 @@ export const DESIGN_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
+      const { getDSL, getDesignSheetFile, requireProjectRoot } = await import('../../infrastructure/storage.js');
+      const { detectDrift } = await import('./intent/detect_drift.js');
+      const { compileBehaviorContracts } = await import('./intent/behavior_compile.js');
+      const { readRewritePlan, writeRewritePlan, planGaps, planUntouchedGaps, planCoverageGapsOf, planJudgementGaps, planDependencyGaps, planKindGaps, planTopoOrder, prunePlans, orphanPlans, planCardClearGap, syncPlanStatuses, planChangeSetOfCard } = await import('./db/rewrite_plan.js');
+      const { resolveJudgementKind, symbolsInFileOf, symbolFpsOf } = await import('../write_gate.js');
+      const { checkRewriteExit } = await import('./db/plan_exit_check.js');
+      const { runPlanJudgements, renderJudgementLine } = await import('./db/judgement_run.js');
+      const { contentHash } = await import('../../infrastructure/index/symbols.js');
+      const { updateFeature } = await import('./dsl_ops/update_feature.js');
+      const { designLineHandler, briefHandler } = await import('./line/design_line.js');
+      const { genDesignDb, loadDesignSheetsForGate } = await import('./db/gen_design_db.js');
+      const { rewriteSymbols } = await import('./rewrite/rewrite.js');
+      const { gateHumanLines } = await import('../refactor/gate_note.js');
+      const { designDiff } = await import('./line/design_diff.js');
       const action = (a.action as string | undefined) ?? 'report';
       // ★ 不变量：`design_line` 的 action 表里只放「对**这个项目**做的事」。`rules` 曾住这里，但它读的是
       //   `domain/gate_error.ts#GATE_RULES`（**框架自己的码表**），不是项目的事实 ⇒ 2026-11-02 删除。
@@ -1263,7 +1239,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
         // ★ 2026-10-28（"能发现逻辑 bug"的最后一里）：**真跑判据** ——
         //   只读模式缺省开、写模式缺省关（刚写的计划还没改代码，跑了没意义）。
         let judgementNote = '';
-        let judgements: Awaited<ReturnType<typeof runPlanJudgements>> = [];
+        let judgements: PlanJudgementVerdict[] = [];
         if (!given && a.run_judgements !== false) {
           try {
             judgements = await runPlanJudgements(projectRoot, plan);
@@ -1565,6 +1541,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
     //   `message` 字段刻意**不放进 data**：[B] 的结果里嵌的就是同一份回执文本，
     //   再塞进 `---DATA---` 只是逐字重复（体积翻倍、零信息增量）。
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { getProjectCacheDb } = await import('../../infrastructure/index/db.js');
+      const { importProject } = await import('../../infrastructure/graph/import_project.js');
       const project_dir = requireStr(a, 'project_dir');
       const feature = requireStr(a, 'feature');
       // MCP 路径默认连项目级符号缓存（<project_dir>/.agent-io/cache.db）：
@@ -1681,6 +1660,8 @@ export const DESIGN_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { updateFeature } = await import('./dsl_ops/update_feature.js');
       const feature = requireStr(a, 'feature');
       // ★★★ 2026-11-02（收逻辑写口 · 第一刀）：**本工具已并入 `edit_dsl`** —— 本次仍生效，下个版本移除。
       //   ★ 行为改为**走同一条写端**（`updateFeature` 的 `goal` / `edge_intent` op）：别名因此也拿到
@@ -1750,6 +1731,9 @@ export const DESIGN_TOOLS: ToolDef[] = [
       implement: z.union([z.array(z.any()), z.string()]).optional().describe('advance: [{file,symbol,code}]'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { oplAdd, oplAuto, oplLocate, oplDeclare, oplImplement, oplCheck, oplIntegrate, oplList } = await import('./derive/opl.js');
+      const { oplPropose, oplAdopt, oplAdvance } = await import('./derive/opl_goal_entry.js');
       const feature = requireStr(a, 'feature');
       const action = requireStr(a, 'action');
       const id = a.id ? String(a.id) : '';

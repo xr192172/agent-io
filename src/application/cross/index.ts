@@ -10,18 +10,9 @@
  * 为什么能切了：依赖已先行抽到 `registry/{types,plumbing,handlers}.ts`（P1a）——
  *   否则本文件 import 它们就会成环（server_registry → lanes → server_registry）。
  */
-import { z } from 'zod';
-import { wrap, wrapData, requireStr } from '../plumbing.js';
-import path from 'node:path';
-import { compareProjects } from '../../infrastructure/analysis/cross_repo/index.js';
-import { analyzeHealth, projectHealthPayload } from '../../infrastructure/analysis/health/index.js';
-import { detectReachableRoots } from '../../infrastructure/analysis/project_root/index.js';
-import { extractGoFromFile } from '../../infrastructure/authoring/translate/go_extractor.js';
-import { rebuildBook } from '../../infrastructure/authoring/translate/book.js';
-import { fillBookTsSignatures } from '../../infrastructure/authoring/translate/book_ts.js';
-import { TRANSLATE_PAIRS, translatePair } from '../../infrastructure/authoring/translate/pairs.js';
-import { translateGoTsHandler } from '../../infrastructure/authoring/translate/tool.js';
-import { getDesignSheetFile } from '../../infrastructure/storage.js';
+import { z } from "zod";
+import { wrapData } from "../plumbing.js";
+import path from "node:path";
 import type { ToolDef } from '../types.js';
 
 export const CROSS_TOOLS: ToolDef[] = [
@@ -61,6 +52,12 @@ export const CROSS_TOOLS: ToolDef[] = [
         .describe('★ 调用方显式给的对照用例（[{name?, args:[…]}]）：优先于仓库 *_test.go，同一批输入逐条比 Go 与 TS 输出'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { rebuildBook } = await import('../../infrastructure/authoring/translate/book.js');
+      const { fillBookTsSignatures } = await import('../../infrastructure/authoring/translate/book_ts.js');
+      const { TRANSLATE_PAIRS, translatePair } = await import('../../infrastructure/authoring/translate/pairs.js');
+      const { translateGoTsHandler } = await import('../../infrastructure/authoring/translate/tool.js');
+      const { getDesignSheetFile } = await import('../../infrastructure/storage.js');
       // ★ 语言对先解析：**表里没有就是没有**，不静默降级成 go→ts
       const fromLang = typeof a.from === 'string' && a.from ? a.from : 'go';
       const toLang = typeof a.to === 'string' && a.to ? a.to : 'ts';
@@ -143,6 +140,7 @@ export const CROSS_TOOLS: ToolDef[] = [
       symbol: z.string().optional().describe('可选：只返回该符号名的原文'),
     },
     handler: wrapData(async (a) => {
+      const { extractGoFromFile } = await import('../../infrastructure/authoring/translate/go_extractor.js');
       // ★ [C] 只做路由：读文件（含存在性判定）在 [B]（extractGoFromFile），本层不碰文件系统
       const file = a.file ? path.resolve(String(a.file)) : '';
       // ★ 2026-10-12（T188）：原先是 `'Go 文件不存在: (未提供 file)'` —— ★ **把"你没给 file"
@@ -184,6 +182,8 @@ export const CROSS_TOOLS: ToolDef[] = [
       project_dir_b: z.string().describe('项目 B 根目录（绝对路径）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { compareProjects } = await import('../../infrastructure/analysis/cross_repo/index.js');
       const r = await compareProjects(requireStr(a, 'project_dir_a'), requireStr(a, 'project_dir_b'));
       const fmtSym = (defs: Array<{ file: string; signature: string }>) => defs.map((d) => `${d.file}  ${d.signature}`).join(' ; ');
       const lines = [
@@ -251,6 +251,9 @@ export const CROSS_TOOLS: ToolDef[] = [
         ),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { analyzeHealth, projectHealthPayload } = await import('../../infrastructure/analysis/health/index.js');
+      const { detectReachableRoots } = await import('../../infrastructure/analysis/project_root/index.js');
       const root = requireStr(a, 'project_dir');
       const top = a.top == null ? undefined : Number(a.top);
       const detail = a.detail === true || top === -1;

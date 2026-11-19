@@ -234,34 +234,54 @@ test('QW-2 · 端到端：一次真 CLI 调用的预热是「按需」那行，�
 // 计时（预算/天花板；判据的牙在上面那批机制用例里，这里守"别退回去"）
 // ─────────────────────────────────────────────────────────────
 
-test('QW-1+QW-2 · 启动预算：--help 冷 ≤ 裸 node 地板 + 820 ms；失败的调用只多 ≤210 ms', () => {
+test('QW-1+QW-2 · 启动预算：--help 冷 ≤ 裸 node 地板 + 820 ms；预热税（同路径差）≤210 ms', () => {
   assert.equal(fs.existsSync(CLI), true, '缺 ' + CLI + ' ⇒ 先 npm run build');
 
   const floor = [0, 1, 2].map(() => runBareNode());
   const help = [0, 1, 2].map(() => runCli(['--help']).ms);
-  // 一次**必然失败**的调用：`action=trace` 不是 observe 的动作（参数在 handler 里被拒）
+  // ① 走到 handler 才失败的调用：`action=trace` 让它真跑一遍预热（这条是"含预热"的一端）
   const fail = [0, 1, 2].map(() => {
     const r = runCli(['observe', 'action=trace']);
     assert.notEqual(r.rc, 0, '前提：这次调用必须真的失败（rc≠0），实得 rc=' + r.rc);
+    return r.ms;
+  });
+  /**
+   * ② **参数校验即拒**的调用：`get_dsl` 缺必填 `query` ⇒ `invokeTool` 在校验那一步就返回，
+   *    **不预热、不进 handler、不保鲜**（普查 §2.1 的"什么都不干"那一档）。
+   *
+   * ★★★ 2026-11-19（延迟簇 A · 元数据/实现分家）**换过一次尺**，理由必须记住：
+   *   旧尺是 `失败调用 − --help`，它把"invoke 路径要加载的那些模块"和"预热"混成一个数
+   *   —— 当时两者都静态加载，所以那个差**恰好**等于预热税。簇 A 落地后 `--help` 只剩元数据（不再加载
+   *   `server_registry`），两者不再同源，旧尺会量出 600 ms 的"预热税"（其实是**调用侧入场费**）。
+   *   ⇒ 改成 `走到 handler 的调用 − 校验即拒的调用`：**两端同为 invoke 路径**，差 = 预热 + handler 的净钱。
+   *   ★ 判据没放松（上限仍是 210 ms），只是量具从"跨路径相减"换成"同路径相减"。
+   */
+  const reject = [0, 1, 2].map(() => {
+    const r = runCli(['get_dsl']);
+    assert.notEqual(r.rc, 0, '前提：缺必填的调用必须被拒（rc≠0），实得 rc=' + r.rc);
     return r.ms;
   });
 
   const floorMs = Math.min(...floor);
   const helpMs = Math.min(...help);
   const failMs = Math.min(...fail);
+  const rejectMs = Math.min(...reject);
 
   // ★ 上限按"裸 node 地板 + 余量"表述：机器快慢体现在地板里，固定读数不跨机器搬运。
+  // ★★ 2026-11-19（延迟簇 A 落地后收紧）：820 → 400。元数据/实现分家后 `--help` 只加载元数据
+  //    （本机实测 803 → 139 ms；余量 778 → 114），820 这条**已经没有牙**（退回静态 import 也过得去）。
+  //    400 的余量对慢机器仍宽（本机余量的 3.5 倍），但退回旧形态（余量 778）立刻红。
   assert.ok(
-    helpMs - floorMs <= 820,
+    helpMs - floorMs <= 400,
     `cli.js --help 超出启动预算：${Math.round(helpMs)}ms（地板 ${Math.round(floorMs)}ms，余量 ${Math.round(
       helpMs - floorMs,
-    )}ms > 820ms）⇒ ESM 图/惰性 ajv 有回退`,
+    )}ms > 400ms）⇒ ESM 图/惰性 ajv/元数据分家有回退`,
   );
-  // ★ 失败调用 − --help = **每次调用为预热付的钱**（普查口径 384 ms；按需后应为两位数毫秒）
+  // ★ 预热税 = 走到 handler 的调用 − 校验即拒的调用（普查口径 384 ms；按需后应为两位数毫秒）
   assert.ok(
-    failMs - helpMs <= 210,
-    `每次调用的预热税超出预算：${Math.round(failMs - helpMs)}ms（失败调用 ${Math.round(failMs)}ms − --help ${Math.round(
-      helpMs,
-    )}ms > 210ms）⇒ 按需预热有回退`,
+    failMs - rejectMs <= 210,
+    `每次调用的预热税超出预算：${Math.round(failMs - rejectMs)}ms（跑到 handler 的 ${Math.round(
+      failMs,
+    )}ms − 校验即拒的 ${Math.round(rejectMs)}ms > 210ms）⇒ 按需预热有回退`,
   );
 });

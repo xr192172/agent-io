@@ -24,47 +24,26 @@
  *   ★ 两处**刻意例外**（不在本线，见 handlers.ts 的逐处说明）：`edit_dsl`（受控操作契约的 EditResult 只有
  *   `{message, feature}`，压根没有 data）、`render_design` / `observe_judge`（data 与 message 逐字重复）。
  */
-import { z } from 'zod';
-import { CALL_ACTOR_FIELD, requireArr, requireStr, wrapData } from '../plumbing.js';
-import path from 'node:path';
-import { analyzeHubs, analyzeImpact } from '../../infrastructure/analysis/impact/index.js';
+import { z } from "zod";
+import { CALL_ACTOR_FIELD, wrapData } from "../plumbing.js";
+import path from "node:path";
 import type { ImpactChangePoint } from '../../infrastructure/analysis/impact/index.js';
-import { suggestRenamesInFile } from './find/ast_suggest.js';
-import { deprecateOffline, type DeprecateOfflinePlan } from './deprecate_offline/deprecate_offline.js';
+import { type DeprecateOfflinePlan } from "./deprecate_offline/deprecate_offline.js";
 import type { SuggestOptions } from './find/ast_suggest.js';
-import { applyWrites } from './edit/apply_writes.js';
-import { editCode } from './edit/edit_code.js';
-import { listFileSnapshots, rollbackFileSnapshot } from './snapshot/file_snapshot.js';
-import { moveDomain } from './rename/move_domain.js';
-import { findReferences } from './find/find_references.js';
-import { planFunctionAnnotation } from './annotate/function_annotation.js';
-import { renderGranularityNote } from './parse_capability/parse_capability.js';
-import { runRefactorJudge } from './pipeline/refactor_judge.js';
 import type { JudgeDecision, JudgeIssue } from './pipeline/refactor_judge.js';
-import { runRefactorPipeline } from './pipeline/refactor_pipeline.js';
+// ★ 2026-11-19（延迟簇 A）：类型侧单独 type-only 取 —— `Parameters<typeof runRefactorPipeline>` 会让
+//   `refactor_pipeline.ts` 的实现闭包（实测 ≈520 ms）留在模块求值期。
+import type { PipelineOptions } from './pipeline/refactor_pipeline.js';
 // ★ I4（2026-10-25）：`remove_dead_imports` **工具面已吸收进 `refactor_pipeline`**（同生态位收敛）——
 //   管线的 `dead_imports` 步覆盖它的全部能力：① 同一份执行内核（`edit/remove_dead_imports.ts`，
 //   TS/Go 全形态）；② 显式 dead 清单（`steps.dead_imports.dead`，形状同 DeadDepCandidate）
 //   或不给清单自动检测（`detectDeadImports`，比它描述里指向的 `dead_deps` 工具——已不存在——更直接）；
 //   ③ `verify: true | {commands}` 与它的验证闭环逐字同语义（改前基线 + 改后重验 + 回归自动回滚）。
 //   实现函数（`removeDeadImportsWithVerify` 等）**保留**，`deprecate_offline` 的写路仍用它。
-import { removeDeadImportsWithVerify } from './edit/remove_dead_imports.js';
-import { renameFiles } from './rename/rename_files.js';
 // ★ 2026-10-20：三条写路共用的闸读数人读侧（机器侧字段仍是 `task_gate`，形状照抄 `edit_code`）
-import { gateHumanLines } from './gate_note.js';
 // ★ 2026-10-28：出口闭环的人读渲染（唯一实现在 write_gate.ts，与 gateHumanLines 同款）
-import { planExitHumanLine } from '../write_gate.js';
-import { renameSymbols } from './rename/rename_symbols.js';
-import { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } from './rule_library/rule_apply.js';
-import { extractRule } from './rule_library/rule_extract.js';
-import { isLegalRuleId, loadRules, rulesDir, writeRule } from './rule_library/rule_library.js';
 import type { Rule } from './rule_library/rule_library.js';
-import { disambiguationItems, suggestDisambiguationsInFile } from './find/similar_names.js';
-import { moveSymbol } from './rename/symbol_move.js';
-import { structureGap } from '../../infrastructure/analysis/structure/structure_gap.js';
-import { buildRefactorPlan, applyRefactorPlan } from './pipeline/refactor_plan.js';
 import type { RefactorTarget, RefactorPlan } from './pipeline/refactor_plan.js';
-import { diffViewsHandler } from './handlers.js';
 import type { ScanBounds } from '../../infrastructure/scan_bounds.js';
 import type { ToolDef } from '../types.js';
 
@@ -151,6 +130,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       card: z.string().optional().describe('按任务卡画布坍缩集圈定；与 scope 二选一，卡无画布 ⇒ 0 文件'),
     },
     handler: async (args) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { diffViewsHandler } = await import('./handlers.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：feature 是 schema 必填，缺失时原 handler 会把
       //   undefined 传进 diffViews ⇒ 静默返回全 0（假结果）；这里当场报「缺参数」。
       //   （本工具的 handler 落在 handlers.ts（diffViewsHandler），不在本文件，故以「守一道 + 委托」补齐。）
@@ -257,6 +238,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       atomic: z.boolean().optional().describe('★ 批量专用原子性：true=任一项失败则整批不落盘（全成或全不成）；缺省 false=逐项独立（一项失败不影响其余）。dry_run 天然不落盘'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { editCode } = await import('./edit/edit_code.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 两条路径都必填；
       //   file/op 仅**单文件路径**必填 —— targets 批量路径按 description「传 targets 时
       //   忽略 file/op 等单文件参数」本就允许省略 ⇒ 只在非批量时守，避免拒掉合法批量调用。
@@ -325,6 +308,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       report_literals: z.boolean().optional().describe('★ 仅 scope=module：true=扫描旧符号 snake 变体的字面量引用清单（错误提示/README 等纯字符串），仅报告不改动'),
     },
     handler: wrapData(async (a) => {
+      const { requireArr, requireStr } = await import('../plumbing.js');
+      const { suggestRenamesInFile } = await import('./find/ast_suggest.js');
+      const { gateHumanLines } = await import('./gate_note.js');
+      const { renameSymbols } = await import('./rename/rename_symbols.js');
+      const { disambiguationItems, suggestDisambiguationsInFile } = await import('./find/similar_names.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：renames 是 schema 必填数组，缺失时原 handler
       //   直接 `a.renames.map(...)` ⇒ `Cannot read properties of undefined (reading 'map')`。
       // ★ 只读分析形态（吸收 suggest_renames / find_similar_names）：算建议清单，不碰任何文件
@@ -582,6 +570,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只算全部 dry-run 影响面不落盘（默认：先整体校验，全通过才落盘）'),
     },
     handler: wrapData(async (a) => {
+      const { requireArr } = await import('../plumbing.js');
+      const { renameFiles } = await import('./rename/rename_files.js');
+      const { gateHumanLines } = await import('./gate_note.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：renames 是 schema 必填数组，缺失时原 handler
       //   直接 `a.renames.map(...)` ⇒ `Cannot read properties of undefined (reading 'map')`。
       const renames = requireArr(a, 'renames', '[{from, to}]') as Array<{ from: string; to: string }>;
@@ -669,6 +660,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只算影响面预览、不落盘（默认 false）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { moveDomain } = await import('./rename/move_domain.js');
       // ★ [C] 只转发：读域表/清单（structure_gap）+ 搬（rename_files）全在受控操作契约
       const project_dir = requireStr(a, 'project_dir');
       const r = await moveDomain({
@@ -702,6 +695,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('true=只出结构化预览不落盘（默认：先整体校验，全通过才落盘）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { gateHumanLines } = await import('./gate_note.js');
+      const { moveSymbol } = await import('./rename/symbol_move.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：file/symbol/to_file 是 schema 必填，
       //   缺失时原 `String(undefined)==='undefined'` 会拼成假路径 / 空实体名（静默错）。
       const file = requireStr(a, 'file');
@@ -777,6 +773,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       report_literals: z.boolean().optional().describe('true=额外扫描符号 snake 变体在项目文本里的字面量命中（文档/测试/契约/工具注册名），返回清单待核验，不改动'),
     },
     handler: wrapData(async (a) => {
+      const { findReferences } = await import('./find/find_references.js');
+      const { renderGranularityNote } = await import('./parse_capability/parse_capability.js');
       // ★ §16.4 P-D：file/symbol/field 是「模式相关必填」，schema 里只能 optional。
       //   这里**不做 `String(a.x)` 强转**——`String(undefined)==='undefined'` 会把缺参变成
       //   一个合法字符串，静默去查名叫 "undefined" 的符号或拼出 `...\undefined` 路径。
@@ -902,6 +900,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       project_dir: z.string().describe('目标项目根目录（绝对路径）—— 读它根下的 structure.domains.json 作为"结构意图"'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { structureGap } = await import('../../infrastructure/analysis/structure/structure_gap.js');
       // ★ [C] 只转发：读配置（ENOENT⇒null / 坏⇒抛）+ 对账 全在受控操作契约（structureGap）
       const r = structureGap(requireStr(a, 'project_dir'));
       if (!r.configured) {
@@ -978,6 +978,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       verify: z.boolean().optional().describe('编译级验收（改前基线 + 改后重验 + 回归自动回滚）；默认 = !dry_run'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { deprecateOffline } = await import('./deprecate_offline/deprecate_offline.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 缺了会让 path.resolve(undefined) 抛**裸 TypeError**。
       requireStr(a, 'project_dir');
       const r = await deprecateOffline({
@@ -1015,6 +1017,11 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       mode: z.enum(['apply', 'dry_run', 'scan']).optional().default('apply').describe('apply=生成并写盘；dry_run=生成但只预览；scan=只读报告'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { applyWrites } = await import('./edit/apply_writes.js');
+      const { planFunctionAnnotation } = await import('./annotate/function_annotation.js');
+      const { gateHumanLines } = await import('./gate_note.js');
+      const { planExitHumanLine } = await import('../write_gate.js');
       // ★ 入口缺参守卫（CLI 面不做 zod 校验）：project_dir 是 schema 必填 —— 缺失时原
       //   `String(undefined)` ⇒ 静默「扫描 0 个函数 / 0 个文件」（假成功）。
       const project_dir = requireStr(a, 'project_dir');
@@ -1216,6 +1223,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('true 启用统一验证闭环；{commands} 自定义命令；缺省/verify=false 仅落盘不验证'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { runRefactorPipeline } = await import('./pipeline/refactor_pipeline.js');
+      const { gateHumanLines } = await import('./gate_note.js');
       // ★ 缺根时此前会静默回「共 0 步 / 全局 通过」（假绿）—— 先守根。
       const project_dir = requireStr(a, 'project_dir');
       const steps = a.steps as
@@ -1237,7 +1247,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
             function_annotation?: { enabled?: boolean; files?: string[] };
           }
         | undefined;
-      const verify = a.verify as Parameters<typeof runRefactorPipeline>[0]['verify'];
+      const verify = a.verify as PipelineOptions['verify'];
       const migrate = steps?.package_migration;
       const r = await runRefactorPipeline({
         project_dir,
@@ -1350,6 +1360,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       escalate_to_inbox: z.boolean().optional().default(true).describe('uncertain 是否入收件箱回上下文'),
     },
     handler: wrapData(async (a) => {
+      const { runRefactorJudge } = await import('./pipeline/refactor_judge.js');
       const issues = (a.issues as JudgeIssue[]) ?? [];
       const verdicts = a.verdicts as JudgeDecision[] | undefined;
       const result = await runRefactorJudge({
@@ -1389,6 +1400,8 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       file: z.string().optional().describe('rollback 用：只回滚该文件（相对项目根或绝对路径）'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { listFileSnapshots, rollbackFileSnapshot } = await import('./snapshot/file_snapshot.js');
       const action = a.action as 'list' | 'rollback' | undefined;
       // ★ 前置校验（安全策略前移）：入口与锚点先判，缺参**明确报错**，不把 'undefined' 拼进路径。
       if (action !== 'list' && action !== 'rollback') {
@@ -1478,6 +1491,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
       dry_run: z.boolean().optional().describe('export/apply 用：true（默认）=只算不写盘；false=把通过三关的规则 / applied 的文件落盘'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { applyWrites } = await import('./edit/apply_writes.js');
+      const { gateHumanLines } = await import('./gate_note.js');
+      const { planExitHumanLine } = await import('../write_gate.js');
+      const { applyRulesToFiles, collectRuleTargets, loadBaseline, ratchetDelta, runFixtures, writeBaseline } = await import('./rule_library/rule_apply.js');
+      const { extractRule } = await import('./rule_library/rule_extract.js');
+      const { isLegalRuleId, loadRules, rulesDir, writeRule } = await import('./rule_library/rule_library.js');
       const action = a.action as 'export' | 'apply' | 'check' | undefined;
       // ★ 前置校验（安全策略前移第一半）：入口与锚点先判。
       //   为什么要它：旧版三个入口都是 `String(a.project_dir)` —— 缺参时 `String(undefined)` 会变成
@@ -1694,6 +1714,9 @@ export const REFACTOR_TOOLS: ToolDef[] = [
         .describe('true ⇒ 任一项失败（含清单与实际源冲突）则整批不落盘（全成或全不成）；缺省 false = 逐项独立'),
     },
     handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { gateHumanLines } = await import('./gate_note.js');
+      const { buildRefactorPlan, applyRefactorPlan } = await import('./pipeline/refactor_plan.js');
       const project_dir = requireStr(a, 'project_dir');
       // ★ 形态判定（合并后唯一入口）：给 targets ⇒ 算清单（只读）；给 plan ⇒ 落盘（幂等）。
       if (Array.isArray(a.targets)) {

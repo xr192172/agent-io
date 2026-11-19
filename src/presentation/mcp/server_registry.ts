@@ -45,8 +45,13 @@ import { DATA_MARKER, parseDataBlock, runRejectionScope } from '../../applicatio
 // ★★ 2026-10-06：「面」—— 目录口径（`catalogOf`，单点）+ 面的机算（`facesOf`）+ 各线 direct 白名单
 // ★ 2026-10-11：接续段的**入参路径表**改用 `collectInputPaths`（必填判定在 `renderHandoffPanel` 里，
 //   复用 `declaredRequiredMembersOf` —— 与 `capability_map` 的「接续」段**同源**，T140 第二处）。
-import { catalogOf, collectInputPaths, LANE_META } from '../../application/meta/registry/capability_map.js';
-import type { InputPath } from '../../application/meta/registry/capability_map.js';
+// ★ 2026-11-19（延迟簇 A · 元数据/实现分家）：这三样都只从**零依赖叶子**取 —— 原先从
+//   `capability_map.ts` 取，而它的运行时闭包（`scan_authorities → storage → …`）实测 ≈400 ms，
+//   于是**每一次工具调用**（含参数校验即拒的失败调用）都替"目录派生"付掉整张导航实现图。
+//   判定/渲染仍住 capability_map：那是它被真调用时才该付的钱。
+import { catalogOf } from '../../application/meta/registry/catalog.js';
+import { LANE_META } from '../../application/meta/registry/capability_map.js';
+import { collectInputPaths, type InputPath } from '../../application/meta/registry/input_paths.js';
 // ★ T54 收口：「下一棒」印具体值，**共用** capability_map 的同一个渲染（别在这写第二份）
 import { renderHandoffPanel } from '../../application/meta/index.js';
 import { countStaleResolvedRefs } from '../../application/meta/integrity/index_integrity.js';

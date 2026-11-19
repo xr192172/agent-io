@@ -26,7 +26,13 @@ import { CROSS_TOOLS } from './cross/index.js';
 import { DESIGN_TOOLS } from './design/index.js';
 import { META_TOOLS } from './meta/index.js';
 import { REFACTOR_TOOLS } from './refactor/index.js';
-import { bindLaneOf, bindToolDefs, type LaneAssign, type LaneId } from './meta/registry/capability_map.js';
+// ★ 2026-11-19（延迟簇 A · 元数据/实现分家）：**注入槽**搬到零依赖叶子 `tool_catalog_ref.ts`。
+//   本文件只是把「目录 / 归属」**递过去**（写两个变量），原先却要为它静态 import `capability_map`，
+//   而后者运行时闭包实测 ≈400 ms / 96 个 dist 模块（`scan_authorities → storage → …`）
+//   ⇒ 每一次 `cli --help`、每一次"找一下工具名"都在为这两个变量付整张实现图。
+//   ★ 判定（未注入 ⇒ 抛错）仍在 `capability_map`：叶子只存值，不给"看起来能用"的空壳。
+import { setLaneOf, setToolDefs, type LaneAssign } from './meta/registry/tool_catalog_ref.js';
+import type { LaneId } from './meta/registry/lane_ids.js';
 import { bindToolDefsForWiring } from '../infrastructure/analysis/health/wiring_claims.js';
 import { TOOL_ANNOTATIONS } from './tool_annotations.js';
 import { bindWritesOf } from '../infrastructure/dsl_write_scope.js';
@@ -79,13 +85,13 @@ export function laneOfFromSources(
 
 // ★ 破环注入：meta 线的 capability_map 需要真实注册表作目录，而 TOOL_DEFS 是各 lane 汇总出来的。
 //   用到时才解析（handler 调用期），故加载期注入一次即可（见 lanes/meta.ts 的说明）。
-bindToolDefs(TOOL_DEFS);
+setToolDefs(TOOL_DEFS);
 // ★ 2026-11-08（接线账 P2）：把**同一份** TOOL_DEFS 递给 code_health 的"能力接线账"。
 //   为什么走注入而不是让 infrastructure 直接 import：infrastructure 不能 import application（分层方向），
 //   与本文件已有的 bindLaneOf / bindWritesOf 同一模式；★ 不另存一份工具清单（那就是第二份权威）。
 bindToolDefsForWiring(TOOL_DEFS);
 // ★ P1c 归属注入：capability_map 不再持有归属清单，改由本文件的 lane 来源派生后送进去。
-bindLaneOf(laneOfFromSources());
+setLaneOf(laneOfFromSources());
 // ★ 写册白名单注入（2026-11-03，卡 1.1）：infrastructure 层的 saveDSL 闸需要知道
 //   「哪个工具真的落盘设计册」⇒ 由 TOOL_DEFS 派生（`writes` 字段是唯一事实源），
 //   加载期 bind 一次。infrastructure 不能 import application，故走注入（dsl_write_scope.ts）。
