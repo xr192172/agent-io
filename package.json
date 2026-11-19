@@ -135,6 +135,7 @@
         "env:check": "node scripts/env-check.mjs"
     },
     "dependencies": {
+        "@derekstride/tree-sitter-sql": "^0.3.13",
         "@modelcontextprotocol/sdk": "^1.0.0",
         "ajv": "^8.17.0",
         "ajv-formats": "^3.0.1",
@@ -197,6 +198,7 @@
     },
     "allowScripts": [
         "tree-sitter-sql",
-        "tree-sitter-xml"
+        "tree-sitter-xml",
+        "@derekstride/tree-sitter-sql"
     ]
 }
