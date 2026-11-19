@@ -111,6 +111,33 @@ interface ScriptChunk {
   ext: ChildExt;
 }
 
+/** 对外暴露的切块形态（`indexBase`/`lineBase` 是回填用的坐标系，外面用不上 —— 见 `splitScriptBlocks`） */
+export interface ScriptBlock {
+  code: string;
+  /** 子解析虚拟路径（`.vue` + `ext`）—— 直接喂 `parseFileFull` / `parseRootForFile` 即可 */
+  virtualPath: string;
+  ext: ChildExt;
+}
+
+/**
+ * ★★★ card-cashier-gate（2026-11-19）：**切块规则的唯一入口**（外面别自己写正则）。
+ *
+ * 为什么要有它：`kernel#parseRootForFile` 要回答"这个 `.vue` 的 `<script>` 里有没有声明结构"，
+ *   而切块规则**只有这一份**（`collectScriptChunks`：`src=` 外链跳过、非 JS/TS 的 `lang` 跳过、
+ *   行号基准数到内容首字符）。让它再抄一遍正则 = 第二份口径，"哪块算脚本"两边会漂。
+ * ★ 返回的 `virtualPath` 是**虚拟路径**（`.vue.js` / `.vue.ts`），只用来选解析器 ——
+ *   它不会进磁盘，也不会被登记成文件（与 `parseVueSfc` 内部同一约定）。
+ */
+export function splitScriptBlocks(source: string): ScriptBlock[] {
+  return collectScriptChunks(source).map((c) => ({
+    code: c.content,
+    // ★ 虚拟路径的**文件名部分**与 `parseVueSfc` 里 `${filePath}${ext}` 同构（`parseFileFull`
+    //   只看最后一个 `.` 之后那一段选解析器）—— 但这里是**纯虚拟**路径，不存在也不会落盘。
+    virtualPath: `snippet${c.ext}`,
+    ext: c.ext,
+  }));
+}
+
 /**
  * 把 SFC 切成脚本块（顺序即出现顺序）。
  *
