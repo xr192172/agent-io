@@ -134,7 +134,7 @@ const CARD_LEAVE = ['src/application/design/rewrite/symbol_diff.ts', 'src/domain
 /** 判据守恒读数（B 类零判据 ⇒ 删 25 个节点、搬 24 条职责文本，一条判据都不动） */
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 861; // ★ 2026-11-20（同名符号指纹）：857 → 861 = 共享文件 +2、冻结/出口 call-exists 各 +1；前值含 ledger 当前性与 patrol 接线。
+const CRITERIA_TOTAL = 868; // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；前值含 ledger 当前性与 patrol 接线。
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -247,7 +247,7 @@ test('8.2 清单形状：25 条 · **码位序**（`sort()`，不是 `localeComp
 // ════════════════════════════════════════════════════════════════════
 // 8.3 判据总数守恒 + 8.3b 有牙
 // ════════════════════════════════════════════════════════════════════
-test('8.3 判据总数守恒：三册合计 861 条（B 类零判据 ⇒ 删 25 个节点、搬 24 条职责文本，一条判据不动）', () => {
+test('8.3 判据总数守恒：三册合计 868 条（B 类零判据 ⇒ 删 25 个节点、搬 24 条职责文本，一条判据不动）', () => {
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaTotal([s])}`).join(' · ');
   assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, `搬职责文本不许带走判据（实测 ${per}）。若某批之后总数合法地变了，改这里是显式动作，不是让它漂`);
@@ -259,9 +259,9 @@ test('8.3 判据总数守恒：三册合计 861 条（B 类零判据 ⇒ 删 25 
   }
 });
 
-test('8.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 861（同一把尺两个世界）', () => {
+test('8.3b 上一条**有牙**：纯核副本里删掉一个带判据的属主节点 ⇒ 总数立刻 < 868（同一把尺两个世界）', () => {
   const sheets = repoSheets();
-  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 861');
+  assert.equal(criteriaTotal(sheets), CRITERIA_TOTAL, '前提：现实的读数是 868');
   const victim = sheets
     .flatMap((s) => nodesOf(s).map((n) => ({ feature: s.feature, id: String(n.id), n })))
     .find((x) => ((x.n.decision as { expectations?: unknown[] } | undefined)?.expectations ?? []).length > 0);

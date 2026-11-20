@@ -929,7 +929,9 @@ export async function judgeExpectations(
   const out: ExpectationItem[] = [];
   // ★★★ P1：evidence 派生（唯一出口 push 内完成）—— verdict 参数逐字不动，只在 item 上多挂一层标注
   const evidenceOf = (it: JudgeItem): EvidenceMark => {
-    const ex = it.evidence ?? {};
+    // ★ DSL 上的 expectation.evidence 是 cited 的唯一写处；judge item 没显式带时回退读它，
+    //   否则 documented/source-has 的 cited 永远不会进入 judge 读数（C1 两条新增判据实测）。
+    const ex = it.evidence ?? ((it.expectation as { evidence?: Partial<EvidenceMark> }).evidence ?? {});
     const tier = ex.tier ?? EVIDENCE_TIER_BY_KIND[it.expectation.kind as Expectation['kind']] ?? 'assumption';
     const base: EvidenceMark = {
       tier,

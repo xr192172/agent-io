@@ -9497,35 +9497,44 @@
         "task": {
           "id": "file_src_application_design_intent_expectations_ts",
           "summary": "source-has 的 must / mustNot 在**剥注释之后**的文本上匹配（只剥代码扩展名）；判定核是 domain 层 expectSourceHas 的纯函数 matchSourceHas，剥注释器是 src/domain/text_strip.ts（零 import）；application 层只留 fs 读取与四态渲染",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
+          "owner": "subagent:exec-eligibility-worker-hy",
+          "claimed_at": "2026-11-20T05:02:26.773Z",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/intent/expectations.ts",
-                "name": "SourceHasTextResult",
-                "fp": "50885825944950c0bced11f56779717ccd1be3d4"
+                "name": "judgeExpectations",
+                "fp": "dbfa304b2439b53c1528541a99700805c6282daa"
               },
               {
                 "file": "src/application/design/intent/expectations.ts",
-                "name": "judgeSourceHas",
-                "fp": "1b3abe1c36d4c95f8ea1068305414770ae3e60c2"
+                "name": "prepareJudgeFactsForRun",
+                "fp": "58fc17555e82b3d1daaab6e77589ed3157a3615a"
               },
               {
-                "file": "src/application/design/intent/expectations.ts",
-                "name": "sourceHasTextOf",
-                "fp": "04210a542d657c0dbfdb4a877a706f198e173a71"
+                "file": "src/application/design/intent/judge_facts.ts",
+                "name": "JudgeFactsDeps",
+                "fp": "c2fbbfe8a42cc9b35a7ff056e24bf32167623dab"
+              },
+              {
+                "file": "src/application/design/intent/judge_facts.ts",
+                "name": "createJudgeFacts",
+                "fp": "00d85f9475afedd3fabf0df439a9e26c31a74449"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/intent/expectations.ts",
-                "content_hash": "2c78e01a67cd1a1d2b0fe87eddee97069a2df79b"
+                "content_hash": "37ba32dc8316e3f8dab00059053452375c5e596c"
+              },
+              {
+                "path": "src/application/design/intent/judge_facts.ts",
+                "content_hash": "81a9f2b0a0aadf10920fe4b9fe7f4553bbc5380c"
               }
             ],
-            "computed_at": "2026-11-06T11:52:33.178Z",
+            "computed_at": "2026-11-20T05:02:26.690Z",
             "basis": [
               "canvas"
             ]
@@ -9677,29 +9686,44 @@
               },
               "observed": "src/application/design/intent/expectations.ts：L27 import 改指 parse/index.js（parseFile, isSupportedFile）；L303 await parseFileSymbols(p, content) → await parseFile(p, content)；头注三处旧名同步（L11/L19/L306），并顺手把注释里的旧行号引用 consistency.ts:281-283 改成函数名 checkConsistencyReport；本节点 7 条后态判据在 judge 中全绿（515/515 pass）；tsc 绿。",
               "command": "npm run build && npm test && design_line action=judge feature=agent-io"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-20T05:17:25.039Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p1_evidence_tiers.test.ts; node scripts/judge-all.mjs",
+                "input": "6a6db268098475a87dfeee30924c33be4addd392",
+                "code": "9108f920e6314c7edf19ea0dc116f110497f9676",
+                "covers": [
+                  "src/application/design/intent/expectations.ts",
+                  "src/domain/text_strip.ts"
+                ]
+              },
+              "observed": "新增④b实测撤掉回退8/9且actual cited=undefined，恢复后9/9；868/868，documented_missing_citation保持130/130。",
+              "command": "node --import tsx --test tests/p1_evidence_tiers.test.ts; node scripts/judge-all.mjs"
             }
           ],
           "reopened_at": "2026-11-06T11:52:33.253Z",
           "reopen_reason": "T-19：run 判定路径注入 facts 门面 + 只读 fs（改 judgeExpectations，新增 prepareJudgeFactsForRun）",
           "reopened_from": "agent:t0416",
-          "lease_generation": 5,
+          "lease_generation": 6,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T12:39:28.654Z",
-          "prepared_snapshot": null,
-          "release_reason": "T-19 代码已全部落盘且 8 条后态判据逐条 pass（我另跑 judgeExpectations 复核：8/8 pass，含 #7 facts 出生用例），但 MCP 本进程仍跑旧 dist（回执带 STALE_BUILD）⇒ 旧执行核没有 facts 注入 ⇒ 它把 #7 判 unsupported 而拒收口。不在这条旧代码上硬收口（那会是假绿）；交还写权，待重启 MCP 后由主控收口",
-          "released_by": "agent:t18",
-          "released_at": "2026-11-06T12:39:28.654Z"
+          "last_heartbeat_at": "2026-11-20T05:17:25.040Z",
+          "prepared_snapshot": null
         },
-        "status": "draft",
+        "status": "done",
         "overlay": {
           "path": "src/application/design/intent/expectations.ts",
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T10:45:00Z",
-            "command": "npm run build && npm test && design_line action=judge feature=agent-io",
             "kind": "reading",
-            "observed": "src/application/design/intent/expectations.ts：L27 import 改指 parse/index.js（parseFile, isSupportedFile）；L303 await parseFileSymbols(p, content) → await parseFile(p, content)；头注三处旧名同步（L11/L19/L306），并顺手把注释里的旧行号引用 consistency.ts:281-283 改成函数名 checkConsistencyReport；本节点 7 条后态判据在 judge 中全绿（515/515 pass）；tsc 绿。"
+            "command": "node --import tsx --test tests/p1_evidence_tiers.test.ts; node scripts/judge-all.mjs",
+            "observed": "新增④b实测撤掉回退8/9且actual cited=undefined，恢复后9/9；868/868，documented_missing_citation保持130/130。",
+            "at": "2026-11-20T13:20:00+08:00"
           }
         }
       },
@@ -16883,45 +16907,73 @@
         "task": {
           "id": "file_src_domain_semantic_ts",
           "summary": "【L1 待建构】服务层 · src/domain — 2 个函数（导入自 2 个模块）（src/domain/semantic.ts） ← 节点 file_src_domain_semantic_ts",
-          "state": "void",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_domain_semantic_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "lease_generation": 1,
+          "owner": "subagent:exec-eligibility-worker-hy",
+          "claimed_at": "2026-11-20T03:55:50.696Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/domain/semantic.ts",
+                "name": "FileLifecycle",
+                "fp": "79ea6914af84f994359edab34ccb85e10ef688ce"
+              },
+              {
+                "file": "src/domain/semantic.ts",
+                "name": "assertLifecycle",
+                "fp": "aab608fea1d552b76e5dfeff2fd35907b2ce6a7a"
+              }
+            ],
             "files": [
               {
                 "path": "src/domain/semantic.ts",
-                "content_hash": "ab3a65363fc822dc02c411f32685d6b00e7bb0cf"
+                "content_hash": "9b35c8ff2e8904e600e2c038c7e58f70889ed399"
               }
             ],
-            "computed_at": "2026-11-02T07:52:02.944Z",
+            "computed_at": "2026-11-20T03:55:50.654Z",
             "basis": [
-              "node-path"
+              "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-02T08:07:07.386Z",
-          "release_reason": "卡建错册：该 path 的断言归 task-system-plan（agent-io 侧无判据可挂，加就是归属重复）⇒ 交回候选，随即作废",
-          "released_by": "subagent:writer-archive",
-          "released_at": "2026-11-02T08:07:07.386Z"
+          "last_heartbeat_at": "2026-11-20T05:17:13.662Z",
+          "reopened_at": null,
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-20T05:17:13.662Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_execution_eligibility.test.ts",
+                "input": "d8a908e793aef30766ab5a9678d43c488e369f07",
+                "code": "80e9f049f8c8ae2a9f41224bf8d214ba3e054f7d",
+                "covers": [
+                  "src/domain/semantic.ts"
+                ]
+              },
+              "observed": "retired合法/缺理由/空白理由与archived对照均通过；完整目标20/20。",
+              "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts"
+            }
+          ]
         },
         "decision": {
-          "summary": "文件生命周期（FileLifecycle）的类型与唯一校验器 assertLifecycle：回答「这个文件该不该删 / 并到哪 / 这次写是不是要归档」，只判形状与必填字段，自己不落盘。",
+          "summary": "文件生命周期（FileLifecycle）的类型与唯一校验器 assertLifecycle：active/deprecated/retired/merged 是持久语义，archived 是归档写入指令；retired 只退出现行执行并保留事实和历史。",
           "expectations": [
             {
               "kind": "run",
               "input": {
                 "file": "src/domain/semantic.ts",
-                "check": "FileLifecycle 值域含 archived（作为写入指令）"
+                "check": "FileLifecycle 值域含 retired 持久态与 archived 写入指令"
               },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'merged' \\| 'archived'/.test(m[0]); })()",
-              "why": "2026-11-02 收逻辑写口 ②：`archived` 是旧 `archive` 写端搬进 `edit_dsl` 的入口值，类型里没有它那条路就走不通。★ 与 T183 不矛盾：T183 删它是因为当时**没有**任何写端读这个值（不可达）；现在 `file_ops.ts#updateFile` 会把它分派给 `archiveNode` ⇒ 它成了**可达的指令**，而不是持久状态（落盘后文件已不在 DSL 里）。先剥注释再判，避免被注释里的 `archived` 误命中。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const m = /^export interface FileLifecycle \\{[\\s\\S]*?^\\}/m.exec(s); if (!m) return false; return /status: 'active' \\| 'deprecated' \\| 'retired' \\| 'merged' \\| 'archived'/.test(m[0]); })()",
+              "why": "retired 是仍在盘上但退出当前执行的持久态；archived 仍是分派到归档执行核的写入指令。二者必须同时可表达且不可混同。",
               "mutants_ignore": [
                 "*"
               ]
@@ -16930,18 +16982,44 @@
               "kind": "run",
               "input": {
                 "file": "src/domain/semantic.ts",
-                "check": "assertLifecycle：archived 必须带非空 retire_reason"
+                "check": "assertLifecycle：retired 与 archived 都必须带非空 retire_reason"
               },
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const ok = s.indexOf(\"const ok = ['active', 'deprecated', 'merged', 'archived']\") >= 0; const need = s.indexOf('lifecycle.status=\"archived\" 必须带 retire_reason') >= 0; return ok && need; })()",
-              "why": "归档必须有理由（与 deprecated 同一条纪律），且这条判据只许住 `assertLifecycle` 一处 —— 若挪到 `file_ops.ts` 再写一遍，本仓头号病「同一判据住两处」就复发（T181 三方评审立的规矩）。",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/domain/semantic.ts'), 'utf8').replace(/\\/\\*[\\s\\S]*?\\*\\//g, ''); const ok = s.indexOf(\"const ok = ['active', 'deprecated', 'retired', 'merged', 'archived']\") >= 0; const retired = s.indexOf('lifecycle.status=\"retired\" 必须带 retire_reason') >= 0; const archived = s.indexOf('lifecycle.status=\"archived\" 必须带 retire_reason') >= 0; return ok && retired && archived; })()",
+              "why": "退休与归档都必须留下原因，且唯一校验仍住 assertLifecycle；删去 retired 分支或理由校验会让本判据变红。",
               "mutants_ignore": [
                 "*"
               ]
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/semantic.ts",
+              "must": [
+                "'active', 'deprecated', 'retired', 'merged', 'archived'",
+                "lifecycle.status=\"retired\" 必须带 retire_reason"
+              ],
+              "why": "FileLifecycle 需要持久态 retired 表示仍在盘上但退出当前执行；它必须像 deprecated 一样保留退役原因。archived 仍是写入指令，不得被当成退休证明。",
+              "evidence": {
+                "tier": "documented",
+                "basis": "FileLifecycle.retired 与 archived 的语义由唯一校验器 assertLifecycle 和 P0 反例共同钉住，不是只看词。",
+                "cited": "tests/p0_execution_eligibility.test.ts#FileLifecycle.retired 必须有理由；archived 仍是写入指令; src/domain/semantic.ts#assertLifecycle"
+              }
             }
           ],
-          "updated_at": "2026-11-02T07:56:13.657Z",
-          "agent": "subagent:writer-archive",
+          "updated_at": "2026-11-20T04:42:11.690Z",
+          "agent": "subagent:exec-eligibility-worker-hy",
           "acceptance": "`assertLifecycle` 对 `{status:\"deprecated\"}`（缺 `retire_reason`）、`{status:\"merged\"}`（既无 `merged_into` 又无 `merged_from`）、`{status:\"archived\"}` 三种输入**都抛**（最后一种须指路 `archive` 工具）；对 `{status:\"active\"}` 放行。`hasFileEntries(undefined)` 与 `{files:[]}` ⇒ false，`{files:[{…}]}` ⇒ true。"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/semantic.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts",
+            "observed": "retired合法/缺理由/空白理由与archived对照均通过；完整目标20/20。",
+            "at": "2026-11-20T13:20:00+08:00"
+          }
         }
       },
       {
@@ -36639,12 +36717,85 @@
               "symbol": "verifyProject",
               "target": "impactOfChanged",
               "why": "波及必须复用 diffImpact 那条实现"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/verify/verify_project.ts",
+              "symbol": "verifyProject",
+              "target": "adjudicateTestObjects",
+              "why": "通用验证必须在选材、widen、rerun、新发现和继承之前先得到当前执行集合；只过滤最终 spawn 会留下 retired 旧证据和错误分母。"
             }
           ],
-          "updated_at": "2026-11-08T18:00:32.637Z",
-          "agent": "agent:pilot-next"
+          "updated_at": "2026-11-20T03:23:16.041Z",
+          "agent": "lead"
         },
-        "style": {}
+        "style": {},
+        "task": {
+          "id": "file_src_application_verify_verify_project_ts",
+          "summary": "零项目特定配置的自动接管入口：verifyProject({projectRoot, change?}) 自动认 runner、枚举测试对象、必要时自建/保鲜索引、用 diffImpact 算波及、用 planInheritance 判继承、只跑重验集，证据合并写回 VerifiedSnapshot；不可信时明确 unsupported/undetermined，绝不报通过。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:exec-eligibility-worker-hy",
+          "claimed_at": "2026-11-20T03:55:58.524Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/verify/verify_project.ts",
+                "name": "VerifyProjectResult",
+                "fp": "843d66d359aea024b3f0dfd4becf896a78c743ae"
+              },
+              {
+                "file": "src/application/verify/verify_project.ts",
+                "name": "verifyProject",
+                "fp": "491ec8012b8ce74de3f0ccd588f7cd195a86b94f"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/verify/verify_project.ts",
+                "content_hash": "c1f976e224742bc4e40a8eaad7eafdb40a7de827"
+              }
+            ],
+            "computed_at": "2026-11-20T03:55:58.484Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-20T05:17:14.081Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-20T05:17:14.080Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_execution_eligibility.test.ts",
+                "input": "93a105ab4821f8769eeb5abb5b703645f7afc49a",
+                "code": "77043d241ad538137293963e75af222f070833f1",
+                "covers": [
+                  "src/application/verify/verify_project.ts"
+                ]
+              },
+              "observed": "真实基线→退休→继承→退休自改→无基线全跑序列通过；坏册不执行/不继承/不改快照；全retired与未索引retired反例通过，目标20/20。",
+              "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/verify/verify_project.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts",
+            "observed": "真实基线→退休→继承→退休自改→无基线全跑序列通过；坏册不执行/不继承/不改快照；全retired与未索引retired反例通过，目标20/20。",
+            "at": "2026-11-20T13:20:00+08:00"
+          }
+        }
       },
       {
         "id": "file_scripts_verify-project_mjs",
@@ -39649,6 +39800,342 @@
             "command": "node scripts/run-tests.mjs --filter p0_duplicate_symbol_fps; npm run verify",
             "observed": "修前仅重排同名索引行即触发 changed_unplanned；最终真实 cache.db 定向回归 1/1，helper behavior-cases 5/5；完整 verify 14/14，全量测试 1327/1327，design_line 显式判据 854/854 pass。",
             "at": "2026-11-20T10:27:06.0363448+08:00"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_execution_eligibility_ts",
+        "label": "execution_eligibility.ts",
+        "x": 4770,
+        "y": 16410,
+        "type": "file",
+        "path": "src/domain/execution_eligibility.ts",
+        "decision": {
+          "summary": "执行资格只消费现有生命周期与节点意图；retired 是唯一可信的现行执行排除态，未知和冲突不得通过默认 active 或空集变绿。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/execution_eligibility.ts",
+              "why": "只证明新建裁判文件落地；行为正确性由同卡 behavior-cases 和真实项目反例验收。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/execution_eligibility.ts",
+              "symbol": "judgeExecutionEligibility",
+              "cases": [
+                {
+                  "given": [
+                    []
+                  ],
+                  "expect": "{\"status\":\"eligible\",\"reason\":\"default-active\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "lifecycle": "active"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"eligible\",\"reason\":\"active\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "lifecycle": "deprecated"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"eligible\",\"reason\":\"deprecated-still-executable\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "nodeIntent": "to_delete"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"eligible\",\"reason\":\"node-to-delete-still-present\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "lifecycle": "retired"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"excluded\",\"reason\":\"retired\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "nodeIntent": "retired"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"excluded\",\"reason\":\"node-retired\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "lifecycle": "archived"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"unjudgeable\",\"reason\":\"archived-is-write-command\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "book",
+                        "lifecycle": "unknown"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"unjudgeable\",\"reason\":\"unknown-lifecycle\"}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "source": "a",
+                        "lifecycle": "retired"
+                      },
+                      {
+                        "source": "b",
+                        "lifecycle": "active"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"status\":\"unjudgeable\",\"reason\":\"conflicting-lifecycle\"}"
+                }
+              ],
+              "why": "坏输入分别覆盖：没有声明、正常 active、仍须运行的 deprecated/to_delete、可信 retired、把归档指令误存为状态、未知枚举和跨册冲突。后三者若被当成 active 或 excluded 都会制造假绿。"
+            }
+          ],
+          "updated_at": "2026-11-20T03:23:15.701Z",
+          "agent": "lead"
+        },
+        "task": {
+          "id": "file_src_domain_execution_eligibility_ts",
+          "summary": "执行资格只消费现有生命周期与节点意图；retired 是唯一可信的现行执行排除态，未知和冲突不得通过默认 active 或空集变绿。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-20T05:16:40.735Z",
+          "lease_generation": 3,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/execution_eligibility.ts",
+                "name": "judgeExecutionEligibility",
+                "fp": "1812ea86612fb63f00bde73d8fc3b1134f7d50ec"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/execution_eligibility.ts",
+                "content_hash": "605df985b343c2f1b2fca3b46b8a32336d49732d"
+              }
+            ],
+            "computed_at": "2026-11-20T05:16:40.632Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 2 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+          },
+          "last_heartbeat_at": "2026-11-20T05:17:11.026Z",
+          "prepared_snapshot": null,
+          "taken_over_from": {
+            "from_owner": "subagent:exec-eligibility-worker-hy",
+            "from_claimed_at": "2026-11-20T04:38:59.221Z",
+            "age_hours": 0.6,
+            "last_heartbeat_at": "2026-11-20T04:38:59.221Z"
+          },
+          "reopened_from": "subagent:exec-eligibility-worker-hy",
+          "dissent_reason": "主控已通读 src/domain/execution_eligibility.ts 的 judgeExecutionEligibility 单符号、其两条判据与 tests/p0_execution_eligibility.test.ts 全20项；只接管过期租约并核销，不改设计。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_domain_execution_eligibility_ts 的 2 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_domain_execution_eligibility_ts",
+              "why": "主控已通读 src/domain/execution_eligibility.ts 的 judgeExecutionEligibility 单符号、其两条判据与 tests/p0_execution_eligibility.test.ts 全20项；只接管过期租约并核销，不改设计。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_domain_execution_eligibility_ts#0",
+                  "verdict": "仍成立",
+                  "why": "file-exists 仍对应实际 src/domain/execution_eligibility.ts；该存在性判据继续保留。"
+                },
+                {
+                  "ref": "decision:file_src_domain_execution_eligibility_ts#1",
+                  "verdict": "仍成立",
+                  "why": "behavior-cases 覆盖default-active、deprecated、to_delete、retired、Node retired、archived、merged、unknown与冲突；当前9组输入输出仍符合合同。"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_domain_execution_eligibility_ts",
+              "at": "2026-11-20T05:16:40.735Z",
+              "why": "主控已通读 src/domain/execution_eligibility.ts 的 judgeExecutionEligibility 单符号、其两条判据与 tests/p0_execution_eligibility.test.ts 全20项；只接管过期租约并核销，不改设计。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-20T05:17:11.026Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}; node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs",
+                "input": "dc48ad9c5578a36dfb8611ccfdf72763cf45e97c",
+                "code": "5aa366a5ea67f358690937c62249b9219fd267ca",
+                "covers": [
+                  "src/domain/execution_eligibility.ts"
+                ]
+              },
+              "observed": "合并后整册 agent-io 861 pass / 0 fail / 0 unsupported；加 toolface 7 pass 后868/868。目标20/20通过。",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}; node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/execution_eligibility.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}; node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs",
+            "observed": "合并后整册 agent-io 861 pass / 0 fail / 0 unsupported；加 toolface 7 pass 后868/868。目标20/20通过。",
+            "at": "2026-11-20T13:20:00+08:00"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_verify_execution_intents_ts",
+        "label": "execution_intents.ts",
+        "x": 6350,
+        "y": 16410,
+        "type": "file",
+        "path": "src/application/verify/execution_intents.ts",
+        "decision": {
+          "summary": "通用项目验证与宿主脚本共用同一个册适配器，不在 run-tests、verify-changed 或 verifyProject 各自解释生命周期。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/verify/execution_intents.ts",
+              "why": "只证明新建册适配器落地；真实 runner、证据隔离与失败可判定性由同卡 run 验收。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/verify/execution_intents.ts",
+              "must": [
+                "readDesignSheetsForGate(root)",
+                "judgeExecutionEligibility(claims)",
+                "status: 'unjudgeable'"
+              ],
+              "why": "适配器必须读现有设计册并调用唯一纯裁判，读取失败必须形成 unjudgeable；tests/p0_execution_eligibility.test.ts 另用真实临时项目和真实 runner 验证 retired 的执行与证据隔离。",
+              "evidence": {
+                "tier": "documented",
+                "basis": "适配器确实读设计册、调用纯裁判，并对非法/冲突证据保持 unjudgeable；由 P0 反例覆盖。",
+                "cited": "tests/p0_execution_eligibility.test.ts#原始册 lifecycle.retired 缺理由 ⇒ invalid-lifecycle/unjudgeable；有理由仍 excluded; src/application/verify/execution_intents.ts#adjudicateTestObjects"
+              }
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/verify/execution_intents.ts",
+              "symbol": "adjudicateTestObjects",
+              "target": "judgeExecutionEligibility",
+              "why": "新建纯裁判必须由册适配器真实调用；否则 behavior-cases 只能证明一个无人使用的函数自身正确。"
+            }
+          ],
+          "updated_at": "2026-11-20T04:42:11.814Z",
+          "agent": "subagent:exec-eligibility-worker-hy"
+        },
+        "task": {
+          "id": "file_src_application_verify_execution_intents_ts",
+          "summary": "通用项目验证与宿主脚本共用同一个册适配器，不在 run-tests、verify-changed 或 verifyProject 各自解释生命周期。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "subagent:exec-eligibility-worker-hy",
+          "claimed_at": "2026-11-20T03:55:41.074Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/application/verify/execution_intents.ts",
+                "name": "adjudicateTestObjects",
+                "fp": "862963a2034a8e1935c29f8c36b85ed93ae9e65b"
+              },
+              {
+                "file": "tests/p0_execution_eligibility.test.ts",
+                "name": "mkProject",
+                "fp": "8d4df8b7aac7c4a31b9cd97af271881f29a5c09f"
+              }
+            ],
+            "files": [
+              {
+                "path": "src/application/verify/execution_intents.ts",
+                "content_hash": "d2d9797d4d79eea5f362aa99df92556dcdf443ac"
+              },
+              {
+                "path": "tests/p0_execution_eligibility.test.ts",
+                "content_hash": "d9fbec3184cb6bd6d64862c33b0b0807054cd0c9"
+              }
+            ],
+            "computed_at": "2026-11-20T03:55:41.033Z",
+            "basis": [
+              "canvas"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-20T05:17:11.435Z",
+          "prepared_snapshot": null,
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-20T05:17:11.435Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs",
+                "input": "9b622056a922285dedadf05c6c5cd0381903bf17",
+                "code": "f7b07a6ced21ad297a0c8def1f7e2640f3b42b3d",
+                "covers": [
+                  "src/application/verify/execution_intents.ts"
+                ]
+              },
+              "observed": "真实临时项目覆盖pathless、非对象节点、path:123、坏册、跨册冲突与raw retired缺理由；20/20通过，868/868判据通过。",
+              "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/verify/execution_intents.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node --import tsx --test tests/p0_execution_eligibility.test.ts; node scripts/judge-all.mjs",
+            "observed": "真实临时项目覆盖pathless、非对象节点、path:123、坏册、跨册冲突与raw retired缺理由；20/20通过，868/868判据通过。",
+            "at": "2026-11-20T13:20:00+08:00"
           }
         }
       }
@@ -56871,7 +57358,7 @@
         "responsibility": "",
         "lines": 571,
         "layer": "core",
-        "status": "draft",
+        "status": "done",
         "expected_deps": [
           "src/application/design/intent/judge_cache.ts",
           "src/application/meta/explore/query_feature.ts",
@@ -64373,7 +64860,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/domain/semantic.ts"
+        "path": "src/domain/semantic.ts",
+        "status": "done"
       },
       {
         "id": "file_src_domain_simulation_ts",
@@ -80902,7 +81390,8 @@
           "src/infrastructure/analysis/facts/impact_set.ts",
           "src/infrastructure/graph/import_project.ts",
           "src/infrastructure/index/db.ts"
-        ]
+        ],
+        "status": "done"
       },
       {
         "id": "file_scripts_verify-project_mjs",
@@ -82550,6 +83039,35 @@
             "notes": "from:cache.db@1795138492710"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_execution_eligibility_ts",
+        "path": "src/domain/execution_eligibility.ts",
+        "responsibility": "宿主无关的执行资格纯裁判：只回答当前对象 eligible/excluded/unjudgeable，不负责 affected、required、删除或改写。",
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "judgeExecutionEligibility(claims: readonly ExecutionClaim[]): ExecutionEligibility",
+            "notes": "from:cache.db@1795149891130"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_verify_execution_intents_ts",
+        "path": "src/application/verify/execution_intents.ts",
+        "responsibility": "从项目现有设计册读取 FileLifecycle 与 Node.intent，对扫描到的测试对象统一裁决执行资格；读取失败保持 unjudgeable。",
+        "status": "done",
+        "expected_deps": [
+          "src/domain/execution_eligibility.ts",
+          "src/domain/semantic.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "adjudicateTestObjects(root: string, candidates: readonly string[]): TestObjectEligibility",
+            "notes": "from:cache.db@1795149891130"
+          }
+        ]
       }
     ]
   },
@@ -82611,13 +83129,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2761,
+  "_dsl_rev": 2814,
   "_sync": {
-    "saved_at": "2026-11-20T02:28:32.068Z",
+    "saved_at": "2026-11-20T05:17:25.288Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2140714931,
+    "age": 2150848151,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

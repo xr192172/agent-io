@@ -127,11 +127,11 @@ export interface SemanticFile {
  */
 export interface FileLifecycle {
   /**
-   * active=存活；deprecated=弃用待删；merged=已并入他处；
+   * active=存活；deprecated=弃用待删；retired=仍**在盘上**但退出当前执行（持久态，不是删除）；merged=已并入他处；
    * ★ `archived`=**归档指令**（不是持久态）：写它 ⇒ `updateFile` 在合并写之前转交归档执行核
    *   （写归档库 + 三清 + 移出 DSL）⇒ 落盘后该文件**不在 DSL 里**，所以读端永远读不到这个值。
    */
-  status: 'active' | 'deprecated' | 'merged' | 'archived';
+  status: 'active' | 'deprecated' | 'retired' | 'merged' | 'archived';
   /**
    * ★ **合并目标文件路径** —— `merged` 且本文件是**源**（被并走的那头）时给。
    * ★★ 注意：归档路径上源文件**随即被移出 DSL** ⇒ 它通常只活在**归档快照**里。
@@ -143,7 +143,7 @@ export interface FileLifecycle {
    *   ⇒ 判据是"**两者至少有一个**"，不是"必须有 `merged_into`"（T185 修正）。
    */
   merged_from?: string[];
-  /** 下线原因（`deprecated` / `archived` 时必填 —— 一句话说清"为什么该删 / 为什么下线"，那是历史堆要留的东西） */
+  /** 下线原因（`deprecated` / `retired` / `archived` 时必填 —— 一句话说清"为什么该删 / 为什么退出当前执行 / 为什么下线"，那是历史堆要留的东西） */
   retire_reason?: string;
   /** 状态变更时间（ISO 8601） */
   changed_at?: string;
@@ -228,7 +228,7 @@ export function assertLifecycle(lc: FileLifecycle): void {
         `★ 已知键（${LIFECYCLE_KEYS.length} 个）：${LIFECYCLE_KEYS.join(' / ')}`,
     );
   }
-  const ok = ['active', 'deprecated', 'merged', 'archived'];
+  const ok = ['active', 'deprecated', 'retired', 'merged', 'archived'];
   if (!ok.includes(lc.status)) {
     throw new Error(`lifecycle.status 非法：「${String(lc.status)}」—— 合法值只有 ${ok.join(' / ')}`);
   }
@@ -236,6 +236,14 @@ export function assertLifecycle(lc: FileLifecycle): void {
     throw new Error(
       'lifecycle.status="deprecated" 必须带 retire_reason（一句话说清"为什么该删"）—— ' +
         '★ 那正是历史堆要留的东西；没有理由的"待删"标记，将来没人能考古。',
+    );
+  }
+  // ★★ retired 仍是**盘上对象**的持久态（Node.intent=retired 表示盘上已无，二者不同轴）：
+  //   它只退出**当前执行**，事实与历史照旧保留 ⇒ 与 deprecated / archived 同一条纪律：必须留下理由。
+  if (lc.status === 'retired' && !lc.retire_reason?.trim()) {
+    throw new Error(
+      'lifecycle.status="retired" 必须带 retire_reason（一句话说清"为什么退出当前执行"）—— ' +
+        '★ 没有理由的退休标记，将来没人能考古；Node.intent=retired 不替代它（那是盘上已无的事实）。',
     );
   }
   // ★★★ 2026-11-02（收逻辑写口 ②）：归档与待删**同一条纪律** —— 没有理由的归档，将来没人能考古。

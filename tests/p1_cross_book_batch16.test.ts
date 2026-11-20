@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **861** / 职责 **11,756** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **868** / 职责 **11,911** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -190,7 +190,9 @@ const CARD_TABLE: ReadonlyArray<{
   { id: 'file_src_presentation_http_serve_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/presentation/http/serve.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '1f3ec2fbbf8962775597197c327de427cf3f776b86721b88d7f0650bcfc54ce7', cardSha: '6c120ea2042869dd879d2d5f6eaef54e6fb1757827efe36ee79d6970bd5b78ef' },
   { id: 'file_src_application_design_dsl_ops_file_ops_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/design/dsl_ops/file_ops.ts', nodeTask: 'void', steps: ['history'], reasonSha: 'acc9c53727c54da1224b8f940822386ae5e04645ccb7ef2fc12791f5d2cd613b', cardSha: '67d29a8e5b755db0c43efbb34cfeaafa417c50d58b1efd916896651b31d998d1' },
   { id: 'file_src_application_refactor_diff_views_diff_views_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/refactor/diff_views/diff_views.ts', nodeTask: null, steps: ['history'], reasonSha: 'c8a296bf4dd3889e0418aa096dd426c3c0c162e9668ce99d4bfcc2240ba32ade', cardSha: '72c3a7b46fabbdac296ca2144f8f9ea68055cc08db8c2db7b57941e88839a4b6' },
-  { id: 'file_src_domain_semantic_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/semantic.ts', nodeTask: 'void', steps: ['history'], reasonSha: '4a412ae19e3f4957ec61ca66783bb12cdab3543f284178fe092e8f3d732d8088', cardSha: '0b06858c99c900d418377f2abf025726c20838cb7440eff3bdcd45d411a8698f' },
+  // nodeTask=void 是批 16 迁移事实，永不改写；C1 核销后当前态前进为 done。
+  // ★ 主控实际 judge/complete 前该项允许暂时红；这是唯一待主控收口的状态断言。
+  { id: 'file_src_domain_semantic_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/semantic.ts', nodeTask: 'void', currentNodeTask: 'done', steps: ['history'], reasonSha: '4a412ae19e3f4957ec61ca66783bb12cdab3543f284178fe092e8f3d732d8088', cardSha: '0b06858c99c900d418377f2abf025726c20838cb7440eff3bdcd45d411a8698f' },
   { id: 'file_src_domain_validator_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/validator.ts', nodeTask: 'done', steps: ['history'], reasonSha: 'a4789d21e96a043a469d7440fdfaa3232052bf9bd5ac627becd76e8303413f0f', cardSha: 'fc465d3583d6970c3a507b4de475c3c639b13051f6a3fad9cd8943867bf5a59e' },
   { id: 'file_scripts_gen_agents_mjs', action: 'NO_HOME', from_state: 'done', feature: 'agent-io', home: null, nodePath: null, nodeTask: null, steps: ['history'], reasonSha: '14f9c2cb3977e2356e4e76b9c395be240186daa8a2ef1103356b5760125ea84c', cardSha: '54818e7e18876548937b311afb3d45a2a83af7129450e38c4b5430af6a7988a4' },
 ];
@@ -240,9 +242,9 @@ const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
-const CRITERIA_TOTAL = 861; // ★ 2026-11-20（同名符号指纹）：857 → 861 = 共享文件 +2、冻结/出口 call-exists 各 +1；文档基线 857 的出处保留在历史注释。
-const RESP_TOTAL = 11756; // ★ 2026-11-20（同名符号指纹）：11699 + 新职责实测 57 字 = 11756；10,366 仍是批 16 历史值。
-const PATHS_TOTAL = 597; // ★ 2026-11-20（同名符号指纹）：596 + 已登记 src/domain/symbol_fingerprint.ts = 597；不是放宽判定。
+const CRITERIA_TOTAL = 868; // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；文档基线 857 的出处保留在历史注释。
+const RESP_TOTAL = 11911; // ★ 2026-11-20（C1 当前执行资格）：11756 + execution_eligibility.ts 79 字 + execution_intents.ts 76 字 = 11911；10,366 仍是批 16 历史值。
+const PATHS_TOTAL = 599; // ★ 2026-11-20（C1 当前执行资格）：597 + execution_eligibility.ts + execution_intents.ts 两个新语义文件 = 599；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
@@ -546,7 +548,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **861** · 职责 **11,756**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
+test('16.12 守恒：判据 **868** · 职责 **11,911**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });

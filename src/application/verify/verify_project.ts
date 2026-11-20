@@ -34,6 +34,7 @@ import {
   testObjectVisibility,
   writeVerifiedSnapshot,
 } from '../design/verified_snapshot.js';
+import { adjudicateTestObjects, type ExecutionObjectVerdict } from './execution_intents.js';
 
 const norm = (p: string): string => String(p).replace(/\\/g, '/');
 
@@ -86,6 +87,8 @@ export type VerifyProjectResult = {
   impacted: { files: number; symbols: number; calls: number; ms: number } | null;
   ran: { file: string; rc: number; pass: number; fail: number; ms: number }[];
   inherited: string[];
+  /** 当前设计册判定为排除（retired / Node retired）—— 不进入重验、继承与基线 */
+  excluded: ExecutionObjectVerdict[];
   undetermined: { id: string; reason: string }[];
   /** 明确的能力边界（做不到的事，逐条写出来） */
   limitations: string[];
@@ -433,6 +436,7 @@ export async function verifyProject(input: {
     impacted: null,
     ran: [],
     inherited: [],
+    excluded: [],
     undetermined: [],
     limitations,
     ms: { total: 0, ...ms },
@@ -447,6 +451,41 @@ export async function verifyProject(input: {
     base.ms.total = Date.now() - t0;
     return base;
   }
+
+  // ①.5 当前执行资格：扫描后先由设计册裁决 **哪些测试对象还该跑**。
+  //   ★ 只消费 FileLifecycle 与显式 Node.intent；未声明交给纯裁判 default-active（不伪造 active）。
+  //   ★ 判不了/冲突 ⇒ 本次**不执行、不继承、不写基线**；全部 excluded ⇒ 不是零对象成功。
+  const eligibility = adjudicateTestObjects(root, onDisk);
+  base.excluded = eligibility.excluded;
+  if (eligibility.excluded.length > 0) {
+    limitations.push(
+      `当前设计册判定 ${eligibility.excluded.length} 个测试对象不执行（retired / Node retired）：` +
+        eligibility.excluded.map((e) => `${e.id}（${e.reason}）`).slice(0, 3).join(', ') +
+        ' ⇒ 它们不进入重验、继承与基线',
+    );
+  }
+  if (eligibility.unjudgeable.length > 0) {
+    base.project.unsupported = 'execution-unjudgeable';
+    base.undetermined = eligibility.unjudgeable.map((u) => ({ id: `test:${u.id}`, reason: u.reason }));
+    limitations.push(
+      `执行资格不可判（${eligibility.unjudgeable.length} 个测试对象：坏册 / 未知生命周期 / 跨册冲突）` +
+        ` ⇒ 本次**不执行、不继承、不写基线**：` +
+        eligibility.unjudgeable.map((u) => `${u.id}（${u.reason}）`).slice(0, 3).join(', '),
+    );
+    base.ms.total = Date.now() - t0;
+    return base;
+  }
+  const executable = new Set(eligibility.eligible);
+  if (executable.size === 0) {
+    base.project.unsupported = 'no-executable-test-objects';
+    limitations.push(
+      `扫描到 ${onDisk.length} 个测试对象，但当前设计册全部判定为不执行` +
+        `（${eligibility.excluded.length} 个 excluded）⇒ 没有可执行对象，**不是通过**（不写基线）`,
+    );
+    base.ms.total = Date.now() - t0;
+    return base;
+  }
+  const executableOnDisk = onDisk.filter((f) => executable.has(f));
 
   // ② runner
   const det = detectRunner(root);
@@ -484,6 +523,8 @@ export async function verifyProject(input: {
   const tIdx = Date.now();
   let indexed = 0;
   let indexRefreshed = 0;
+  // ★ 当前可执行集合的索引可见性（executableOnDisk）；null = 索引不可用（plan 用保守回退）。
+  let vis: ReturnType<typeof testObjectVisibility> | null = null;
   try {
     const dbFile = path.join(root, '.agent-io', 'cache.db');
     const needsIndex = !fs.existsSync(dbFile);
@@ -495,16 +536,19 @@ export async function verifyProject(input: {
         limitations.push('项目此前没有索引 ⇒ 本次自动建了一次（含测试文件）；这是**一次性成本**，不是每次都要');
       }
     }
-    const vis = testObjectVisibility(root, (() => {
+    const filesFromIndex = (() => {
       const db = getProjectCacheDb(root);
       const rows = db.prepare("SELECT DISTINCT file_path AS f FROM nodes WHERE file_path IS NOT NULL").all() as { f: string }[];
       return rows.map((r) => String(r.f));
-    })());
+    })();
+    // ★ 公开读数仍是**物理扫描总量**（retired 也算“盘上有”）；vis 只描述**当前可执行集合**。
+    const visAll = testObjectVisibility(root, filesFromIndex);
+    vis = testObjectVisibility(root, filesFromIndex, { onDisk: executableOnDisk });
     indexed = vis.objects_indexed;
-    base.project.test_objects_indexed = indexed;
+    base.project.test_objects_indexed = visAll.objects_indexed;
     if (vis.missing.length > 0) {
       limitations.push(
-        `索引里看不到 ${vis.missing.length} 个测试文件（例：${vis.missing.slice(0, 3).join(', ')}）⇒ 它们的观察面退化，判读可能降级成 undetermined`,
+        `索引里看不到 ${vis.missing.length} 个当前可执行测试文件（例：${vis.missing.slice(0, 3).join(', ')}）⇒ 它们的观察面退化，判读可能降级成 undetermined`,
       );
     }
   } catch (e) {
@@ -546,7 +590,8 @@ export async function verifyProject(input: {
   if (!impact.ok) limitations.push(`影响关系不可信（${impact.reason}）⇒ 本次不许继承`);
 
   // ⑥ 证据面（观察面来自索引 import 边）
-  const obs = observesFromIndex(root, onDisk);
+  // ★ 观察面只沿**当前可执行集合**取：retired 的 import 边不得进入当前证据的计划。
+  const obs = observesFromIndex(root, executableOnDisk);
   const tPlan = Date.now();
   const loaded = loadVerifiedSnapshot(root);
   const files = hashProjectFiles(root);
@@ -560,16 +605,28 @@ export async function verifyProject(input: {
     changed,
     impact,
     drift: changeError ? null : drift,
-    evidence: { objects_on_disk: onDisk.length, objects_indexed: indexed, label: '测试文件' },
+    // ★ 证据可见性只读**当前可执行集合**（vis）的盘上数与索引可见数；不得混入全物理 indexed。
+    evidence: {
+      objects_on_disk: vis?.objects_on_disk ?? executableOnDisk.length,
+      objects_indexed: vis?.objects_indexed ?? indexed,
+      label: vis?.label ?? '测试文件',
+    },
   });
+
+  // ★ 当前执行资格是继承面的闸：retired / Node retired 的旧证据不得继承，也不得写回当前基线。
+  //   contract 条目不是测试对象，不受这道过滤；测试条目只保留 executable 里的文件。
+  const isExecutableSnapshotId = (id: string): boolean =>
+    !id.startsWith('test:') || executable.has(id.slice('test:'.length));
+  const inheritedEntries = plan.inherit.filter((e) => isExecutableSnapshotId(e.id));
+  const planUndetermined = plan.undetermined.filter((u) => isExecutableSnapshotId(u.id));
 
   // 观察面由**索引**推出来（不是 touches），所以要在 plan 之前把它装进基线——这里用一次性转换：
   // 若基线缺失/无条目，先按"全部重跑"处理（no-evidence 分支已覆盖）。
   // ★ 选材：账本说"要重验"的 + **账本态要求扩大时全部**（无证据/观察面空/整体扩大 ⇒ 全跑）
   const mustWiden = plan.state === 'no-evidence' || plan.state === 'empty-observes' || !!plan.widen || plan.state === 'widen';
   const rerunFiles = mustWiden
-    ? [...onDisk]
-    : plan.rerun.map((r) => r.id.replace(/^test:/, '')).filter((f) => onDisk.includes(f));
+    ? [...executableOnDisk]
+    : plan.rerun.map((r) => r.id.replace(/^test:/, '')).filter((f) => executable.has(f) && onDisk.includes(f));
 
   // ★ 2026-11-09（生命周期的漏洞）：**基线里没有条目的测试对象必须跑** ——
   //   `planInheritance` 只比"基线里的条目"，它看不见"磁盘上刚多出来的一支测试"。
@@ -578,7 +635,8 @@ export async function verifyProject(input: {
   const knownIds = new Set<string>(
     loaded.status === 'ok' ? loaded.snapshot.entries.map((e) => e.id) : [],
   );
-  const newObjects = onDisk.filter((f) => !knownIds.has(`test:${f}`));
+  // ★ 新发现也必须先是当前可执行对象：retired 测试不是“新对象”，不得因缺基线被拉回来跑。
+  const newObjects = executableOnDisk.filter((f) => !knownIds.has(`test:${f}`));
   if (newObjects.length > 0) {
     for (const f of newObjects) if (!rerunFiles.includes(f)) rerunFiles.push(f);
     limitations.push(`基线里没有以下测试对象的证据（新出现）⇒ 本次必须跑：${newObjects.join(', ')}`);
@@ -626,7 +684,8 @@ export async function verifyProject(input: {
       const prevById = new Map<string, { id: string }>();
       if (loaded.status === 'ok') for (const prev of loaded.snapshot.entries) prevById.set(prev.id, prev);
       const entries: { id: string }[] = [];
-      for (const it of plan.inherit) {
+      // ★ 只把当前可执行对象的旧证据带入写回；retired 条目在这里被排除。
+      for (const it of inheritedEntries) {
         const prev = prevById.get(it.id);
         if (prev) entries.push(prev as { id: string });
       }
@@ -662,8 +721,8 @@ export async function verifyProject(input: {
         entries: finalEntries as never,
         scope: {
           ran: ran.map((r) => `test:${r.file}`),
-          inherited: plan.inherit.map((it) => it.id),
-          undetermined: plan.undetermined.map((u) => ({ id: u.id, reason: u.reason })),
+          inherited: inheritedEntries.map((it) => it.id),
+          undetermined: planUndetermined.map((u) => ({ id: u.id, reason: u.reason })),
           partial: true,
           covered_files: [...new Set((finalEntries as { observes?: string[] }[]).flatMap((it) => it.observes ?? []))].sort(),
         },
@@ -678,10 +737,10 @@ export async function verifyProject(input: {
   ms.plan = Date.now() - tPlan - ms.tests;
 
   base.ran = ran;
-  base.inherited = plan.inherit.map((e) => e.id);
+  base.inherited = inheritedEntries.map((e) => e.id);
   // ★ 2026-11-12（D4-3）：不可归因的实跑项与账本的 undetermined **并列**（同一口径：判不了 ≠ 通过）
   base.undetermined = [
-    ...plan.undetermined.map((u) => ({ id: u.id, reason: u.reason })),
+    ...planUndetermined.map((u) => ({ id: u.id, reason: u.reason })),
     ...unattributable.map((u) => ({ id: `test:${u.file}`, reason: u.reason })),
   ];
   if (unattributable.length > 0) {

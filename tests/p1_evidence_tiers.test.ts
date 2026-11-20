@@ -87,6 +87,30 @@ test('④ 真判定器：每条 item 都带 evidence；file-exists ⇒ read_dire
   assert.equal(rep.evidenceTierCounts.read_directly, 1);
 });
 
+test('④b DSL expectation.evidence 回退：item.evidence 缺省时 cited 保留且 derivedFrom=explicit；显式 item.evidence 优先', async () => {
+  const root = makeProj();
+  const dslOnly = {
+    kind: 'source-has', path: 'src/a.ts', must: ['x'], why: 'w',
+    evidence: { tier: 'documented', basis: 'DSL 引用', cited: 'docs/spec.md#L1' },
+  } as unknown as Parameters<typeof judgeExpectations>[1][number]['expectation'];
+  const explicitToo = {
+    kind: 'source-has', path: 'src/a.ts', must: ['x'], why: 'w',
+    evidence: { tier: 'documented', basis: 'DSL 引用', cited: 'docs/spec.md#L1' },
+  } as unknown as Parameters<typeof judgeExpectations>[1][number]['expectation'];
+  const rep = await judgeExpectations(root, [
+    { node_id: 'n_dsl', node_label: 'DSL', expectation: dslOnly },
+    {
+      node_id: 'n_item', node_label: 'Item', expectation: explicitToo,
+      evidence: { tier: 'documented', basis: 'item 显式', cited: 'docs/item.md#L2' },
+    },
+  ]);
+  const byId = Object.fromEntries(rep.items.map((i) => [i.node_id, i]));
+  assert.equal(byId.n_dsl.evidence.cited, 'docs/spec.md#L1', 'DSL expectation.evidence.cited 必须在 item 缺省时保留');
+  assert.equal(byId.n_dsl.evidence.derivedFrom, 'explicit', '来自 expectation.evidence 必须标 explicit，不能落 kind-default');
+  assert.equal(byId.n_item.evidence.cited, 'docs/item.md#L2', '显式 item.evidence 必须优先，不被 expectation.evidence 覆盖');
+  assert.equal(byId.n_item.evidence.basis, 'item 显式');
+});
+
 test('⑤ assumption 显式标注 + next_verify ⇒ 报告层逐条点名（下一步验证清单）', async () => {
   const root = makeProj();
   const rep = await judgeExpectations(root, [
