@@ -15427,14 +15427,14 @@
         "task": {
           "id": "file_src_application_write_gate_ts",
           "summary": "【L1 待建构】核心层 · src/application — 22 个函数（导入自 16 个模块）（src/application/write_gate.ts） ← 节点 file_src_application_write_gate_ts",
-          "state": "candidate",
+          "state": "done",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_write_gate_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
-          "lease_generation": 2,
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-20T02:22:45.252Z",
+          "lease_generation": 4,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
@@ -15456,27 +15456,27 @@
               },
               {
                 "file": "src/application/write_gate.ts",
-                "name": "planGate",
-                "fp": "aca592faac8cc3894382440a188c71a0466a449e"
+                "name": "symbolFpsOf",
+                "fp": "bf62827232718ed602c6543f670088dde2194e4d"
               }
             ],
             "files": [
               {
                 "path": "scripts/write-log-baseline.json",
-                "content_hash": "0767fc5bd96f306bda8a411842a74edfcb08e408"
+                "content_hash": "a7cd453cf75aed26f3965aa8d5184f28649cd22d"
               },
               {
                 "path": "src/application/write_gate.ts",
-                "content_hash": "8ee4c1b97a2395d04948a15dd9a63feabb537ed6"
+                "content_hash": "d2fee2309d70e8412eb9b8c692224daf70946ab3"
               }
             ],
-            "computed_at": "2026-11-05T13:31:17.117Z",
+            "computed_at": "2026-11-20T02:22:45.213Z",
             "basis": [
               "canvas"
             ],
-            "note": "3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-baseline.json#credential_missed / scripts/write-log-baseline.json#max_no_card / scripts/write-log-baseline.json#rows"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；3 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：scripts/write-log-baseline.json#credential_missed / scripts/write-log-baseline.json#max_no_card / scripts/write-log-baseline.json#rows"
           },
-          "last_heartbeat_at": "2026-11-05T14:02:35.503Z",
+          "last_heartbeat_at": "2026-11-20T02:28:31.467Z",
           "evidence": [
             {
               "kind": "reading",
@@ -15507,16 +15507,30 @@
               },
               "observed": "symbolFpsOf 无索引 ⇒ {ok:false,fps:{},reason:'索引不存在：<path>/cache.db'}（改前回 {}）；有索引 ⇒ ok:true、fps 键 = ['f','g']；坏库 ⇒ ok:false + '读索引失败'（与'索引不在'可区分）。t394 8/0 · t395 8/0（只把返回值改成 .fps，断言未改）。npm run build ✓ · npm run verify 8 门全绿",
               "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-20T02:28:31.465Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p1_cross_book_batch; npm run verify",
+                "input": "b8d39d4c2b76fbb98fa4a05de82edb5bccfcdc08",
+                "code": "76ace4f64ae7e17f6440920ac544a72a498d0528",
+                "covers": [
+                  "src/application/write_gate.ts"
+                ]
+              },
+              "observed": "17 个历史守卫文件 237/237；最终完整 verify 14/14、测试 1327/1327；本卡 15 条判据全 pass，冻结端 call-exists 与真实数据库行为回归均绿。",
+              "command": "node scripts/run-tests.mjs --filter p1_cross_book_batch; npm run verify"
             }
           ],
           "reopened_at": "2026-11-05T13:31:17.271Z",
           "reopen_reason": "R72 B1 消费者：resolveJudgementKind 把 parsed.feature 传给 resolveDecisionExpectation",
-          "reopened_from": "subagent:real-defects",
-          "release_reason": "R72：agent-io 册里 src/application/write_gate.ts 这个节点的决策卡**0 条判据**（它正是 R8/R67 那个“同一 path 两册都有节点、只有一册有断言”的重复项；真正持有判据的是 task-system-plan 册 14 条）。给 agent-io 补判据会造出“两册断言同一 path”= gen-db-check ⑦ 直接红（本卡禁区）⇒ 不收口、释放，交回候选并由 R8 治重复项",
-          "released_by": "subagent:r72-ref",
-          "released_at": "2026-11-05T14:02:35.503Z"
+          "reopened_from": "subagent:real-defects"
         },
-        "status": "draft",
+        "status": "done",
         "decision": {
           "summary": "symbolFpsOf：指纹算不出时回 {ok,fps,reason}，不许静默回 {}（画布冻结基线）\n\n★ 本节点不持有该 path 的判据：权威在 task-system-plan/file_src_application_write_gate_ts",
           "expectations": [
@@ -15613,10 +15627,17 @@
               },
               "kind": "run",
               "why": "R72 B1 消费者：resolveJudgementKind 是判定引用的第二个消费者 —— 3 段写法里的**显式册名**必须传给 resolveDecisionExpectation（丢在这里 = 解析到了却静默忽略）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/write_gate.ts",
+              "symbol": "symbolFpsOf",
+              "target": "symbolBodyFingerprint",
+              "why": "冻结端必须调用唯一多重集编码核，不能再用 out[x.name]=x.body_hash 覆盖同名行；否则未改文件在索引行序变化时会冻结出另一份假指纹。"
             }
           ],
-          "updated_at": "2026-11-19T18:43:53.116Z",
-          "agent": "lead-recovery",
+          "updated_at": "2026-11-20T01:07:46.987Z",
+          "agent": "lead",
           "rationale": "0.12：算不出必须与“没有符号”可区分；调用点必须把失败带进回执（warning/拒）。",
           "tags": [
             "write_gate",
@@ -15644,10 +15665,10 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-10-31T15:58:00+08:00",
-            "command": "node scripts/run-tests.mjs --filter p0_silent_failure_guards; node certs/t394-design-authority-cert.mjs; node certs/t395-baseline-refresh-cert.mjs",
             "kind": "reading",
-            "observed": "symbolFpsOf 无索引 ⇒ {ok:false,fps:{},reason:'索引不存在：<path>/cache.db'}（改前回 {}）；有索引 ⇒ ok:true、fps 键 = ['f','g']；坏库 ⇒ ok:false + '读索引失败'（与'索引不在'可区分）。t394 8/0 · t395 8/0（只把返回值改成 .fps，断言未改）。npm run build ✓ · npm run verify 8 门全绿"
+            "command": "node scripts/run-tests.mjs --filter p1_cross_book_batch; npm run verify",
+            "observed": "17 个历史守卫文件 237/237；最终完整 verify 14/14、测试 1327/1327；本卡 15 条判据全 pass，冻结端 call-exists 与真实数据库行为回归均绿。",
+            "at": "2026-11-20T10:27:06.0363448+08:00"
           }
         }
       },
@@ -31784,33 +31805,54 @@
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_plan_exit_check_ts\"].responsibility"
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_db_plan_exit_check_ts\"].responsibility",
+            "supersedes": {
+              "against": "file_src_application_design_db_plan_exit_check_ts",
+              "why": "已通读 src/application/design/db/plan_exit_check.ts 的 checkRewriteExit/renderExitCheck 与现有 3 条判据；保留 cardId 对账语义，只补同名符号指纹能力。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_application_design_db_plan_exit_check_ts#0",
+                  "verdict": "仍成立",
+                  "why": "在 file_src_application_design_db_plan_exit_check_ts 中，checkRewriteExit 仍必须由 readRewritePlan 读取指定卡画布。"
+                },
+                {
+                  "ref": "decision:file_src_application_design_db_plan_exit_check_ts#1",
+                  "verdict": "仍成立",
+                  "why": "在 file_src_application_design_db_plan_exit_check_ts 中，opts?.cardId 仍是避免跨卡误判的必填传递。"
+                },
+                {
+                  "ref": "decision:file_src_application_design_db_plan_exit_check_ts#2",
+                  "verdict": "仍成立",
+                  "why": "在 file_src_application_design_db_plan_exit_check_ts 中，新增的 symbolBodyFingerprint 调用判据正是本次修前红目标。"
+                }
+              ]
+            }
           },
-          "owner": "agent:t48",
-          "claimed_at": "2026-11-07T06:53:24.349Z",
-          "lease_generation": 1,
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-20T01:13:07.338Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/db/plan_exit_check.ts",
                 "name": "checkRewriteExit",
-                "fp": "69c1f05783d34753ccbd72ea1cbf18e60dc7a516"
+                "fp": "0e3d0eeb593238fe6b57e9422c11c3f0c65e9116"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/db/plan_exit_check.ts",
-                "content_hash": "1658a0e6ad079b719366cf39133368ebc277c179"
+                "content_hash": "60d67bb36a97b17b1aa475038c19a4d720b72d58"
               }
             ],
-            "computed_at": "2026-11-07T06:53:24.269Z",
+            "computed_at": "2026-11-20T01:13:07.311Z",
             "basis": [
-              "expectations",
-              "node-path"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-17T06:13:01.629Z",
+          "last_heartbeat_at": "2026-11-20T02:28:31.830Z",
           "evidence": [
             {
               "kind": "reading",
@@ -31827,6 +31869,40 @@
               },
               "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
               "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-20T02:28:31.830Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:\"judge\", feature:\"agent-io\"}",
+                "input": "454e9816534f70c8275c1945fb92502d0fc2d61a",
+                "code": "c4806a70cac8e3f46cb605803d23e46109d8ec81",
+                "covers": [
+                  "src/application/design/db/plan_exit_check.ts"
+                ]
+              },
+              "observed": "854 pass / 0 fail / 0 unsupported（design_line action=judge 的合并后整册读数）；原始红证据为未改同名体仅行序变化却报计划外修改；最终 tests/p0_duplicate_symbol_fps.test.ts 定向 1/1，legacy raw 命中任一行不放行且重冻结后出口为空；npm run verify 14/14 门、1327/1327 测试全绿。",
+              "command": "design_line {action:\"judge\", feature:\"agent-io\"}"
+            }
+          ],
+          "reopened_at": "2026-11-20T01:13:03.834Z",
+          "reopen_reason": "DSH 真实试点发现同名 failure/refused 未改也被 changed_unplanned 误报，旧完成证据未覆盖该能力，必须重开。",
+          "reopened_from": "agent:lead",
+          "taken_over_from": {
+            "from_owner": "agent:lead",
+            "from_claimed_at": "2026-11-20T01:13:03.834Z",
+            "age_hours": 0,
+            "last_heartbeat_at": "2026-11-17T06:13:01.629Z"
+          },
+          "dissent_reason": "已通读 src/application/design/db/plan_exit_check.ts 的 checkRewriteExit/renderExitCheck 与现有 3 条判据；保留 cardId 对账语义，只补同名符号指纹能力。",
+          "disputed_by": [
+            {
+              "by": "file_src_application_design_db_plan_exit_check_ts",
+              "at": "2026-11-20T01:13:07.338Z",
+              "why": "已通读 src/application/design/db/plan_exit_check.ts 的 checkRewriteExit/renderExitCheck 与现有 3 条判据；保留 cardId 对账语义，只补同名符号指纹能力。"
             }
           ]
         },
@@ -31848,10 +31924,17 @@
                 "opts?.cardId"
               ],
               "why": "T48：可选 cardId 必须真的传到 readRewritePlan（实测 43 个文件有 >1 份画布，不传就“拿别的卡的画布判我 = 假拒”）"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/application/design/db/plan_exit_check.ts",
+              "symbol": "checkRewriteExit",
+              "target": "symbolBodyFingerprint",
+              "why": "出口端必须与冻结端共用同一多重集编码；只在冻结端修会让新旧读数使用不同口径，只在出口端修则旧覆盖仍会丢失冻结事实。"
             }
           ],
-          "updated_at": "2026-11-07T06:53:08.441Z",
-          "agent": "agent:t48"
+          "updated_at": "2026-11-20T01:07:47.087Z",
+          "agent": "lead"
         },
         "overlay": {
           "path": "src/application/design/db/plan_exit_check.ts",
@@ -31859,9 +31942,9 @@
           "progress": "done",
           "progress_evidence": {
             "kind": "reading",
-            "command": "A1=node --import tsx --test tests/p0_complete_canvas_gate.test.ts + A2=run-tests --filter p0_two_phase_claim + 调用点 grep",
-            "observed": "A1 16/16 pass · A2 9/9 pass · checkRewriteExit 调用点 5 处实测",
-            "at": "2026-11-17T13:00:00+08:00"
+            "command": "design_line {action:\"judge\", feature:\"agent-io\"}",
+            "observed": "854 pass / 0 fail / 0 unsupported（design_line action=judge 的合并后整册读数）；原始红证据为未改同名体仅行序变化却报计划外修改；最终 tests/p0_duplicate_symbol_fps.test.ts 定向 1/1，legacy raw 命中任一行不放行且重冻结后出口为空；npm run verify 14/14 门、1327/1327 测试全绿。",
+            "at": "2026-11-20T10:27:06.0363448+08:00"
           }
         }
       },
@@ -39428,6 +39511,146 @@
         "y": 560,
         "type": "file",
         "path": "src/infrastructure/index/project_exts.ts"
+      },
+      {
+        "id": "file_src_domain_symbol_fingerprint_ts",
+        "label": "symbol_fingerprint.ts",
+        "x": 4770,
+        "y": 16170,
+        "type": "file",
+        "path": "src/domain/symbol_fingerprint.ts",
+        "decision": {
+          "summary": "同名顶层符号不能被 Record<name,hash> 的最后一行覆盖：单行原值兼容，多行排序后编码成多重集；空指纹仍为 null。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/domain/symbol_fingerprint.ts",
+              "why": "这是新建共享纯函数文件；file-exists 只证明施工对象落地，不承担行为正确性，行为由同卡 behavior-cases 与真实数据库回归验收。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/symbol_fingerprint.ts",
+              "symbol": "symbolBodyFingerprint",
+              "cases": [
+                {
+                  "given": [
+                    []
+                  ],
+                  "expect": "null"
+                },
+                {
+                  "given": [
+                    [
+                      "h1"
+                    ]
+                  ],
+                  "expect": "\"h1\""
+                },
+                {
+                  "given": [
+                    [
+                      "h2",
+                      "h1"
+                    ]
+                  ],
+                  "expect": "\"multiset:[\\\"h1\\\",\\\"h2\\\"]\""
+                },
+                {
+                  "given": [
+                    [
+                      "h1",
+                      "h2"
+                    ]
+                  ],
+                  "expect": "\"multiset:[\\\"h1\\\",\\\"h2\\\"]\""
+                },
+                {
+                  "given": [
+                    [
+                      "h1",
+                      "h1"
+                    ]
+                  ],
+                  "expect": "\"multiset:[\\\"h1\\\",\\\"h1\\\"]\""
+                }
+              ],
+              "why": "真实 DSH 画布证明同名行覆盖会让未改文件因索引行序变化而误报。空数组必须保持无指纹；单元素必须保留旧画布值；两个顺序相反的多重集必须相同；两个相同 hash 也代表两行，不能去重，否则删一行会逃检。"
+            }
+          ],
+          "updated_at": "2026-11-20T01:07:46.907Z",
+          "agent": "lead"
+        },
+        "task": {
+          "id": "file_src_domain_symbol_fingerprint_ts",
+          "summary": "同名顶层符号不能被 Record<name,hash> 的最后一行覆盖：单行原值兼容，多行排序后编码成多重集；空指纹仍为 null。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:lead",
+          "claimed_at": "2026-11-20T01:13:04.102Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [
+              {
+                "file": "src/domain/symbol_fingerprint.ts",
+                "name": "symbolBodyFingerprint",
+                "fp": ""
+              },
+              {
+                "file": "tests/p0_duplicate_symbol_fps.test.ts",
+                "name": "duplicate symbol fingerprints survive index row reorder",
+                "fp": ""
+              }
+            ],
+            "files": [
+              {
+                "path": "src/domain/symbol_fingerprint.ts",
+                "content_hash": ""
+              },
+              {
+                "path": "tests/p0_duplicate_symbol_fps.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-20T01:13:04.066Z",
+            "basis": [
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 2 个符号 / 2 个文件被忽略 —— 两套取并集正是假阻塞的来源）；2 个符号的**指纹取不到**（索引与磁盘不同源、且解析器未预热）⇒ fp 留空；★ **名字照旧参与冲突比对**（比的是 file#name，不是 fp）"
+          },
+          "last_heartbeat_at": "2026-11-20T02:28:26.348Z",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-20T02:28:26.347Z",
+              "by": "llm",
+              "agent": "agent:lead",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p0_duplicate_symbol_fps; npm run verify",
+                "input": "ae7e21970aa168137031c2e008051afb71708f72",
+                "code": "74341ce7a328fc6a1863c7cc7e7374b514782743",
+                "covers": [
+                  "src/domain/symbol_fingerprint.ts"
+                ]
+              },
+              "observed": "修前仅重排同名索引行即触发 changed_unplanned；最终真实 cache.db 定向回归 1/1，helper behavior-cases 5/5；完整 verify 14/14，全量测试 1327/1327，design_line 显式判据 854/854 pass。",
+              "command": "node scripts/run-tests.mjs --filter p0_duplicate_symbol_fps; npm run verify"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/symbol_fingerprint.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "command": "node scripts/run-tests.mjs --filter p0_duplicate_symbol_fps; npm run verify",
+            "observed": "修前仅重排同名索引行即触发 changed_unplanned；最终真实 cache.db 定向回归 1/1，helper behavior-cases 5/5；完整 verify 14/14，全量测试 1327/1327，design_line 显式判据 854/854 pass。",
+            "at": "2026-11-20T10:27:06.0363448+08:00"
+          }
+        }
       }
     ],
     "edges": [
@@ -62564,7 +62787,7 @@
         ],
         "lines": 1716,
         "layer": "core",
-        "status": "draft",
+        "status": "done",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/plan_exit_check.ts",
@@ -82315,6 +82538,18 @@
             "notes": "from:cache.db@1795117951275"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_symbol_fingerprint_ts",
+        "path": "src/domain/symbol_fingerprint.ts",
+        "responsibility": "顶层符号冻结指纹的零依赖编码核：单符号保持 body_hash 原值，同名多行用排序多重集编码，供冻结与出口共用。",
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "symbolBodyFingerprint(bodyHashes: readonly string[]): string | null",
+            "notes": "from:cache.db@1795138492710"
+          }
+        ]
       }
     ]
   },
@@ -82376,13 +82611,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2739,
+  "_dsl_rev": 2761,
   "_sync": {
-    "saved_at": "2026-11-19T21:29:31.857Z",
+    "saved_at": "2026-11-20T02:28:32.068Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2122774720,
+    "age": 2140714931,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

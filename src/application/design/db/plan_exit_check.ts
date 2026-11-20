@@ -22,6 +22,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { projectCacheDbPath } from '../../../infrastructure/index/db.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
+import { symbolBodyFingerprint } from '../../../domain/symbol_fingerprint.js';
 import { readRewritePlan, type RewritePlanEntry } from './rewrite_plan.js';
 
 /** 一条 entry 的闭环结论 */
@@ -188,10 +189,18 @@ export function checkRewriteExit(
           .prepare("SELECT name, body_hash FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
           .all(rel) as Array<{ name: string; body_hash: string | null }>;
         db.close();
+        const hashesByName = new Map<string, string[]>();
         for (const row of rows) {
-          const before = fpsAtFreeze[row.name];
-          if (!before || plannedAnchors.has(row.name)) continue; // 没记过 / 有计划 ⇒ 不算"没计划"
-          if (row.body_hash && row.body_hash !== before) out.changed_unplanned.push(row.name);
+          if (!row.body_hash) continue; // 与冻结端相同：NULL 不伪装成已知指纹。
+          const hashes = hashesByName.get(row.name) ?? [];
+          hashes.push(row.body_hash);
+          hashesByName.set(row.name, hashes);
+        }
+        for (const [name, hashes] of hashesByName) {
+          const before = fpsAtFreeze[name];
+          if (!before || plannedAnchors.has(name)) continue; // 没记过 / 有计划 ⇒ 不算"没计划"
+          const after = symbolBodyFingerprint(hashes);
+          if (after !== before) out.changed_unplanned.push(name);
         }
       }
     } catch {

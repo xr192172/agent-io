@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **857** / 职责 **11,699** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **861** / 职责 **11,756** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -169,7 +169,9 @@ function orphansOf(list: Array<{ id: string; feature: string; card: Record<strin
 /** 19 张孤儿卡的**逐卡裁定**（`cardSha` = **搬前**卡体的 sha256：重挂必须逐字） */
 const CARD_TABLE: ReadonlyArray<{
   id: string; action: string; from_state: string; feature: string; home: string | null;
-  nodePath: string | null; nodeTask: string | null; steps: readonly string[]; reasonSha: string; cardSha: string | null;
+  nodePath: string | null; steps: readonly string[]; reasonSha: string; cardSha: string | null;
+  /** 只记录迁移后合法的当前态演进；缺省时当前态仍等于历史 nodeTask。 */
+  currentNodeTask?: string | null;
 }> = [
   { id: 'file_src_application_design_board_pool_ts', action: 'REHANG', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/design/board/pool.ts', nodeTask: null, steps: ['import@agent-io', 'retire@tsp', 'history@tsp'], reasonSha: '7bb0349212db33dd2f638f342cc18dd7b3e2c67e3cfc9f042fa36c865ebd2989', cardSha: '1f8d5bf00213717d115ff91c954a68cd7613b8f29e9f65721579604b722259af' },
   { id: 'file_src_application_design_rewrite_symbol_diff_ts', action: 'REHANG', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/design/rewrite/symbol_diff.ts', nodeTask: null, steps: ['import@agent-io', 'retire@tsp', 'history@tsp'], reasonSha: '770903b51e2bf79fc7d311b60bd9cf2f7029e6bc2fcc65759c06823d1ef31626', cardSha: 'ed4e7a53ad0914377eb282d1a9f7e1d4577ce13b48bc248487e04553c3953010' },
@@ -179,7 +181,8 @@ const CARD_TABLE: ReadonlyArray<{
   { id: 'file_src_domain_discussion_log_ts', action: 'REHANG', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/discussion_log.ts', nodeTask: null, steps: ['import@agent-io', 'retire@tsp', 'history@tsp'], reasonSha: '73d8b488a32d240dcb28d72f0be9800277f808b4f973ff30ddc9ac6a77249985', cardSha: 'f0dcf7065b8e84571e3b8bbf4beca01c9522601d8f2265d2365ae037d1af57a2' },
   { id: 'file_src_domain_overlay_ts', action: 'REHANG', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/overlay.ts', nodeTask: null, steps: ['import@agent-io', 'retire@tsp', 'history@tsp'], reasonSha: '533d98bdca27933534685258ff2a669e3ffe43c5917628d30916ae174e302e81', cardSha: '50076bf002324197bb646b2dc97a69a461c630697a420fb671520b354abcda6b' },
   { id: 'file_src_application_design_handlers_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/design/handlers.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: 'a306317816e915e5e1d6ffa068cf36c70788608f782908dcbe9365cd94319224', cardSha: '66298e8f43ef8914c4856ae9802081a878cc9c0c6bef1bb6edcff08ac9f38283' },
-  { id: 'file_src_application_write_gate_ts', action: 'SUPERSEDED', from_state: 'claimed', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/write_gate.ts', nodeTask: 'candidate', steps: ['release@tsp', 'retire@tsp', 'history@tsp'], reasonSha: '7d3445982995a4554a85947f3f221197ded641bd5c2ed4711af7ec197719c14a', cardSha: 'b0df98dec8d47b2fdede044e3557ee9222ac58c7bfe8edf38559a378fa313271' },
+  // nodeTask=candidate 是批 16 迁移事实，永不改写；2026-11-20 同名符号修复核销后当前态合法前进为 done。
+  { id: 'file_src_application_write_gate_ts', action: 'SUPERSEDED', from_state: 'claimed', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/write_gate.ts', nodeTask: 'candidate', currentNodeTask: 'done', steps: ['release@tsp', 'retire@tsp', 'history@tsp'], reasonSha: '7d3445982995a4554a85947f3f221197ded641bd5c2ed4711af7ec197719c14a', cardSha: 'b0df98dec8d47b2fdede044e3557ee9222ac58c7bfe8edf38559a378fa313271' },
   { id: 'file_src_domain_chain_wiring_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/chain_wiring.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '17afc2db9639ee5f2d0a7fbde7856f454a44ceb69bd78480acf4e9f4cce3fadb', cardSha: 'c6dcf906ff694f802b8b4c61605e12095efb67c46fb7abee8d866635eb02e7e4' },
   { id: 'file_src_domain_geometry_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/geometry.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '6ae80e6234ea5ba8e776358ac5c57d784d9b83321e46ad2d2124f37f03be486c', cardSha: '7e628e6994b72a4134df9eaf1b2cb9bec0f280ef44221b201acd763acdfecc83' },
   { id: 'file_src_infrastructure_index_schema_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/infrastructure/index/schema.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '2cbb8db03834efded9c493d7223fbde606058064701411ffeef771d143e189e3', cardSha: '5e74ccac1302887936ef5c2f247c3b938b267c560d22bd7eeb3aff79c906ff18' },
@@ -237,9 +240,9 @@ const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
-const CRITERIA_TOTAL = 857; // ★ 2026-11-20（文档基线）：855 → 857，新增审计卡 1 条 + docs/FACTS.json 外部工具事实 2 条；先前 +15 与 ledger 当前性 +2 均已入册。
-const RESP_TOTAL = 11699; // ★ 2026-11-20（文档基线）：按 design:gen-db 当前权威读数；此前 10,366 是批 16 历史值，不伪称本数由收卡产生。
-const PATHS_TOTAL = 596; // ★ 2026-11-20（文档基线）：design:gen-db 现盘权威 583 → 596，合法新增 13 个已登记 path；不是放宽判定。
+const CRITERIA_TOTAL = 861; // ★ 2026-11-20（同名符号指纹）：857 → 861 = 共享文件 +2、冻结/出口 call-exists 各 +1；文档基线 857 的出处保留在历史注释。
+const RESP_TOTAL = 11756; // ★ 2026-11-20（同名符号指纹）：11699 + 新职责实测 57 字 = 11756；10,366 仍是批 16 历史值。
+const PATHS_TOTAL = 597; // ★ 2026-11-20（同名符号指纹）：596 + 已登记 src/domain/symbol_fingerprint.ts = 597；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
@@ -304,7 +307,8 @@ test('16.2 每张卡的**归宿**逐条对表（home / nodeTask / from_state）�
     assert.equal(nodeAt(c.home!, c.id)?.path ?? null, c.nodePath, `${c.id}：属主册节点必须存在且 path 对得上`);
     assert.equal(nodeAt(TSP, c.id), undefined, `${c.id}：计划册侧不许还有这个节点`);
     const task = nodeAt(c.home!, c.id)?.task;
-    assert.equal(task ? String(task.state) : null, c.nodeTask, `${c.id}：属主册 node.task 必须与裁定依据一致`);
+    const expectedCurrentNodeTask = c.currentNodeTask === undefined ? c.nodeTask : c.currentNodeTask;
+    assert.equal(task ? String(task.state) : null, expectedCurrentNodeTask, `${c.id}：当前 node.task 必须匹配显式演进记录；迁移时 nodeTask=${String(c.nodeTask)}`);
     if (c.action === 'REHANG') assert.equal(c.nodeTask, null, `${c.id}：REHANG 的前提 = 属主册**没有**自己的卡`);
     if (c.action === 'SUPERSEDED') assert.notEqual(c.nodeTask, null, `${c.id}：SUPERSEDED 的前提 = 属主册**已有**自己的卡`);
     if (c.action === 'HISTORY') assert.ok(['done', 'void'].includes(c.from_state), `${c.id}：HISTORY 只收已了结的`);
@@ -542,7 +546,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **857** · 职责 **11,699**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
+test('16.12 守恒：判据 **861** · 职责 **11,756**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });

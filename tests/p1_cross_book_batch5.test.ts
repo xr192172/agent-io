@@ -130,7 +130,7 @@ const DEFERRED = [...BOUNDARY.cards, BOUNDARY.prose];
 //   迁回属主册 tsp（一 path 一册断言不变量，batch1 1.3 实测冲突修复），总数不变分册变。
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 857; // ★ 2026-11-19（集成席 · merge callexists-barrel + lang-adapter-semantic）：按现盘重定基线
+const CRITERIA_TOTAL = 861; // ★ 2026-11-20（同名符号指纹）：857 → 861 = 共享文件 +2、冻结/出口 call-exists 各 +1；历史断言语义不变。
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -219,7 +219,7 @@ test('5.1b 计划册里这 50 个 path 的节点 / 语义文件 / 边都不在�
 // ════════════════════════════════════════════════════════════════════
 // 5.2 判据总数守恒
 // ════════════════════════════════════════════════════════════════════
-test('5.2 判据总数守恒：三册合计 857 条（A 类零负载 ⇒ 删 50 个节点一条判据不动）', () => {
+test('5.2 判据总数守恒：三册合计 861 条（A 类零负载 ⇒ 删 50 个节点一条判据不动）', () => {
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaTotal([s])}`).join(' · ');
   assert.equal(

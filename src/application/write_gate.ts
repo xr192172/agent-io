@@ -71,6 +71,7 @@ import { loadOverlay } from '../infrastructure/storage_overlay.js';
 //   · 代际的读法 = `domain/task_machine.ts#leaseGenerationOf`（缺省 0 的规则只有那一处）；
 //   · 心跳的写盘 = `design/dsl_ops/task_ops.ts#touchTaskHeartbeat`（唯一写端；写闸只判不写）。
 import { leaseGenerationOf } from '../domain/task_machine.js';
+import { symbolBodyFingerprint } from '../domain/symbol_fingerprint.js';
 // ★★★ 2026-11-04（G13/G17）：`TaskGateBasis` 的**词表 + 分诊表**已搬去
 //   `src/domain/task_gate_basis.ts`（那里还有 `BASIS_CARDABILITY` 与三个纯分诊函数）——
 //   本文件只**转出**类型（见下方 `export type { TaskGateBasis }`），不复制第二份。
@@ -1287,7 +1288,7 @@ export function resolveJudgementKind(
  */
 export interface SymbolFpsResult {
   ok: boolean;
-  /** 符号名 → body_hash（`ok:false` 时恒空，不猜） */
+  /** 符号名 → 单 body_hash 或同名行的排序多重集编码（`ok:false` 时恒空，不猜） */
   fps: Record<string, string>;
   /** `ok:false` 时的原因（索引不在 / 读索引失败）：不许空手返回 */
   reason?: string;
@@ -1311,8 +1312,18 @@ export function symbolFpsOf(projectRoot: string, rel: string): SymbolFpsResult {
       .prepare("SELECT name, body_hash FROM nodes WHERE file_path = ? AND kind != 'file' AND parent IS NULL")
       .all(rel) as Array<{ name: string; body_hash: string | null }>;
     db.close();
+    const hashesByName = new Map<string, string[]>();
+    for (const row of rows) {
+      if (!row.body_hash) continue; // NULL = 没有体/取不到，保持既有跳过语义。
+      const hashes = hashesByName.get(row.name) ?? [];
+      hashes.push(row.body_hash);
+      hashesByName.set(row.name, hashes);
+    }
     const out: Record<string, string> = {};
-    for (const x of rows) if (x.body_hash) out[x.name] = x.body_hash;
+    for (const [name, hashes] of hashesByName) {
+      const fingerprint = symbolBodyFingerprint(hashes);
+      if (fingerprint) out[name] = fingerprint;
+    }
     return { ok: true, fps: out };
   } catch (e) {
     // ★ 0.12：不许空手返回 —— 锁 / 坏库 / 权限各是各的病（与 symbolsInFileOf 同一口径）
