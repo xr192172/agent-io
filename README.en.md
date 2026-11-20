@@ -34,7 +34,7 @@ Understand project facts → state design intent and criteria → expand into ow
 <!-- FACTS:LANG:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
 ## 语言支持（诚实版）
 
-- **AST 解析**：33 门已装全量（tree-sitter；名册共注册 55 门，装了才能用——`capability_audit` 一键自检）
+- **AST 解析**：31 门已装全量（tree-sitter；名册共注册 55 门，装了才能用——`capability_audit` 一键自检）
 - **语义操作**（改名/契约闸/影响面等）：9 门全量，其余覆盖度递减（`capability_audit` 一键出缺口清单）
 
 > 数字由 scripts/gen-facts.mjs 回写自 docs/FACTS.json（roster/installed 随机器与版本变），**勿手改**。

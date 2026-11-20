@@ -971,30 +971,194 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   // ★ 为什么不先查 `parserReadyForFile()`：实测它对目标文件返回 `false`，
   //   而 `parseFile()` 却能正常出 9 个符号 ⇒ 它的语义不可靠（可能判的是批量解析器的就绪状态）。
   //   ⇒ **只信实际解析结果**，不问原因。
-  // ★ 为什么是 3 个文件：够判"整体是否就绪"，又够便宜（毫秒级）。
-  const probeFiles = absFiles
-    .filter((f) => codeSourceExtSet().has(path.extname(f).toLowerCase()))
-    .slice(0, 3);
+  //
+  // ★★★★ 2026-11-19（card-cashier-gate）：**采样口径改了 —— 从"前 3 个文件"改成"有没有结构证据"**。
+  //
+  // ## 改之前的误拒（实测原文）
+  // fuintCashier（Electron+Vue2，109 个代码文件）导入被拒：
+  //   「导入被拒：**解析器出不了符号**（预检 3 个代码文件，合计 0 个符号）
+  //     · 预检样例：.eslintrc.js · .postcssrc.js · config\index.js」
+  // 真因**不是**解析器坏（同进程同参数导 fuintAdmin/fuintUniapp 都成功）：
+  //   那三个文件是 `module.exports = {...}` 形态的**纯配置**，本来就产不出符号（`symbol_nodes`
+  //   里没有"对象字面量赋值"这种节点）；而同项目里 `server/index.js` 有 19 个符号、
+  //   `constants/RouterMap.js` 有 `import`+`export default [...]` 结构。**前 3 个恰好不是证据。**
+  //
+  // ## 为什么"扩大采样"不是修法（A）/"跳配置文件形态"也不是（B）
+  // 实测这 109 个文件里 0 符号的有 **11 个**，只有 3 个是配置形态；另外 8 个是
+  //   `App.vue`（`<script setup>` 里只有 import）、`constantRouterMap.js`（`export default [...]`）、
+  //   `error.js`、`receiptPaper.vue`… —— **都是合法代码，只是不产符号**。
+  // ⇒ 按文件名跳过 ⇒ 下一个项目换个名字照样误拒；按"前 N 个"扩大 ⇒ 只是把概率降成 N/11。
+  //
+  // ## 现在的判据：**"有声明性结构、却一个符号都产不出" = 解析器坏**
+  // 对采样文件逐个问两件事（同一份内容，解析两次：`parseFile` 要符号、`parseRootForFile` 要树）：
+  //   ① `parseFileFull` 出的符号数（`parseFile` 返回的就是它）；
+  //   ② `astHasDeclarativeStructure()` 在这棵树里找不找得到"声明性节点"。
+  // 判定矩阵（★ 这张表就是本闸的牙）：
+  //   | 有结构 | 有符号 | 结论 |
+  //   |--------|--------|------|
+  //   | 是     | 是     | **解析器好** ⇒ 立即放行（一个正例就够，不必再看别的） |
+  //   | 否     | 否     | **无证据**（纯配置 / 空脚本）⇒ 记名、继续看下一个 |
+  //   | 是     | 否     | **解析器坏** ⇒ 记进 `broken` |
+  //   | 否     | 是     | 解析器好（有符号就说明它在工作）⇒ 放行 |
+  // ⇒ **只要有一个"有结构却 0 符号"，就拒**（不是"全部有结构都 0 符号才拒"）：
+  //   解析器坏时**每个**文件都产不出结构，而正常项目里"有结构却 0 符号"这一格**不该出现**
+  //   （出现了意味着该语言适配器对该形态失效，也值得大声说出来，而不是悄悄建个空索引）。
+  //   ★ 但为了避免"某个冷门语法的单文件适配 bug"杀掉整个项目，判据要求**至少 2 个**这样的文件才拒，
+  //     且只有一个时把它作为 `skipped` 行如实报出（不静默）。
+  //
+  // ## 采样面：不再 `slice(0,3)`
+  // 按"走查顺序的前 N 个"取太脆（前 3 个全是配置就来 0 证据）。现在取 **min(24, 全部)** 个，
+  // 且**按扩展名轮转**挑（每个扩展名先取一个，再取第二个…）—— 保证不把采样全押在一门语言
+  // 或一个目录上，也不必随机（随机 ⇒ 读数不可复现，失败不可重放）。
+  const PROBE_MAX = 24;
+  const BREAK_THRESHOLD = 2;
+  const codeExtSet = codeSourceExtSet();
+  const codeFiles = absFiles.filter((f) => codeExtSet.has(path.extname(f).toLowerCase()));
+  /** 按扩展名轮转取样（确定性、可重放；`sorted` 后的顺序即轮转的层内顺序） */
+  const byExt = new Map<string, string[]>();
+  for (const f of [...codeFiles].sort()) {
+    const ext = path.extname(f).toLowerCase();
+    const arr = byExt.get(ext);
+    if (arr) arr.push(f);
+    else byExt.set(ext, [f]);
+  }
+  const probeFiles: string[] = [];
+  for (let round = 0; probeFiles.length < PROBE_MAX; round++) {
+    let added = false;
+    for (const ext of [...byExt.keys()].sort()) {
+      const arr = byExt.get(ext)!;
+      if (arr[round] === undefined) continue;
+      probeFiles.push(arr[round]);
+      added = true;
+      if (probeFiles.length >= PROBE_MAX) break;
+    }
+    if (!added) break; // 所有扩展名的文件都取完了
+  }
   /** ★ T-#46：预检拿到的符号数（**外面声明**，供解析循环之后的对照断言用） */
   let probeSyms = 0;
+  /** card-cashier-gate：判定为"有结构却 0 符号"的文件（= 解析器坏的证据） */
+  const broken: Array<{ rel: string; syms: number }> = [];
+  /** card-cashier-gate：没有结构证据的文件（纯配置/空脚本）—— 如实报出，不当证据也不当故障 */
+  const noEvidence: string[] = [];
+  /** card-cashier-gate：**根本没拿到树**的文件（语言包载不入/抛错）—— 这一档单列，见下面的判据 */
+  const noTree: string[] = [];
+  /** card-cashier-gate：**树只有根节点**的非空文件（= 解析器没干活）—— 见下面的第三信号 */
+  const hollowTrees: string[] = [];
   if (probeFiles.length > 0) {
-    const { parseFile: probeParseFile } = await import('../parse/kernel.js');
+    const { parseFile: probeParseFile, parseRootForFile, astHasDeclarativeStructure, childrenOf } = await import('../parse/kernel.js');
+    const { splitScriptBlocks, VUE_SFC_PARSER } = await import('../parse/vue_sfc.js');
+    /** 树里的节点总数（含根）—— 回答"解析器到底遍历出东西没有"（见下面第三信号的注释） */
+    const countTreeNodes = (n: { childCount: number; child: (i: number) => unknown }): number => {
+      let c = 1;
+      for (const ch of childrenOf(n as never)) if (ch) c += countTreeNodes(ch as never);
+      return c;
+    };
     for (const pf of probeFiles) {
+      const rel = path.relative(root, pf);
+      let text: string;
       try {
-        probeSyms += (await probeParseFile(pf, fs.readFileSync(pf, 'utf8'))).length;
+        text = fs.readFileSync(pf, 'utf8');
       } catch {
-        /* 单文件失败不单独算，看整体是否为 0 */
+        noTree.push(rel); // 读不了 ⇒ 没有证据（不据此判坏）
+        continue;
       }
+      let syms = 0;
+      try {
+        syms = (await probeParseFile(pf, text)).length;
+      } catch {
+        /* 单文件解析抛错：符号按 0 算，结构那一侧会给出证据 */
+      }
+      probeSyms += syms;
+      if (syms > 0) continue; // 有符号 ⇒ 解析器在工作（不必再要结构证据）
+      // 0 符号 ⇒ 必须分清楚"这里本来就没东西"和"解析器没吐出东西"
+      let ast: Awaited<ReturnType<typeof parseRootForFile>> = null;
+      try {
+        ast = await parseRootForFile(pf, text);
+      } catch {
+        ast = null;
+      }
+      if (ast === null) {
+        noTree.push(rel);
+        continue;
+      }
+      if (astHasDeclarativeStructure(ast.root, ast.langName)) broken.push({ rel, syms });
+      else noEvidence.push(rel);
+      // ★★ 第三个信号：**树里到底有多少节点**。
+      //
+      // 为什么单靠"有没有声明结构"分不开"syntax tree 根本没解析"与"解析了但没声明"：
+      //   解析器彻底坏掉（语法包载不入 / ABI 不符）时，拿到的常是**只剩根节点**的树
+      //   （`program` 一个子节点都没有）—— 它在结构判据眼里与"纯配置"一模一样。
+      // 实测（fuintCashier 109 个文件，逐个量）：真文件 **55–141 个节点**，而被弄坏的树 = **1 个**。
+      // ⇒ 判据：文件**非空**（>24 字节，太短的注释/空壳不算）但树**只有根节点** ⇒ 解析器没干活。
+      //   ★ 24 字节这个界不是拍脑袋：一个空 `export default {}` 也有 17 字节、解析出 4 个节点；
+      //     而"树只有 1 个节点"对一个有内容的文件**在任何语言里都不成立**（连 `;` 都要 3 个）。
+      // 第三信号：**树只有根节点**（解析器连一个字都没干），哪怕没声明也要拦——
+      //   这是反例②的核心：坏 parser 让**所有**文件都没有声明结构，光靠"broken"一格判不出来。
+      //   Vue 不能把 synthetic wrapper 算成证据：逐块对齐同一个 splitScriptBlocks 结果，
+      //   只看非空 script 自己的根；空/短脚本与 template-only 组件不作故障证据。
+      const hollow = ast.langName === VUE_SFC_PARSER
+        ? splitScriptBlocks(text).some((blk, i) => {
+            const child = childrenOf(ast.root)[i];
+            return blk.code.trim().length > 24 && !!child && countTreeNodes(child) <= 1;
+          })
+        : text.trim().length > 24 && countTreeNodes(ast.root) <= 1;
+      if (hollow) hollowTrees.push(rel);
     }
-    if (probeSyms === 0) {
+    // ★★★ 判据一：**"有结构却 0 符号"≥ 2 ⇒ 解析器坏**（结构判据的主牙）
+    // ★★★ 判据二：**连树都拿不到（`noTree`）且一个符号都没出 ⇒ 解析器也坏了**
+    //
+    // 为什么要第二条（第一版漏了它，被反例当场打红）：
+    //   "解析器彻底坏掉"（语法包没载入 / ABI 不符）时，`parseFile` 出 0 符号**且**
+    //   `parseRootForFile` 也拿不到树 ⇒ 它们的指纹是 `broken` 为 0、`noTree` 全满。
+    //   只写第一条的话，这种**最严重的坏法**恰好绕过了闸（判定落进"全部没有声明结构 ⇒ 没证据"），
+    //   空索引照样建成 —— 那正是这道闸存在的理由。
+    //   ★ 而合法项目（fuintCashier 实测）里 `noTree` **是空的**：它的 109 个文件后缀全是
+    //     `.js`/`.vue`，语言包都在，每个都能拿到树（只是其中 50 个树里没有声明结构）。
+    //     ⇒ 第二条在真项目上**不会误伤**；它只在"解析器根本吐不出树"时亮。
+    const treeMissing = noTree.length;
+    const allTreesMissing = probeFiles.length > 0 && treeMissing === probeFiles.length && probeSyms === 0;
+    const hollow = hollowTrees.length;
+    if (allTreesMissing || hollow >= BREAK_THRESHOLD || broken.length >= BREAK_THRESHOLD) {
+      const headline = allTreesMissing
+        ? `预检 ${probeFiles.length} 个代码文件**一个语法树都拿不到**、合计 0 个符号`
+        : hollow >= BREAK_THRESHOLD
+          ? `预检 ${probeFiles.length} 个代码文件里，${hollow} 个**解析出的树只剩根节点**（文件有内容、树是空的）`
+          : `预检 ${probeFiles.length} 个代码文件里，${broken.length} 个"有声明结构却 0 个符号"`;
+      const evidence = allTreesMissing
+        ? `  · 拿不到树的文件：${noTree.slice(0, 5).join(' · ')}${noTree.length > 5 ? ` …（共 ${noTree.length} 个）` : ''}`
+        : hollow >= BREAK_THRESHOLD
+          ? `  · 空树文件：${hollowTrees.slice(0, 5).join(' · ')}${hollow > 5 ? ` …（共 ${hollow} 个）` : ''}`
+          : `  · 证据文件：${broken.slice(0, 5).map((b) => b.rel).join(' · ')}` +
+            `${broken.length > 5 ? ` …（共 ${broken.length} 个）` : ''}\n` +
+            `  · 同一批里另有 ${noEvidence.length} 个文件**没有声明结构**（纯配置/空脚本，天然 0 符号 —— 它们不算证据）`;
       throw new Error(
-        `导入被拒：**解析器出不了符号**（预检 ${probeFiles.length} 个代码文件，合计 0 个符号）\n` +
-          `  · 预检样例：${probeFiles.map((p) => path.relative(root, p)).join(' · ')}\n` +
-          `★ 症状：若不拦，索引会被建成"有文件节点、但 \`nodes\` 表为空"——` +
+        `导入被拒：**解析器出不了符号**（${headline}）\n` +
+          `${evidence}\n` +
+          `★ 判据：` +
+          (allTreesMissing
+            ? `解析器连**语法树**都产不出（语言包载不入 / ABI 不符）⇒ 这不是"文件没符号"，是解析器没工作。`
+            : hollow >= BREAK_THRESHOLD
+              ? `这些文件**有内容**，而解析出来的树**只剩一个根节点** —— ` +
+                `没有任何语法器会把一段完整代码解析成 1 个节点 ⇒ 解析器没干活（语法包载入了错误的东西 / ABI 不符）。`
+              : `这些文件在 AST 里**有**声明性节点（function/class/顶层绑定/顶层调用…），` +
+                `却一个符号都产不出 ⇒ 只可能是解析器没工作，**不是"这些文件本来就没符号"**。`) +
+          `\n★ 症状：若不拦，索引会被建成"有文件节点、但 \`nodes\` 表为空"——` +
           `之后任何基于索引的查询都会**静默返回空**（"建好了"与"空的"在回执上长得一样）。\n` +
           `★ 已知成因：tree-sitter 语法包未加载（冷启未 prewarm）/ 从裸 node 进程调用` +
           `（MCP server 启动时会 prewarm，裸进程不会）。\n` +
           `★ 本次**一个字节都没写**（预检在写索引之前）⇒ 已有索引不受影响。`,
+      );
+    }
+    // 证据不足（既没有"有符号"，也没有够数的"有结构却 0 符号"）：不许静默 —— 如实说出来
+    if (probeSyms === 0 && broken.length > 0) {
+      skipped.push(
+        `预检只找到 ${broken.length} 个"有结构却 0 符号"的文件（阈值 ${BREAK_THRESHOLD}）` +
+          `⇒ **不足以判解析器坏**，本次照常导入；但请留意：${broken.map((b) => b.rel).join(' · ')}`,
+      );
+    } else if (probeSyms === 0) {
+      skipped.push(
+        `预检 ${probeFiles.length} 个代码文件**全部没有声明结构**（纯配置/空脚本）⇒ 本次没有解析器符号证据，照常导入；` +
+          `若随后看到 symbols_found=0，请用 \`index_integrity\` 核对`,
       );
     }
   }

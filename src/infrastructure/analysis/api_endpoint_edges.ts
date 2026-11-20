@@ -53,11 +53,16 @@
  *   ★ 前端 77 条拼接 url 按**字面**参与匹配（`'…/info/' + id` 归一后是 `…/info`，不影响）；
  *     拼接产生的**尾部变量**不猜、不求值。
  *
- * 【匹配（三种结局，逐条如实分类，不合并）】
+ * 【匹配（★ 顺序即判据：精确优先于模板；逐条如实分类，不合并）】
  *   · **精确相等**：`norm(segJoin(base, path)) === norm(url)` 且 HTTP 方法一致 ⇒ **建边**。
- *   · **参数模板**：端点路径含 `{x}` 时按段通配**只计数不建边** ⇒ `paramPathUnmatched`
- *     （本轮不猜：`{x}` 段的绑定语义要前端拼接表达式的求值结果，属语义扩展；
- *     反例口径 = 参数模板两端**不建边**但**计数可见**；挂账 `T-#API-PARAM-EDGES`）。
+ *   · **参数模板**（T-#API-PARAM-EDGES，2026-11-19 修）：精确落空后，端点路径含 `{x}` 的按
+ *     `matchParamTemplate` **三重约束**匹配 ⇒ **建边**，metadata 多带
+ *     `param_template: true` + `params`（参数名清单）+ `param_values`（读数，边**不绑定值**）。
+ *     ★ 口径：**边是结构性的**（这个 api 函数调这个端点模板），参数值属运行时 ⇒ 不求值、不猜；
+ *       所以"同名不同值"（`/info/{id}` 被 `'…/info/'+orderId` 调）**不是歧义**。
+ *     ★ 同一 url 对上 **>1 个**模板 ⇒ `ambiguous`（不建边，不挑第一个）。
+ *     ★ 真语料反例（为什么约束里必须有"段数相等"）：`backendApi/refund/delete/' + refundId`
+ *       后端根本没有 `delete` 端点 ⇒ 若 `{x}` 能跨段通配，它会被别的模板吞掉、真孤儿消失。
  *   · **最长前缀但还有残余段** ⇒ `ambiguous`（不建边；"prefix" 不是证据）。
  *   · **都没命中** ⇒ `frontendOrphan`（逐条点名 url + 文件）。
  *   HTTP 方法不一致单独记 `methodMismatch`（同样不建边 —— 路径对、方法错不是"调得到"）。
@@ -73,7 +78,8 @@
  *   ⇒ 别再拿 270/270 当基线。
  *
  * ★ 打断即红：砍 `import_project` 里的调用 ⇒ 边消失 + 读数消失；破坏 norm ⇒ 带前导斜杠/尾斜杠/查询串/
- *   拼接的 url 全部掉进孤儿；砍孤儿上报 ⇒ 真孤儿一个字都不出现。
+ *   拼接的 url 全部掉进孤儿；砍孤儿上报 ⇒ 真孤儿一个字都不出现；
+ *   砍模板匹配分支 ⇒ 带 `{x}` 的端点一条边都不建；把"段数相等"放宽成跨段通配 ⇒ 真孤儿被吞（反例红）。
  * ═══════════════════════════════════════════════════════════════════════════
  */
 import fs from 'node:fs';
@@ -96,8 +102,15 @@ export interface ApiReconcileResult {
   frontendOrphan: string[];
   /** 命中多个端点 / 最长前缀但仍有余段 —— 不假装精确 */
   ambiguous: string[];
-  /** 路径只靠 `{x}` 通配才对得上的（**不建边**，本轮不猜；挂账 T-#API-PARAM-EDGES） */
+  /**
+   * ★ T-#API-PARAM-EDGES 修好后的语义：**模板匹配之后仍没对上的残余**（逐条点名）。
+   * 历史：修之前这里是"只计数不建边"的参数端点（真语料 69 条）；
+   * 现在模板整段对得上就**建边**，这里只剩"被截断在段边界 / 无模板可对"的那种。
+   * 歧义（同一 url 对上 >1 个模板）与节点缺失**不塞进这里**，各归 ambiguous / nodeMissing。
+   */
   paramPathUnmatched: string[];
+  /** 靠**参数模板**建成的边数（读数，不参与判定；精确匹配见 matched - paramEdges） */
+  paramEdges: number;
   /** 路径对得上但 HTTP 方法不一致（不建边） */
   methodMismatch: string[];
   /** 带拼接表达式（`'…' + expr`）的前端 url 条数（信息类读数，不参与判定） */
@@ -180,6 +193,87 @@ export function segJoin(base: string, p: string): string {
   const b = base.replace(/\/+$/, '');
   if (!p) return b || '/';
   return p.startsWith('/') ? `${b}${p}` : `${b}/${p}`;
+}
+
+/** `{x}` 段（后端路径参数的唯一判定；别在别处再写一份） */
+const PARAM_SEG_RE = /^\{([^}]+)\}$/;
+
+export interface ParamTemplateHit {
+  /** 模板里的参数名，按出现顺序 */
+  params: string[];
+  /** url 侧对上各参数名的段（**只作读数**：边不绑定值，见文件头【匹配】） */
+  values: string[];
+}
+
+/**
+ * 参数模板匹配（T-#API-PARAM-EDGES 的唯一判定处）。
+ *
+ * ★ 边是**结构性**的（这个 api 函数调这个端点模板），参数值属运行时 ⇒ 这里**只判形状、不求值**。
+ * 三重约束，缺一不可（每一条都对应一条 mutation 的牙）：
+ *   ① **段数相等**：`{x}` 只匹配**恰好一段**（放宽成 `.+` ⇒ 跨段通配 ⇒ 会把真孤儿吞掉，
+ *      真语料反例 = `backendApi/refund/delete/' + refundId` 后端根本没有 `delete` 端点）；
+ *   ② **字面段逐字相等**（大小写不折叠，与 normApiUrl 口径一致；前缀相等不算相等）；
+ *   ③ `{x}` 段对应的 url 段必须**非空**且自身不是 `{…}`；
+ * 且模板里**至少有一个** `{x}` 段 —— 纯字面相等是精确匹配的事，这里不重复判。
+ *
+ * @returns null = 不匹配；否则是命中的参数名清单
+ */
+export function matchParamTemplate(
+  endpointNorm: string,
+  urlNorm: string,
+  /** 只有真实 concat 调用才允许字面部分省略末尾参数段；安全默认是不允许。 */
+  allowMissingTail = false,
+): ParamTemplateHit | null {
+  const ep = endpointNorm.split('/');
+  const u = urlNorm.split('/');
+  // ★★ 本卡第二轮真跑撞的（模板匹配一条都建不出来）：**归一后 url 与模板段数不等**。
+  //   真语料 `'backendApi/order/info/' + orderId` 的字面部分归一后是 `/backendApi/order/info`
+  //   （3 段）而模板是 `/backendApi/order/info/{orderId}`（4 段）—— 少的那段正是拼接进去的那个参数。
+  //   ⇒ 匹配前先把模板**对末尾连续的 `{x}` 段**从比较里去掉（只允许在**末尾**，不猜中间：
+  //     中间缺段要判"后面几段分别是谁"，那就是猜了）。
+  let epEnd = ep.length;
+  const tailParams: string[] = [];
+  while (epEnd > 1 && PARAM_SEG_RE.test(ep[epEnd - 1])) {
+    tailParams.unshift(PARAM_SEG_RE.exec(ep[epEnd - 1])![1]);
+    epEnd--;
+  }
+  // ★ 病史（本卡第二轮真跑撞的两次，别改回去）：
+  //   ① 先写成「去掉末尾 `{x}` 段再比段数」⇒ `/order/{id}` 也会吃下 `/order/info/{id}` 的调用（过宽）；
+  //   ② 再写成「按模板长度比」⇒ url 比模板**长**时也放行 ⇒ `/order/{id}` 吃下 `/order/{id}/list`（过宽）。
+  //   现在的判据：**url 的段数只有两种合法值** —— `ep.length`（参数值在字面量里，如 `'…/info/42'`）
+  //   或 `epEnd`（末尾参数是拼接上去的，字面量里没写，如 `'…/info/' + orderId`）；
+  //   任何其它段数（多一段 / 少一段但缺的不是**末尾参数**）⇒ 不匹配。
+  const missingTail = u.length === epEnd && epEnd !== ep.length;
+  // 缺尾段不是通用通配：它只描述 `'…/info/' + id` 的字面部分。纯字面 `/info` 没有运行时参数证据。
+  if (missingTail && !allowMissingTail) return null;
+  if (u.length !== ep.length && u.length !== epEnd) return null; // ① 段数相等
+  // ★ 逐段比的终点 = **url 的段数**（不是 epEnd！）：
+  //   · 等长情形（u.length === ep.length）⇒ 比全部模板段，**末尾 `{x}` 段也要比**；
+  //   · 末尾参数段缺的情形（u.length === epEnd）⇒ 只比到缺的那几段之前（缺的段记名不计值）。
+  //   ★ 病史（第三次）：写成 `Math.min(epEnd, u.length)` ⇒ 等长时**末尾 `{x}` 段被整个跳过** ⇒
+  //     `/order/{id}` 永远不命中 `/order/detail`（⑩ 的模板腿一条都建不出来）；且漏建的参数名
+  //     让 `params` 变空 ⇒ 连"是不是模板边"都判不准。终点只能是 `u.length`。
+  const params: string[] = [];
+  const values: string[] = [];
+  for (let i = 0; i < u.length; i++) {
+    const m = PARAM_SEG_RE.exec(ep[i]);
+    if (m) {
+      const seg = u[i];
+      if (seg === '' || PARAM_SEG_RE.test(seg)) return null; // ③ 非空、且不是另一个占位符
+      params.push(m[1]);
+      values.push(seg);
+      continue;
+    }
+    if (ep[i] !== u[i]) return null; // ② 字面段逐字相等
+  }
+  if (missingTail) {
+    // 末尾参数段在 url 里**没写出来**（那是拼接上去的，如 `'…/info/' + orderId`）⇒ 记名不计值
+    for (const name of tailParams) {
+      params.push(name);
+      values.push('');
+    }
+  }
+  return params.length > 0 ? { params, values } : null;
 }
 
 const MAPPING_ALIAS_VERB: Record<string, string> = {
@@ -439,6 +533,7 @@ export function reconcileApiEndpoints(db: Database, projectRoot: string): ApiRec
     frontendOrphan: [],
     ambiguous: [],
     paramPathUnmatched: [],
+    paramEdges: 0,
     methodMismatch: [],
     concatUrls: 0,
     nodeMissing: 0,
@@ -536,22 +631,14 @@ export function reconcileApiEndpoints(db: Database, projectRoot: string): ApiRec
     }
   }
 
-  // 4. 匹配（精确 / 参数模板 / 最长前缀 / 无）
-  const epFull = endpoints.map((e) => e.full);
+  // 4. 匹配（精确 → 参数模板 → 字面前缀 → 无；★ 顺序即判据：精确优先）
   const paramEndpoints = endpoints.filter((e) => /\{[^}]+\}/.test(e.path));
   const matchedEps = new Set<Endpoint>();
   const paramHitEps = new Set<Endpoint>();
   const ambiguousEps = new Set<Endpoint>();
   const builtPairs = new Set<string>();
-
-  const tmplMatch = (epFullNorm: string, urlNorm: string): boolean => {
-    const segs = epFullNorm.split('/');
-    if (segs.some((s) => /^\{[^}]+\}$/.test(s))) {
-      const rx = `^${segs.map((s) => (/^\{[^}]+\}$/.test(s) ? '[^/]+' : s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).join('/')}$`;
-      return new RegExp(rx).test(urlNorm);
-    }
-    return false;
-  };
+  /** 靠参数模板建成/命中过的边数（读数，不参与判定） */
+  let paramEdges = 0;
 
   // 清理旧边（幂等）
   db.prepare("DELETE FROM edges WHERE kind = 'api_endpoint'").run();
@@ -563,16 +650,66 @@ export function reconcileApiEndpoints(db: Database, projectRoot: string): ApiRec
     const u = normApiUrl(c.url);
     const exactNoVerb = endpoints.filter((e) => e.full === u);
     const exact = exactNoVerb.filter((e) => e.verbs.length === 0 || e.verbs.includes(c.method));
+    // ★★ 参数模板（T-#API-PARAM-EDGES）：**结构性建边**，不猜值。
+    //   约束全在 matchParamTemplate 里（段数相等 + 字面逐段相等 + {x} 非空 + 至少一个 {x}）。
+    //   方法一致性：verb 为空的端点（`@RequestMapping` 不带 method）视为任意方法（与精确匹配同口径）。
+    //   ★★ 位置是判据（本卡第二轮真跑撞的）：模板判定必须在「字面路径但方法不一致 ⇒ methodMismatch」
+    //     这条 else 之前 —— 否则 `/order/save`（POST）被 GET 调用时，url 归一后是 `/order/save`，
+    //     也会拿去做模板匹配 ⇒ 被 `/order/{id}` 当成模板边建出来 ⇒ **方法不一致被静默洗成模板边**。
+    //     ⇒ 现在的顺序：精确 → 模板（方法过滤）→ 字面方法不一致 → 前缀/孤儿。
+    const tmplHits: Array<{ ep: Endpoint; hit: ParamTemplateHit }> = [];
+    // 精确候选已经存在时，模板无权抢边；只有 exact 为空才进入模板匹配。
+    if (exact.length === 0) for (const e of paramEndpoints) {
+      if (!(e.verbs.length === 0 || e.verbs.includes(c.method))) continue;
+      const hit = matchParamTemplate(e.full, u, c.concat);
+      if (hit) tmplHits.push({ ep: e, hit });
+    }
+    if (tmplHits.length > 1) {
+      // 同一 url 对上多个模板 ⇒ 不假装精确（与精确匹配的歧义同口径），也不许挑第一个
+      for (const h of tmplHits) {
+        ambiguousEps.add(h.ep);
+        paramHitEps.add(h.ep);
+      }
+      result.ambiguous.push(
+        `${c.url} @ ${c.fileRel}:${c.line} —— 参数模板同时命中 ${tmplHits.length} 个端点（${tmplHits.map((h) => `${h.ep.typeName}.${h.ep.methodName || '?'}(${h.ep.full})`).join(', ')}）`,
+      );
+      continue;
+    }
+    if (tmplHits.length === 1) {
+      const { ep, hit } = tmplHits[0];
+      result.matched++;
+      matchedEps.add(ep);
+      paramHitEps.add(ep);
+      if (!ep.nodeId || !c.nodeId) {
+        result.nodeMissing++;
+        continue;
+      }
+      const key = `${ep.nodeId}|${c.nodeId}`;
+      if (builtPairs.has(key)) continue;
+      builtPairs.add(key);
+      insEdge.run({
+        src: ep.nodeId,
+        tgt: c.nodeId,
+        ln: c.line,
+        md: JSON.stringify({
+          url: c.url,
+          method: c.method,
+          controller: `${ep.typeName}.${ep.methodName || '?'}`,
+          api_function: c.fnName || '?',
+          // ★ 边是结构性的：这里记的是**模板形状**，不是运行时的值绑定
+          param_template: true,
+          params: hit.params,
+          param_values: hit.values,
+        }),
+      });
+      result.edges++;
+      paramEdges++;
+      continue;
+    }
     if (exact.length === 0) {
       if (exactNoVerb.length > 0) {
         result.methodMismatch.push(`${c.url} (${c.method}) @ ${c.fileRel}:${c.line} —— 路径命中 ${exactNoVerb.map((e) => `${e.typeName}.${e.methodName || '?'}[${e.verbs.join('|')}]`).join(', ')}，HTTP 方法不一致`);
         for (const e of exactNoVerb) ambiguousEps.add(e);
-        continue;
-      }
-      const tmpl = paramEndpoints.filter((e) => (e.verbs.length === 0 || e.verbs.includes(c.method)) && tmplMatch(e.full, u));
-      if (tmpl.length > 0) {
-        for (const e of tmpl) paramHitEps.add(e);
-        result.paramPathUnmatched.push(`${c.url} (${c.method}) @ ${c.fileRel}:${c.line} ⇒ ${tmpl[0].typeName}.${tmpl[0].methodName || '?'}`);
         continue;
       }
       // ★ 字面**前缀匹配**（端点路径是 url 的头部，或 url 是端点路径的头部）。
@@ -634,10 +771,10 @@ export function reconcileApiEndpoints(db: Database, projectRoot: string): ApiRec
   result.backendNoApiTruncated = noApi.length > 50;
   result.backendNoApi = noApi.slice(0, 50);
 
-  // 参数模板命中但**不建边** —— 汇总里带端点数，便于挂账追踪
-  if (paramHitEps.size > 0 && result.paramPathUnmatched.length === 0) {
-    result.paramPathUnmatched.push(`（参数模板端点 ${paramHitEps.size} 个，无前端调用命中）`);
-  }
+  // ★ paramPathUnmatched 的语义（T-#API-PARAM-EDGES 修好之后）：**只剩"没对上任何模板"的残余**
+  //   —— 模板能整段对上却没建成边（歧义 / 节点缺失）的，已经在上面各分支里单列（ambiguous / nodeMissing）。
+  //   ⇒ 这里不再额外塞一条汇总行（那会让"残余"看起来多一条，读数谎报）。
+  result.paramEdges = paramEdges;
 
   return result;
 }
@@ -645,8 +782,8 @@ export function reconcileApiEndpoints(db: Database, projectRoot: string): ApiRec
 /** 把对账结果渲染成回执里的一段（带分母；学 renderMapperReconcile 的形状） */
 export function renderApiReconcile(r: ApiReconcileResult): string {
   const lines: string[] = [
-    `── API 端点对账 ── 端点 ${r.endpoints} · 前端 url ${r.urls} · 建边 ${r.edges} · 精确匹配 ${r.matched}/${r.urls}` +
-      ` · 拼接 url ${r.concatUrls} · 节点缺失 ${r.nodeMissing}`,
+    `── API 端点对账 ── 端点 ${r.endpoints} · 前端 url ${r.urls} · 建边 ${r.edges} · 精确匹配 ${r.matched - (r.paramEdges ?? 0)}/${r.urls}` +
+      ` · 参数模板 ${r.paramEdges ?? 0} · 拼接 url ${r.concatUrls} · 节点缺失 ${r.nodeMissing}`,
   ];
   if (
     r.edges > 0 &&
@@ -655,10 +792,10 @@ export function renderApiReconcile(r: ApiReconcileResult): string {
     r.paramPathUnmatched.length === 0 &&
     r.methodMismatch.length === 0
   ) {
-    lines.push(`  ✓ ${r.matched}/${r.urls} 个前端 url 精确对上后端端点（方法级）`);
+    lines.push(`  ✓ ${r.matched}/${r.urls} 个前端 url 对上后端端点（精确 + 参数模板，方法级）`);
   }
   for (const x of r.frontendOrphan) lines.push(`  ⚠ 前端 url 无后端端点: ${x}（未建边）`);
-  for (const x of r.paramPathUnmatched) lines.push(`  ⚠ 参数模板端点未建边（T-#API-PARAM-EDGES，本轮不猜）: ${x}`);
+  for (const x of r.paramPathUnmatched) lines.push(`  ⚠ 参数模板对不上（段边界截断 / 无模板可对；未建边）: ${x}`);
   for (const x of r.methodMismatch) lines.push(`  ⚠ 路径命中但 HTTP 方法不一致: ${x}`);
   for (const x of r.ambiguous) lines.push(`  ⚠ 歧义（不假装精确）: ${x}`);
   for (const x of r.backendNoApi) lines.push(`  ⚠ 后端端点无前端调用: ${x}`);

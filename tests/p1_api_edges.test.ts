@@ -12,15 +12,21 @@
  *       砍孤儿上报 ⇒ 清单里一个字都没有 |
  * | ③ | 幂等：连跑两次边数不变（先删后建） | 删 DELETE 那行 ⇒ 边翻倍 |
  * | ④ | URL 归一：无反斜杠 / 尾斜杠 / 查询串 / 拼接 `'…' + id` 全要匹配上 | 破坏 norm ⇒ 全掉进孤儿 |
- * | ⑤ | 参数端点 `{id}` **不建边但计数可见**（T-#API-PARAM-EDGES） | 参数类静默 ⇒ ② 的读数会谎报 |
+ * | ⑤ | 参数端点 `{id}` ↔ 拼接调用 `'…/info/' + id` **建边**，metadata 带 `param_template:true` + `params`
+ *       （T-#API-PARAM-EDGES 已修）；且该 url **不再**进 `paramPathUnmatched` |
+ *       砍模板匹配分支 ⇒ 边 0 条 + paramPathUnmatched 有它 |
+ * | ⑨ | 反例三条（段数不等 / 字面段不同 / 方法不一致）**都不建边** | `{x}` 跨段通配 ⇒ 第一二条红；不判方法 ⇒ 第三条红 |
+ * | ⑫ | 非拼接字面 url 不得省略末尾参数段 | 无 concat 也放行 missingTail ⇒ 错建参数边 |
+ * | ⑬ | 同方法精确端点与等长模板碰撞时精确先赢 | 模板先 continue ⇒ save 被错指向 byId |
+ * | ⑩ | 混合场景：一条 url 精确命中、另一条模板命中，**互不干扰**（精确优先，模板不顶掉精确） | 模板抢在精确前 ⇒ controller 字段错位 |
+ * | ⑪ | 后端无对应模板的真孤儿（`'…/refund/delete/' + id`）**必须进 `frontendOrphan`**，不许被模板吞掉 | 模板匹配过宽 ⇒ 它从孤儿清单消失 |
  * | ⑥ | opt-in：不传 `include_api_edges` ⇒ 回执无 `api_reconcile`、无边（不改既有行为） | 恒真判断 ⇒ ⑥ 红 |
  * | ⑦ | 未注册语言 / 无 `src/api` 目录的项目不被误伤（端点照扫、url 0 条、不抛） | reconcile 无端点时乱写 ⇒ ⑦ 红 |
  * | ⑧ | 双层类（内部类）各自取自己的类级 mapping，内层不继承外层 base | 回落外层 ⇒ ⑧ 红 |
  *
  * ## 夹具为什么这么摆
- * 预检闸取 `walkFiles` 排序后**前 3 个**代码文件试解析、合计 0 符号就拒导入
- * （`import_project.ts` 约 954 行；fuintCashier 就是栽在这）。⇒ 夹具里 `src/api/order.js`
- * （字典序 `src/api/…` < `src/…`）与 `OrderController.java` 都在前 3 个，且都出符号。
+ * 预检闸按后缀轮转取样，分别检查符号、声明结构、缺树与空子树，避免固定前缀样本误判。
+ * 夹具的 `src/api/order.js` 与 `OrderController.java` 都有真实符号，正常解析时必须通过。
  *
  * touches: src/infrastructure/analysis/api_endpoint_edges.ts, src/infrastructure/graph/import_project.ts
  */
@@ -31,7 +37,12 @@ import path from 'node:path';
 
 import { importProject } from '../src/infrastructure/graph/import_project.js';
 import { getProjectCacheDb } from '../src/infrastructure/index/db.js';
-import { normApiUrl, segJoin, reconcileApiEndpoints } from '../src/infrastructure/analysis/api_endpoint_edges.js';
+import {
+  normApiUrl,
+  segJoin,
+  reconcileApiEndpoints,
+  matchParamTemplate,
+} from '../src/infrastructure/analysis/api_endpoint_edges.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 const TMP = makeTempHome();
@@ -69,6 +80,56 @@ public class OrderController {
     public Object save() {
         return null;
     }
+}
+`;
+
+/**
+ * ⑩ 混合场景专用 Controller：**字面端点 `/order/save`（POST）与模板端点 `/order/{id}`（GET）同处一个 base**。
+ * 精确必须先赢；模板只接收"拼接出来、精确对不上"的那些。
+ * ★ 单独一个类、不并进 CONTROLLER：并进去会让 ①②⑦⑧ 的端点分母读数全部漂移。
+ */
+const MIX_CONTROLLER = `package com.acme.web;
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(value = "/backendApi/order")
+public class MixController {
+
+    @RequestMapping(value = "save", method = RequestMethod.POST)
+    public Object save() {
+        return null;
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    public Object byId() {
+        return null;
+    }
+}
+`;
+
+/** ⑬ 同方法碰撞：精确 save 与模板 {id} 都是 GET，精确必须真的先赢。 */
+const EXACT_COLLISION_CONTROLLER = `package com.acme.web;
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(value = "/backendApi/exact")
+public class ExactCollisionController {
+    @RequestMapping(value = "save", method = RequestMethod.GET)
+    public Object save() { return null; }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    public Object byId() { return null; }
+}
+`;
+
+const API_JS_EXACT_COLLISION = `
+export function getExactSave() {
+  return request({
+    url: 'backendApi/exact/save',
+    method: 'get',
+  })
 }
 `;
 
@@ -135,6 +196,134 @@ export function queryOrders(params) {
 }
 `;
 
+/**
+ * ⑤ 正例夹具：**只放那两条拼接到 /info/** 的 url。
+ * ★ 必须与 `API_JS + API_JS_TAIL` 用到的函数名区分（`importFixture` 的进程内缓存按符号内容算），
+ *   否则 ①② 的 app.js 会与这里的 app.js 同摘要 ⇒ 缓存命中 ⇒ 拿不到 getOrderInfo 的符号 ⇒ 边建不出来。
+ */
+const API_JS_PARAM = `
+export function fetchOneOrderInfo(orderId) {
+  return request({
+    url: 'backendApi/order/info/' + orderId,
+    method: 'get',
+  })
+}
+
+export function queryOrderPage(params) {
+  return request({
+    url: '/backendApi/order/',
+    method: 'post',
+    params: params,
+  })
+}
+`;
+
+/**
+ * ⑨ 反例夹具：段数不等 / 字面段不同 / 方法不一致 —— 三条都不许建边。
+ * ★ 「段数不等」用的是**值已写死的字面量**（`'…/info/42/sub'`）而不是 `'…/info/' + a + '/' + b`：
+ *   后者的**字面段只有 `…/info/`**（`extractFrontCalls` 取的是单引号之间的内容），归一后段数与
+ *   `'/info/'` 那条**一模一样** ⇒ 在"字面量 + 拼接"这层语义下它们本来就该同等对待（不是 bug）。
+ *   ⇒ 要测"段数不等"，必须让**字面部分本身**段数不等。
+ */
+const API_JS_NEG = `
+export function getOrderInfoTwoSegs() {
+  return request({
+    url: 'backendApi/order/info/42/sub',
+    method: 'get',
+  })
+}
+
+export function getOrderInfoCase(orderId) {
+  return request({
+    url: 'BackendApi/order/info/' + orderId,
+    method: 'get',
+  })
+}
+
+export function postOrderInfo(orderId) {
+  return request({
+    url: 'backendApi/order/info/' + orderId,
+    method: 'post',
+  })
+}
+
+export function postOrderInfoExact(orderId) {
+  return request({
+    url: '/backendApi/order/save',
+    method: 'get',
+  })
+}
+`;
+
+/**
+ * ⑩ 混合夹具：一条走精确（`/order/save` 字面量），一条走模板（`/order/detail/' + id` ⇒ `/order/{id}`）。
+ * ★ 前置必须核实过：**字面端点**只有不带前导 `/` 的字面量才能精确命中（`extractFrontCalls` 取字面内容，
+ *   归一后补 `/`）⇒ `url: '/backendApi/order/save'` 归一后与原样相等、**精确命中**；
+ *   而 `/order/{id}` 在 `{x}` 段上对 `save` 也成立 ⇒ 精确若被模板抢在前面，下面 `param_template === undefined` 会红。
+ */
+const API_JS_MIX = `
+export function saveOrder(data) {
+  return request({
+    url: '/backendApi/order/save',
+    method: 'post',
+    data: data,
+  })
+}
+
+export function getOrderDetail(id) {
+  return request({
+    url: '/backendApi/order/detail/' + id,
+    method: 'get',
+  })
+}
+
+export function getOrderById(id) {
+  return request({
+    url: '/backendApi/order/' + id,
+    method: 'get',
+  })
+}
+`;
+
+/**
+ * ⑪ 真孤儿夹具：`'backendApi/refund/delete/' + refundId` 的后端**没有** delete 端点
+ * （真语料 BackendRefundController 只有 /list /preCheck /info/{refundId} save doRefund）。
+ * ★ 这里的 base 故意写成 `/backendApi/order`：若 `{x}` 能跨段通配，它会撞上别的模板 —— 正是要防的。
+ */
+const REFUND_CONTROLLER = `package com.acme.web;
+
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping(value = "/backendApi/order")
+public class RefundController {
+
+    @RequestMapping(value = "/info/{refundId}", method = RequestMethod.GET)
+    public Object info() {
+        return null;
+    }
+}
+`;
+
+const API_JS_ORPHAN = `
+export function deleteRefund(refundId) {
+  return request({
+    url: 'backendApi/refund/delete/' + refundId,
+    method: 'get',
+  })
+}
+`;
+
+/** ⑫ 非拼接反例：字面量自己少了末尾 {orderId}，不得借用 concat 的缺尾段例外。 */
+const API_JS_LITERAL_MISSING_PARAM = `
+export function getOrderInfoWithoutId() {
+  return request({
+    url: 'backendApi/order/info',
+    method: 'get',
+  })
+}
+`;
+
 const UTIL_TS = `export function noop(): void {
   return;
 }
@@ -143,7 +332,7 @@ const UTIL_TS = `export function noop(): void {
 function makeProj(dir: string, opts: { withApi?: boolean; withNested?: boolean } = {}): string {
   const withApi = opts.withApi !== false;
   fs.mkdirSync(path.join(dir, 'src'), { recursive: true });
-  // 预检前 3 个：src/api/order.js（有符号）→ src/util.ts（有符号）→ 根上的 Controller.java
+  // 预检按后缀轮转取样：API JS、工具 TS 与 Controller.java 都有真实符号。
   if (withApi) fs.mkdirSync(path.join(dir, 'src', 'api'), { recursive: true });
   fs.writeFileSync(path.join(dir, 'src', 'util.ts'), UTIL_TS);
   if (withApi) fs.writeFileSync(path.join(dir, 'src', 'api', 'order.js'), API_JS + API_JS_TAIL);
@@ -154,6 +343,23 @@ function makeProj(dir: string, opts: { withApi?: boolean; withNested?: boolean }
   );
   fs.writeFileSync(path.join(dir, 'OrderController.java'), CONTROLLER);
   if (opts.withNested) fs.writeFileSync(path.join(dir, 'OuterController.java'), NESTED_CONTROLLER);
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'p', type: 'module' }, null, 2));
+  return dir;
+}
+
+/**
+ * ★ 反例夹具（⑨⑩⑪）：**只放要判的那几条 url**，不像 makeProj 那样带一整套正例
+ * —— 否则 `matched` / `paramEdges` 的读数会被正例污染，断言就失去鉴别力。
+ */
+function makeProjWith(
+  dir: string,
+  opts: { apiFile?: string; apiJs?: string; controllerName?: string; controllerSrc?: string } = {},
+): string {
+  fs.mkdirSync(path.join(dir, 'src', 'api'), { recursive: true });
+  // 预检按后缀轮转取样：API JS、工具 TS 与根上的 Controller.java 都有真实符号。
+  fs.writeFileSync(path.join(dir, 'src', 'util.ts'), UTIL_TS);
+  fs.writeFileSync(path.join(dir, 'src', 'api', opts.apiFile ?? 'neg.js'), opts.apiJs ?? '');
+  fs.writeFileSync(path.join(dir, opts.controllerName ?? 'OrderController.java'), opts.controllerSrc ?? CONTROLLER);
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'p', type: 'module' }, null, 2));
   return dir;
 }
@@ -186,6 +392,7 @@ type ApiRec = {
   frontendOrphan: string[];
   ambiguous: string[];
   paramPathUnmatched: string[];
+  paramEdges: number;
   methodMismatch: string[];
   concatUrls: number;
   nodeMissing: number;
@@ -248,9 +455,11 @@ test('api-edges · ① 端到端：建 api_endpoint 边，metadata 四字段齐�
     `回执 skipped 里必须有对账段，实得：${skipped.filter((s) => s.includes('API')).join(' | ') || '（无）'}`,
   );
   assert.ok(
-    skipped.some((s) => s.includes(`精确匹配 ${rec.matched}/${rec.urls}`)),
-    '对账行必须带分母（matched/urls）',
+    // 对账行现在把"精确"与"参数模板"分列：`精确匹配 X/urls · 参数模板 N`
+    skipped.some((s) => new RegExp(`精确匹配 \\d+/${rec.urls}`).test(s) && s.includes('参数模板')),
+    '对账行必须带分母（匹配数/urls）并分列参数模板读数',
   );
+  assert.equal(rec.matched, rows.length + rec.nodeMissing, 'matched 必须等于建成边数 + 节点缺失数（诚实口径）');
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -309,28 +518,213 @@ test('api-edges · ④ URL 归一：反斜杠缺失 / 尾斜杠 / 查询串 / �
 });
 
 // ════════════════════════════════════════════════════════════════════
-// ⑤ 参数端点：不建边但计数可见（挂账 T-#API-PARAM-EDGES）
+// ⑤ 参数端点：模板匹配 ⇒ 建边（T-#API-PARAM-EDGES 已修）
 // ════════════════════════════════════════════════════════════════════
-test('api-edges · ⑤ `{id}` 参数端点不建边，但 paramPathUnmatched 里点名可见', async () => {
-  const PROJ = makeProj(path.join(TMP, 'p1_param'));
+test('api-edges · ⑤ `{id}` 参数端点 ↔ 拼接调用建边，metadata 带 param_template + params', async () => {
+  const PROJ = makeProjWith(path.join(TMP, 'p1_param'), { apiFile: 'param.js', apiJs: API_JS_PARAM });
   const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
 
-  // ★ 按**行首的 url** 过滤（别用 `includes(...)`：两行里都会出现 `info/{orderId}` 字样）
-  const paramHit = rec.paramPathUnmatched.filter((x) => x.startsWith('backendApi/order/info/ '));
-  assert.equal(paramHit.length, 1, `参数路径必须计数可见（不许静默），实得 ${JSON.stringify(rec.paramPathUnmatched)}`);
-  assert.match(paramHit[0], /src\/api\/order\.js:\d+/, '参数类条目也要带出处');
-  // ★ 夹具里另有一条 `url: '/backendApi/order/'`（尾斜杠截断在段边界）—— 它同时前缀命中
-  //   三个端点，天然归参数类（拼接/截断 ⇒ 尾部段对不上）。这里只要求它**不被静默吞掉**。
-  assert.ok(
-    rec.paramPathUnmatched.some((x) => x.includes("'/backendApi/order/'") || x.includes('/backendApi/order/ (POST)')),
-    '被截断在段边界的 url 也必须进 param 类（不许掉进孤儿、也不许静默）',
-  );
+  // ★ 边必须存在，且 metadata 说清楚"这是模板边、参数名是什么"
+  const rows = apiEdges(PROJ);
+  const infoEdge = rows.map((x) => ({ row: x, md: JSON.parse(x.metadata) })).find((x) => x.md.url === 'backendApi/order/info/');
+  assert.ok(infoEdge, `拼接 url 'backendApi/order/info/' + orderId 必须建边（砍模板匹配分支 ⇒ 这里 undefined），实得 url：${rows.map((x) => JSON.parse(x.metadata).url).join(' | ')}`);
+  assert.equal(infoEdge.md.param_template, true, '模板建的边必须标 param_template:true（否则下游分不清结构边与字面边）');
+  assert.deepEqual(infoEdge.md.params, ['orderId'], `params 必须是模板里的参数名清单，实得 ${JSON.stringify(infoEdge.md.params)}`);
+  assert.equal(infoEdge.md.controller, 'OrderController.info', `必须指到 info 方法本身，实得 ${infoEdge.md.controller}`);
+  assert.equal(infoEdge.md.api_function, 'fetchOneOrderInfo', `api_function 必须是调它的那个函数，实得 ${infoEdge.md.api_function}`);
+  // ★ 边不绑定值：值是读数，不进判定。★ 字面量里那段**没写出来**（是拼接上去的）⇒ 记空串，不编造
+  assert.deepEqual(infoEdge.md.param_values, [''], 'param_values 只是读数：拼接上去的那段字面量里不存在 ⇒ 空串');
 
-  // ★ 本轮不猜 ⇒ 不许建边（建了就是把猜测当事实）
+  // ★ 精确匹配的边**不许**带 param_template（否则下游把所有边都当模板边）。
+  //   夹具里另有一条 `url: '/backendApi/order/'`（POST，字面，裸 base）—— 它与端点 `/backendApi/order` 无，
+  //   故用本夹具内的另一条**字面** url 做反证：`API_JS_PARAM` 里没有；这条反证放在 ⑩（字面 /order/save）判。
+
+  // ★ 建过边 ⇒ 不再进 paramPathUnmatched（读数归零；只剩"段边界截断"那类残余）
+  assert.ok(
+    !rec.paramPathUnmatched.some((x) => x.startsWith('backendApi/order/info/ ')),
+    `模板建了边还把它留在 paramPathUnmatched 里 = 读数谎报，实得 ${JSON.stringify(rec.paramPathUnmatched)}`,
+  );
+  assert.ok(rec.paramEdges >= 1, `回执要带参数模板边数（读数），实得 ${rec.paramEdges}`);
+
+  // ★ 夹具里 `url: '/backendApi/order/'`（尾斜杠截断在段边界）**没有**任何模板能整段对上
+  //   （段数不等）⇒ 它仍归 param 残余，必须点名——不许静默。
+  assert.ok(
+    rec.paramPathUnmatched.some((x) => x.includes('/backendApi/order/ (POST)')),
+    `被截断在段边界的 url 也必须点名（不许掉进孤儿、也不许静默），实得 ${JSON.stringify(rec.paramPathUnmatched)}`,
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑨ 反例三条：段数不等 / 字面段不同 / 方法不一致 —— 都不建边
+// ════════════════════════════════════════════════════════════════════
+test('api-edges · ⑨ 模板匹配反例：段数不等 / 字面段不同 / 方法不一致 都不建边', async () => {
+  const PROJ = makeProjWith(path.join(TMP, 'p1_param_neg'), { apiFile: 'neg.js', apiJs: API_JS_NEG });
+  const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
+  const rows = apiEdges(PROJ);
+  const mdOf = (u: string) => rows.map((x) => JSON.parse(x.metadata)).find((m) => m.url === u);
+
+  // ① 段数不等：字面部分多一段（`/info/42/sub` vs 模板 `/info/{orderId}`）⇒ 不许被吞
+  assert.equal(
+    mdOf('backendApi/order/info/42/sub'),
+    undefined,
+    `段数不等（多一段）不许建边 —— {x} 只能匹配一整段，实得 ${JSON.stringify(mdOf('backendApi/order/info/42/sub'))}`,
+  );
+  //   同一夹具里**方法不一致**那条（`'…/info/' + orderId` + POST）反过来是"该不建、但要分对栏"的对照：
+  //   它证明这里是"段数"在拦，不是"什么都没建出来"（否则本条反例恒真、没有鉴别力）。
+  assert.ok(
+    rec.paramPathUnmatched.some((x) => x.startsWith('backendApi/order/info/ (POST)')),
+    `同夹具的对照组（模板路径 + 方法不一致）必须落在 paramPathUnmatched（段数相等的模板路径被方法过滤挡下），实得 ${JSON.stringify(rec.paramPathUnmatched)}`,
+  );
+  // ② 字面段不同：大小写不同 ⇒ 不许建边（前缀相等/近似不算相等）
+  assert.equal(mdOf('BackendApi/order/info/'), undefined, '字面段大小写不同不许建边（norm 口径不折叠大小写）');
+  // ③ 方法不一致：路径对上 /info/{orderId}（GET），但调用写 POST ⇒ 不许建边，且要归 methodMismatch
+  assert.equal(mdOf('backendApi/order/info/'), undefined, '方法不一致不许建边');
+  //   ★ 用**路径能精确对上**的那条（/order/save 是 POST，这里 GET）：if/else 结构里字面路径的方法不一致
+  //     走的是 methodMismatch 分支（模板路径的方法不一致只会"找不到"，因为模板分支自带方法过滤）。
+  const badVerb = rec.methodMismatch.filter((x) => x.startsWith('/backendApi/order/save (GET)'));
+  assert.equal(
+    badVerb.length,
+    1,
+    `路径对上但方法不一致必须进 methodMismatch（不建边），实得 ${JSON.stringify(rec.methodMismatch)}`,
+  );
+  assert.equal(mdOf('/backendApi/order/save'), undefined, '方法不一致不许建边');
+  //   ★ 模板路径 + 方法不一致：不建边，且**不许冒充**成模板边
+  assert.equal(mdOf('backendApi/order/info/'), undefined, '模板路径 + 方法不一致不许建边');
+
+  // ★ 纯函数层的同三条（更快、更直白，且直接钉住约束本身）
+  //   ★ 反例必须是"末尾参数**之外**的段数差"：末尾 `{x}` 缺一段正是拼接 url 的合法形态（如 `'…/info/' + id`）。
+  assert.equal(matchParamTemplate('/a/{x}/list', '/a/list'), null, '段数不等（缺的不是末尾参数）⇒ null');
+  assert.equal(matchParamTemplate('/a/info/{id}', '/a/info/1/2'), null, '段数不等（多段）⇒ null');
+  assert.equal(
+    matchParamTemplate('/a/{id}/list', '/a/1/list2'),
+    null,
+    '段数相等但末尾字面段不同 ⇒ null（字面段必须逐字相等）',
+  );
+  assert.equal(matchParamTemplate('/a/{id}', '/a/1/list'), null, '末尾参数已填、模板却更短 ⇒ null（{x} 只匹配一整段）');
+  // ★ 对照组：末尾参数**缺段**是拼接 url 的合法形态（`'…/info/' + id`），必须命中
+  assert.deepEqual(matchParamTemplate('/a/info/{orderId}', '/a/info', true), { params: ['orderId'], values: [''] });
+  assert.deepEqual(matchParamTemplate('/a/{x}/{y}', '/a', true), { params: ['x', 'y'], values: ['', ''] });
+  assert.equal(matchParamTemplate('/a/info/{id}', '/a/infoOne/1'), null, '字面段不同 ⇒ null');
+  assert.equal(matchParamTemplate('/a/{x}/list', '/a//list'), null, '{x} 段为空 ⇒ null');
+  assert.equal(matchParamTemplate('/a/list', '/a/list'), null, '无 {x} 的路径不是模板边（那是精确匹配的事）');
+  assert.deepEqual(matchParamTemplate('/a/info/{orderId}', '/a/info/42'), { params: ['orderId'], values: ['42'] });
+  // ★ 末尾 `{x}` 段在**等长**情形下必须真的参与比较（写成 Math.min(epEnd,len) 就会整段跳过 ⇒ 这里 null ⇒ 红）
+  assert.deepEqual(matchParamTemplate('/backendApi/order/{id}', '/backendApi/order/detail'), {
+    params: ['id'],
+    values: ['detail'],
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑫ 纯字面 url 缺末尾参数段：没有 concat，不许使用拼接调用的例外
+// ════════════════════════════════════════════════════════════════════
+test('api-edges · ⑫ 非拼接字面 URL 不得吞掉末尾参数段', async () => {
+  const PROJ = makeProjWith(path.join(TMP, 'p1_literal_missing_param'), {
+    apiFile: 'literal.js',
+    apiJs: API_JS_LITERAL_MISSING_PARAM,
+  });
+  const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
+  const rows = apiEdges(PROJ);
+  assert.equal(rec.concatUrls, 0, '夹具必须真的是非拼接调用');
+  assert.equal(rec.paramEdges, 0, '纯字面 /info 不得建成 /info/{orderId} 的参数模板边');
+  assert.equal(rows.length, 0, '没有精确端点，也没有拼接表达式 ⇒ 不得建任何 API 边');
+  assert.ok(
+    rec.paramPathUnmatched.some((x) => x.startsWith('backendApi/order/info ')),
+    `缺尾段的字面调用必须留作参数路径未匹配，实得 ${JSON.stringify(rec.paramPathUnmatched)}`,
+  );
+  assert.equal(
+    matchParamTemplate('/a/info/{id}', '/a/info', false),
+    null,
+    '匹配器在未允许缺尾段时必须拒绝；只有 concat 调用方才传入 true',
+  );
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑬ 同方法碰撞：模板不得抢在已命中的精确端点之前 continue
+// ════════════════════════════════════════════════════════════════════
+test('api-edges · ⑬ 同 HTTP 方法下精确端点优先于等长模板', async () => {
+  const PROJ = makeProjWith(path.join(TMP, 'p1_exact_collision'), {
+    apiFile: 'exact.js',
+    apiJs: API_JS_EXACT_COLLISION,
+    controllerName: 'ExactCollisionController.java',
+    controllerSrc: EXACT_COLLISION_CONTROLLER,
+  });
+  const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
+  const rows = apiEdges(PROJ);
+  assert.equal(rows.length, 1, '精确 save 与模板 {id} 不得同时建边');
+  const md = JSON.parse(rows[0].metadata);
+  assert.equal(md.controller, 'ExactCollisionController.save', `必须指向精确 save，实得 ${JSON.stringify(md)}`);
+  assert.equal(md.param_template, undefined, '精确命中不得伪装成参数模板边');
+  assert.equal(rec.paramEdges, 0);
+  assert.equal(rec.matched, 1);
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑩ 混合场景：精确命中一个 + 模板命中另一个，互不干扰（精确优先）
+// ════════════════════════════════════════════════════════════════════
+test('api-edges · ⑩ 混合：精确命中与模板命中互不顶替（精确优先、controller 各指各的）', async () => {
+  // ★ 必须**换掉**默认的 OrderController：它自带的 /order/info/{orderId} 会抢先命中 —— 那测的就不是本用例了
+  const PROJ = makeProjWith(path.join(TMP, 'p1_param_mix'), {
+    apiFile: 'mix.js',
+    apiJs: API_JS_MIX,
+    controllerName: 'MixController.java',
+    controllerSrc: MIX_CONTROLLER,
+  });
+  const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
+  const rows = apiEdges(PROJ);
+  const mdOf = (u: string) => rows.map((x) => JSON.parse(x.metadata)).find((m) => m.url === u);
+
+  // 精确那条：/backendApi/order/save 是**字面**端点；同文件另有一个端点 /backendApi/order/{id}
+  //   —— 模板也能"对上"它（一段），但精确必须先赢。
+  const save = mdOf('/backendApi/order/save');
+  assert.ok(save, `字面端点 /backendApi/order/save 必须建边，实得 url：${rows.map((x) => JSON.parse(x.metadata).url).join(' | ')}`);
+  assert.equal(save.param_template, undefined, '精确优先：save 必须走精确分支（不许被 /backendApi/order/{id} 当成模板边抢走）');
+  assert.equal(save.controller, 'MixController.save', `精确边的 controller 必须是自己，实得 ${save.controller}`);
+
+  // 模板那条：/backendApi/order/detail/ + id ⇒ 命中 /backendApi/order/{id}
+  //   ★ 用 `'/backendApi/order/detail/' + id`（数字后缀无关，①② 才有 id 字面量）—— 见下 API_JS_MIX
+  const detail = mdOf('/backendApi/order/detail/');
+  assert.ok(detail, `模板边必须建（detail + id ⇒ /backendApi/order/{id}），实得 url：${rows.map((x) => JSON.parse(x.metadata).url).join(' | ')}`);
+  assert.equal(detail.param_template, true);
+  assert.deepEqual(detail.params, ['id']);
+  assert.equal(detail.controller, 'MixController.byId', `模板边的 controller 必须指到 {id} 那个方法，实得 ${detail.controller}`);
+
+  // 两条边互不干扰：各自 api_function 正确
+  assert.equal(save.api_function, 'saveOrder');
+  assert.equal(detail.api_function, 'getOrderDetail');
+
+  // ★★ 顺序判据的**唯一牙口**（M6）：同一 url `/backendApi/order/save` 在字面端点 `save`（POST）
+  //   与模板端点 `{id}`（GET）**两边都成立** ⇒ 只有"精确先试"才留得下精确边；
+  //   把模板挪到精确之前，这条 url 会被 GET 模板抢走（方法也不一致）⇒ 下面两行一起红。
+  assert.ok(
+    rows.some((x) => JSON.parse(x.metadata).api_function === 'saveOrder'),
+    `saveOrder 那条必须留在边上（模板抢到前面会把它顶掉），实得 api_function：${rows.map((x) => JSON.parse(x.metadata).api_function).join(' | ')}`,
+  );
+  const byId = mdOf('/backendApi/order/7');
+  assert.equal(byId, undefined, '模板边只按字面量认，按值替换出来的 url 不在图上（夹具一致性）');
+  assert.ok(rec.paramEdges >= 1, `paramEdges 读数必须 ≥1，实得 ${rec.paramEdges}`);
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑪ 真孤儿：后端没有对应模板 ⇒ 必须进 frontendOrphan，不许被模板吞掉
+// ════════════════════════════════════════════════════════════════════
+test('api-edges · ⑪ 后端无对应模板的真孤儿必须进 frontendOrphan（模板不许吞孤儿）', async () => {
+  const PROJ = makeProjWith(path.join(TMP, 'p1_param_orphan'), {
+    apiFile: 'orphan.js',
+    apiJs: API_JS_ORPHAN,
+  });
+  const rec = apiRecOf(await importFixture(PROJ, { include_api_edges: true }));
+
+  // ★ 真语料形态：`'backendApi/refund/delete/' + refundId` —— 后端 BackendRefundController
+  //   只有 /list /preCheck /info/{refundId} save doRefund，**没有 delete** ⇒ 这是真缺口。
+  assert.ok(
+    rec.frontendOrphan.some((x) => x.startsWith('backendApi/refund/delete/ ')),
+    `后端无对应端点的拼接 url 必须进 frontendOrphan（模板匹配过宽就会把它吞掉 —— 这是本卡最贵的反例），实得 ${JSON.stringify(rec.frontendOrphan)}`,
+  );
   const rows = apiEdges(PROJ);
   assert.ok(
-    !rows.some((x) => JSON.parse(x.metadata).url.includes('/info/')),
-    '参数端点两端**不建边**（T-#API-PARAM-EDGES 未决）',
+    !rows.some((x) => JSON.parse(x.metadata).url === 'backendApi/refund/delete/'),
+    '不许给真孤儿建边（建了 = 把缺口伪装成影响面）',
   );
 });
 

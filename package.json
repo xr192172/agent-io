@@ -194,5 +194,9 @@
     "@types/node": "^22.20.1",
     "tsx": "^4.23.15",
     "typescript": "^5.4.0"
-  }
+  },
+  "allowScripts": [
+    "tree-sitter-sql",
+    "tree-sitter-xml"
+  ]
 }
