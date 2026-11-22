@@ -2,7 +2,7 @@
 
 > ⛔ **GENERATED —— 不要手改本文件**（台账真相住 `.agent-io/tasks.db` 的 `ledger_rows` / `ledger_events`）。
 > 改行请走引擎（`ledger` 工具：hang / annotate / close / verdict）；重生成：`npm run ledger:render`；对账：`npm run ledger:check`。
-> 指纹：`engine_rows=721 events=543 body_sha256=4f97bf71d06b3175` —— 手改必被 `ledger:check` 点名。
+> 指纹：`engine_rows=721 events=545 body_sha256=1b28add534e82741` —— 手改必被 `ledger:check` 点名。
 
 > 排序原则（用户 2026-11-03）：**两大功能 = ① 主线回路（设计→结构化重写→投影→对拍）② 框架托管项目（增量测试/开发期自动化）**。
 > 每条任务标注服务哪个功能。小 bug 的共同形态 = 冗余数据/静默文件/没接口 ⇒ 收进 §E「产物必须有家」。
@@ -696,6 +696,29 @@ COUNT-NOT-EXACT / DIR-MTIME-NOT-BUILD-SIGNAL / PLAN-PK-TRIPLE  方法论行（�
 | **T-#FEATURE-ENGINE-RESUMABLE-CHECKPOINT** | 引擎原生可恢复执行：自动检查点与跨会话续接 | 当前跨会话恢复依赖主控手写 scratch、手工 ledger 归档和口头续接代理；ledger 能保存事件但没有统一的 run/session 检查点、自动状态采集和恢复入口。这会丢在途状态、重复派工并依赖模型记忆。 | 复用现有项目/任务/ledger/事件权威，设计宿主无关的可恢复执行能力。引擎在目标、任务、代理、工作树、进程、决策和证据变化时自动追加检查点；新会话经统一入口读取最近可信检查点并恢复当前行动。必须识别陈旧状态、未提交差异、仍活跃任务/进程，不声称能重新附着不可恢复的外部进程。禁止第二套任务或记忆真值，禁止 DSH 专属实现。验收反例：一个没有任何聊天上下文的新会话只凭引擎即可说出当前目标、写盘代理、HEAD/脏树、最近验证和唯一下一步，且不会重复已在进行的任务；手工 scratch 不再是必要条件。 |
 > ↳ agent:lead 2026-11-19：用户与主控方向裁定：不取消任务系统，不建立并列检查点系统；将可恢复执行并入任务/执行体系。Task 是长期意图、责任、验收和完成状态；Run/Attempt 是某次实际执行；Checkpoint 是该 run 的可恢复游标。三者复用现有任务身份和 ledger 事件，不建第二套当前状态权威。检查点不能核销任务，任务完成仍须判据与证据。恢复时读取 task/run/latest checkpoint 并建立新执行租约，不冒充旧进程仍存活。检查点投影可删除重建，任务与事件历史不丢。宿主会话仅是适配引用。
 > ↳ agent:lead 2026-11-19：补充验收：检查点不得依赖模型主动保存。任务变更、claim/lease、代理分派、源码写、命令 start/finish、证据与提交等引擎操作，在同一事务自动追加事件；checkpoint 是事件序号与可重建投影，不是模型维护的文档。执行器负责 attempt_started（输入指纹、进程、日志）与 attempt_finished（退出码、结果）；只有 start 没有 finish 必须恢复为 interrupted，不能判完成。引擎不可观测的外部写只能标记未对账。周期快照仅为加速，可删后从事件重建。关键反例：模型从未调用 checkpoint API 且执行中被杀死，全新会话仍能仅凭引擎恢复任务/run/工作树/进程状态与下一步，且不重复派工。
+> ↳ agent:lead 2026-11-22：2026-11-22 P2 首个垂直切片已落地并经独立复核接受；本地提交 f49d9100be294c657d32a3f5b38b2397bdbd033d（main，未 push）。本行仍 active：切片不是完整跨会话续接能力，不伪 done。
+> 
+> 实现（复用既有项目/任务/事件权威；不是第二任务系统，不是第二记忆真值）：
+> - tasks.db 新增 append-only run_events 表；纯域层 foldCheckpoint 从事件派生 Run/Attempt/Checkpoint 读模型（投影可删后重建，任务与事件历史不丢）。
+> - 三接缝：source_writer 写边界记 source_written（引用 write_log + 写后内容指纹，不复制写账/verdict）；completeTask 证据落盘后记 evidence_added（只引用 kind/时刻/署名/指纹）；正式 runner run_tests 记 attempt_started/attempt_finished + 边界 git_observed。
+> - 只读恢复工具 recover_run（writes:false，grants 恒 none）：读 Task/租约/Run/Attempt/证据新鲜度/HEAD 脏树/缺口；上下文校验未通过或缺失的 Attempt 不进当前活跃档；中断且活性 unknown 只给只读 inspect_pending_attempt——不重附旧进程、不判死、不重复派工；无可靠 alive 证据前不允许续接。
+> 
+> 验证读数（本次内环，不推导全量 CI/全册绿）：
+> - npm run build 通过；P2 定向 19/19；p0 115 文件 771 用例、p1 79 文件 661 用例、i1 6 文件 34 用例通过；verify:changed 实跑 371（测试 163 + 契约 208），契约 pass 208 / fail 0；继承 2171，未判定 122（不计通过）。改动 17 文件覆盖 16，唯一未覆盖 scripts/mcp/tool-surface-baseline.json（基线数据文件，存量状况，门内不判红）。
+> - design:check D6/D7/D9 为退役既有红，未改绿；D1–D5b 通过。
+> 
+> 保留限制：
+> - spawnSync 同步句柄拿不到子进程 pid：pid=unavailable、observation=unknown，不凭 pid/TTL 判 alive/dead。
+> - runner Attempt 无独立持久回执：attempt 事件缺失只能靠现场 Git 漂移侧证；回执警告不是持久对账。
+> - 漂移对账只比 HEAD + modified/untracked 文件名清单，不逐文件比内容指纹。
+> - write_log 无 generation 列：历史账只能按 actor 分桶，无法按代际归账；非当前 owner 行记 task 级历史缺口。
+> - unmapped/direct 写不进任务事件流，仅由 write_log 对账。
+> - 仓内没有真实子代理 dispatcher；run_dispatched 不伪造。
+> 
+> 后续小债（复核 N1）：finishAttempt 自身尚未下沉 start 落库守卫，当前由 run_tests 层在 attempt.recorded=false 时不补 finish；后续可把守卫收回记录器内部。
+> ↳ agent:lead 2026-11-22：提交格式修正：删除 src/application/observe/runtime/attempt_recorder.ts 末尾多余空行（git diff --check EOF blank line），
+> 对本批未推送本地提交执行 git commit --amend --no-edit。
+> 最终 hash=c61f314f0d874dca31d48d077dbc6d19dc0ee3a7；代码语义与既有验证读数不变，未为重空白改动重跑全套测试。
 | **T-#DOGFOOD-DSH-PLUGIN-MANAGER** | 官方 DSH 插件管理器：AgentIO 行为保持重构闭环 | 官方 DSH packages/boot/plugin-manager 的 installBundle 同时编排 spec 解析、Git 传输探测、registry/pnpm 安装、构建审批与 profile 写回；需要验证 AgentIO 能否在真实外部项目上约束一次行为保持重构，而不是只做结构清理或在本仓自证。 | 仅以官方 GitHub checkout D:/Projects/ai/active/project_develop/deepseek-harness 的 2e39e70496aa02986ca6a820c5d497e816b69d7e 为源，在 refactor/agentio-install-bundle 分支试点。先经 import_project 导入该包并建立设计节点，再将 installBundle 的可独立阶段抽成纯参数传递的私有方法；不得引入成员级在途状态，不得改变公共签名、返回/错误形状、进度事件、取消语义、审批顺序或 profile 写回时机。原始基线为 17 个测试文件、464 pass、3 skipped；初轮三包并发时两项真实 Git/pnpm 测试超时，插件管理器独立复跑全绿，必须保留该负载事实。新增反例至少证明并发 install 不共享 spec/version/approval 状态；完工复跑原套件、类型/静态门并记录返工与机制维护成本。非目标：修改运行中的 DSH 安装、安装专属插件、实现托管 UI、顺手修无关包。 |
 | **T-#DS1-MUTATE-TAKEOVER-READALL** | DS-1 收口：mutate 过期租约接管被 E-CLAIM-017 挡住（读全门把 E-PLAN-009 的 info 档当 blocking） | 阶段 B 用真实写端 edit_dsl claim 接管 file_scripts_mutate_mjs（原 owner=agent:ds1r3-closeout，claimed_at=last_heartbeat_at=2026-11-21T13:07:11.976Z，远超 LEASE_TTL 10 分钟）。payload：supersedes.against=file_scripts_mutate_mjs，judgements 逐条覆盖 decision:file_scripts_mutate_mjs#0 与 #1，两条都按判据表达式现算为 true（仍成立）⇒ 本该走『兼容接管』。真实回执：E-CLAIM-017『交集文件 scripts/mutate.mjs 还没通读（有顶层符号没在画布 entries / untouched 里表态）：文件里有 34 个冻结之后才出现的符号：JOURNAL_ROOT, journalDir, journalRelOf, journalBegin, journalExpect, journalCommit（`untouched_default` 没覆盖它们）』。根因可复算：tasks.db#plans 里这张卡的画布 frozen_at=2026-11-06T19:19:31.288Z、symbols_at_freeze 只有 32 个符号，而 cache.db#nodes 里该文件当前有 66 个顶层符号（DS-1 那批 journal/existence 函数是冻结之后加的）⇒ planCoverageGaps 出 E-PLAN-009。E-PLAN-009 在 rewrite_plan.ts#PLAN_COVERAGE_TIER 里是 info 档（理由：每次加顶层函数都会亮，属『画布该重新冻结』的派生欠账），写闸 planGate 只按 blocking 拦；但 task_ops.ts#claimTask 的卡级接管门把 [...cov.info, ...cov.blocking] 并成『读全证据不足』⇒ 同一事实两处判法不一致，一张有画布但快照过期的卡永远接管不了。 | 另立一张小卡修 claimTask（src/application/design/dsl_ops/task_ops.ts）的卡级接管门：只把 blocking 计入 E-CLAIM-017，info 档改为回执点名，与 src/application/write_gate.ts#planGate 同一口径；配一条会红的反例：画布快照过期 + 判据全部仍成立 ⇒ 兼容接管必须放行。不借 DS-1 顺手改调度实现或判据框架。 |
 > ↳ agent:ds1-independent-closeout 2026-11-21：2026-11-21 纠偏（22 号企划阶段 D）：本行原写的下一步『修 claimTask，只把 blocking 计入 E-CLAIM-017』**不再授权** —— 21 号复核指出接管门问的是『画布涉及的每个顶层符号是否表态』，写闸与接管门可以是不同消费者，仅凭数组名不同不足以证明是 bug。真实路径已按复核意见走完：① 真实通读 34 个冻结后符号（8 个本轮新增 journal 机制 + 3 个本轮改过的已有函数 restoreAll/runMutate/runMutateLocked + 26 个 existence 棘轮/存活体抽样族的既有符号）；② 用真实写端 design_line action=plan 把当前恢复改集写进画布：entries 12 条（JOURNAL_ROOT、journalDir、journalRelOf、journalBegin、journalExpect、journalCommit、commitEntry、journalRecover、restoreAll、runMutate、runMutateLocked + 保留的 planMutants）、untouched 26 条逐个带 why，**没有一个已改对象被藏进 untouched_default**；③ apply:true 重冻结：symbols_at_freeze 66 = 当前 66 个顶层符号（fps 46 条 body_hash），复算 planCoverageGaps 为空；④ 重跑 claim（兼容档，两条 run 判据现算仍成立）**接管成功**：owner agent:ds1r3-closeout → agent:ds1-independent-closeout，lease_generation 3 → 4，claimed_at 2026-11-21T15:35:09.724Z，taken_over_from 记旧 owner / 旧 claimed_at / age 2.5h / 旧心跳，上一轮 2 条 evidence 逐条保留，disputed_by 追加一条。⇒ 原 E-CLAIM-017『读全证据不足』在真实通读 + 改集纠偏后自然消失，**不是口径 bug**，也不需要改 info/blocking。剩余（另立项，不在本行修）：重冻结后 planJudgementGaps 点名 8 条『新建符号要有接线类判据（call-exists / edge-exists）』—— 本卡判据表达面的既有缺口。本行保持 active，等复核。
