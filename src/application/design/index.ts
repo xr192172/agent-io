@@ -69,7 +69,7 @@ import type { ImportProjectInput } from '../../infrastructure/graph/import_proje
 // ★★ 2026-11-09：目标 → 设计 → 施工项（把 changeset_draft 接进既有 opl 产线；不新增公共工具）
 import { type DesignSheetLike } from "./db/gen_design_db.js";
 
-import type { ToolDef } from '../types.js';
+import { declareActionEffects, declareEffect, type ActionToolDef } from '../action_effect.js';
 
 /**
  * `design_line action=judge` 的**唯一实现** —— 2026-11-17 从 handler 里**原样提出**（行为逐字不变）。
@@ -184,10 +184,14 @@ export async function judgeBookReceipt(input: {
   };
 }
 
-export const DESIGN_TOOLS: ToolDef[] = [
+export const DESIGN_TOOLS: ActionToolDef[] = [
   {
     name: 'get_dsl',
     writes: false,
+    effect: declareEffect('may-write', ['design', 'derived-state'], {
+      conditionalWrite: true,
+      note: 'render/digest 分支写派生缓存；query 分支只读。',
+    }),
     title: 'Query feature data',
     description:
       '统一只读入口：通过 query 参数查询 DSL 数据。' +
@@ -357,6 +361,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'edit_dsl',
     writes: true,
+    effect: declareEffect('may-write', ['design', 'derived-state'], { note: '写 DSL 三格/派生图。' }),
     title: 'Update feature with batch operations',
     description:
       '统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，' +
@@ -490,6 +495,23 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'design_line',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'design', 'derived-state', 'external'], {
+      note: '动作级拆分见 actions（§2.6.2）；LLM 建议/worker 为外部，改源仅 sync-signatures/rewrite apply=true 分支。',
+      actions: declareActionEffects({
+        report: declareEffect('safe-read', ['design', 'derived-state', 'source']),
+        brief: declareEffect('safe-read', ['design', 'derived-state', 'source']),
+        diff: declareEffect('safe-read', ['design', 'source']),
+        plans: declareEffect('safe-read', ['derived-state', 'design']),
+        judge: declareEffect('may-write', ['derived-state', 'external'], { conditionalWrite: true, note: '判定缓存仅 cacheMisses>0 落盘；worker/runner 外部执行。' }),
+        drift: declareEffect('may-write', ['derived-state', 'vcs-history'], { conditionalWrite: true, note: 'mode=check 写 drift.json；git 只读。' }),
+        'gen-db': declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: 'check=false 写 design-db/ 投影。' }),
+        plan: declareEffect('may-write', ['derived-state', 'external'], { conditionalWrite: true, note: 'apply=true 落画布；judgeExpectations 外部判定。' }),
+        'import-plan': declareEffect('may-write', ['derived-state']),
+        'sync-signatures': declareEffect('may-write', ['source', 'derived-state'], { conditionalWrite: true, note: 'apply=true 源码签名写 + 索引写穿。' }),
+        rewrite: declareEffect('may-write', ['source', 'derived-state'], { conditionalWrite: true, note: 'sync-signatures 旧名兼容。' }),
+        compile: declareEffect('may-write', ['design', 'external'], { conditionalWrite: true, note: 'apply=true updateFeature 落册；内部 judgeExpectations 外部判定。' }),
+      }),
+    }),
     title: 'Design line: six-step reading',
     description:
       '设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 设计签名 → 源码。' +
@@ -1471,6 +1493,10 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'import_project',
     writes: true,
+    effect: declareEffect('may-write', ['design', 'derived-state'], {
+      destructive: true,
+      note: '导入/重建派生索引与设计表；覆盖既有派生状态。',
+    }),
     title: 'Import a code project as DSL',
     noAutoFresh: true, // 自己做全量导入，前置保鲜纯属浪费
     description:
@@ -1603,6 +1629,7 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'design_intent',
     writes: true,
+    effect: declareEffect('may-write', ['design'], { conditionalWrite: true, note: '仅 intent 存在/确认分支写 DSL 意图。' }),
     title: 'Design intent (why): set directly — single entry',
     description:
       '「设计意图（why）」统一入口：**没有独立工具** —— 读 intent 走 `get_dsl`（query=goals / edge_intents），' +
@@ -1711,6 +1738,31 @@ export const DESIGN_TOOLS: ToolDef[] = [
   {
     name: 'opl',
     writes: true,
+    effect: declareEffect('may-write', ['design', 'derived-state', 'external'], {
+      note: '动作级拆分见 actions；advance 才经 edit_code 子进程写真仓源码，auto 实现文件只落 implRoot 派生沙箱。',
+      actions: declareActionEffects({
+        // §2.6.3：资源域按真实落点（opl.ts / opl_goal_entry.ts / derive_mind_map.ts）登记。
+        add: declareEffect('may-write', ['derived-state'], { note: 'opl.ts:124 仅 writeState 状态 json。' }),
+        propose: declareEffect('safe-read', ['source', 'design'], { note: 'opl_goal_entry.ts:84-104 候选草案，无写原语。' }),
+        adopt: declareEffect('may-write', ['design', 'derived-state'], { note: 'updateFeature 落册 + steps 命令 json。' }),
+        advance: declareEffect('may-write', ['source', 'external', 'derived-state'], {
+          destructive: true,
+          note: 'opl_goal_entry.ts:421-425/:450/:466-469 execFileSync：edit_code 写真仓源码、verify 外部进程。',
+        }),
+        locate: declareEffect('may-write', ['design', 'derived-state', 'external'], {
+          note: 'opl.ts:129 readState → :131 placeProposals → :142 writeState；teachFile writeFileSync + LLM 分支（derive_mind_map.ts:2033/:2047/:2113）。',
+        }),
+        declare: declareEffect('may-write', ['derived-state'], { note: 'opl.ts:203/:208 沙箱骨架 mkdirSync/writeFileSync；:211 writeState；本步不 saveDSL。' }),
+        implement: declareEffect('may-write', ['derived-state'], { note: 'opl.ts:215-219 仅 writeState；无源/册/外部写。' }),
+        check: declareEffect('may-write', ['derived-state'], { note: 'opl.ts:276-277 签名缓存 writeFileSync；:354 writeState；无 DSL 写。' }),
+        integrate: declareEffect('may-write', ['design', 'derived-state'], { note: 'opl.ts:403 saveDSL；:407-414 导图；:418 writeState；无源码写。' }),
+        list: declareEffect('safe-read', ['derived-state'], { note: 'opl.ts:422-437 readdirSync/readFileSync。' }),
+        get: declareEffect('safe-read', ['derived-state'], { note: 'opl.ts:440-442 readState。' }),
+        auto: declareEffect('may-write', ['design', 'derived-state', 'external'], {
+          note: 'implRoot=getStorageRoot()/opl/<feature>/<id>/impl 派生沙箱（opl.ts:77-78/:574-576）；无 advance/execFileSync/edit_code 真仓源码链；LLM 双路为外部。',
+        }),
+      }),
+    }),
     title: 'OPL：目标/愿望 → 定位 → 契约 → 实现 → 校验 → 归并',
     description:
       'propose：由项目事实出候选 ChangeSet + 确认清单（只读）。' +

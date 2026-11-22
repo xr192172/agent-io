@@ -33,8 +33,7 @@ import { fileNodeId } from '../../graph/node_id.js';
 export type ImpactDirection = 'callers' | 'callees' | 'both';
 export type EdgeKind = 'call' | 'type_ref' | 'import';
 
-export interface DiffImpactInput {
-  /** 可选：提供时用于 DSL 文件节点映射（dsl_node_id）与语义路径基准；缺省纯缓存分析 */
+export interface DiffImpactInput {  /** 可选：提供时用于 DSL 文件节点映射（dsl_node_id）与语义路径基准；缺省纯缓存分析 */
   feature?: string;
   /** 被分析项目的根目录（其下 .agent-io/cache.db 是符号缓存） */
   project_dir: string;
@@ -44,6 +43,12 @@ export interface DiffImpactInput {
   direction?: ImpactDirection;
   /** 最大追溯深度，默认 3 */
   max_depth?: number;
+  /**
+   * ★ DS-1R：**已打开的只读连接**（只读消费者注入）。
+   * 缺省仍走 `getProjectCacheDb` 池（既有调用点零改动）；注入时本函数只用它做 SELECT，
+   * 不 close（由调用方负责），也不得再降级成"空结果"（读失败要暴露给调用方）。
+   */
+  db?: Database;
 }
 
 export interface ImpactedSymbol {
@@ -204,16 +209,20 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
     return base && semanticPaths.has(base) ? base : undefined;
   };
 
-  // 打开缓存连接（失败降级为提示性空结果）
+  // 打开缓存连接（失败降级为提示性空结果）；★ 注入连接时**不降级**：读失败必须上抛/如实报
   let db: Database;
-  try {
-    db = getProjectCacheDb(root);
-  } catch (e) {
-    return emptyResult(
-      feature ?? path.basename(root), root, changedRels, direction, max_depth,
-      [`无法打开/创建缓存 ${projectCacheDbPath(root)}：${(e as Error).message}。请确认该目录存在且可写。`],
-      `变更影响分析失败：无法打开符号缓存（目录不存在或不可写）。`,
-    );
+  if (input.db) {
+    db = input.db;
+  } else {
+    try {
+      db = getProjectCacheDb(root);
+    } catch (e) {
+      return emptyResult(
+        feature ?? path.basename(root), root, changedRels, direction, max_depth,
+        [`无法打开/创建缓存 ${projectCacheDbPath(root)}：${(e as Error).message}。请确认该目录存在且可写。`],
+        `变更影响分析失败：无法打开符号缓存（目录不存在或不可写）。`,
+      );
+    }
   }
 
   // ── 多边类数据源规模 ──

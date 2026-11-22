@@ -33,6 +33,17 @@ export const LEDGER_ACTIONS = [
 export type LedgerAction = (typeof LEDGER_ACTIONS)[number];
 
 /**
+ * 台账只读 action（只触 listActive / getRow / subjectConflicts / readReviewQueue）；
+ * 其余闭集动作触引擎写 API。**由 LEDGER_ACTIONS 派生**，不是第二份判据 —— 动作级
+ * 效果表在 `meta/index.ts` ledger ToolDef 的 `actions` 里直接展开消费这两个闭集
+ * （read = safe-read / write = may-write）；判定权仍在引擎 handler，此处只提供面的形状。
+ */
+export const LEDGER_READ_ACTIONS = ['list', 'get', 'conflicts', 'review_queue'] as const;
+export const LEDGER_WRITE_ACTIONS = LEDGER_ACTIONS.filter(
+  (a): a is LedgerAction => !(LEDGER_READ_ACTIONS as readonly string[]).includes(a),
+);
+
+/**
  * 值域**镜像**（引擎只导出类型、没导出值数组 ⇒ zod 这边只能列一遍）。
  * ★ 改引擎闭集时这几行必须一起改；**判定权仍在引擎**（handler 不拿它们判语义，
  *   只用来把 zod 的窄类型接过去）—— 所以它们是"面的形状"，不是"第二份判据"。

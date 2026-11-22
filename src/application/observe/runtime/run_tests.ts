@@ -16,6 +16,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { resolveNoShell } from '../../../infrastructure/exec_guard.js';
+import {
+  finishAttempt,
+  startAttempt,
+  type AttemptContext,
+  type AttemptRecord,
+} from './attempt_recorder.js';
 
 export interface RunTestsResult {
   /** 工具是否成功执行（能定位到 scripts.test、能起进程拿到退出码）——不含测试通过与否 */
@@ -40,13 +46,28 @@ export interface RunTestsResult {
   outputTruncated: boolean;
   /** ok=false 时的失败原因说明 */
   error?: string;
+  /** P2：本次调用的 Attempt 事件记录回执（未记时 `recorded=false` 并给原因，非静默） */
+  attempt?: AttemptRecord;
+}
+
+/** runTests 入参（执行上下文可选：缺任务字段 = 通用 runner，事件不记但回执显式标注）。 */
+export interface RunTestsInput {
+  project_dir?: string;
+  filter?: string;
+  timeoutMs?: number;
+  /** 任务/租约上下文（透传自工具入参；授权仍由既有写闸判，这里只做审计与分桶）。 */
+  execution?: AttemptContext;
 }
 
 /** 单条输出流的尾部保留字符数（约 4000） */
 const TAIL_CHARS = 4000;
 
-export function runTests(input: { project_dir?: string; filter?: string; timeoutMs?: number }): RunTestsResult {
+export function runTests(input: RunTestsInput): RunTestsResult {
   const cwd = input.project_dir ? path.resolve(input.project_dir) : process.cwd();
+  // ★ P2：一次正式调用 = 一个 Attempt（同 Run 内可多个顺序 Attempt；这里不做重试/分组）。
+  //   ref 在开工前生成，started/finished 按它配对；同步句柄拿不到 pid（记录器里标 unavailable）。
+  const attemptRef = `a-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const execCtx: AttemptContext | undefined = input.execution;
 
   // 防自递归：npm 跑任何 script 时都会设置 `npm_lifecycle_event`。本仓测试入口不止一个
   // （test / test:main / test:r5 / test:watch），只要在「测试类 npm script」进程内、又省略
@@ -83,6 +104,8 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
     if (!exe) {
       return fail('`mvn` 解析失败（resolveNoShell）——Maven 安装形态不受支持。');
     }
+    // ★ P2：解析出真实命令之后、起进程之前落 attempt_started（输入指纹；pid unavailable）。
+    const attempt = startAttempt(cwd, execCtx, attemptRef, { command, filter: input.filter, cwd, timeoutMs: timeout });
     const r = spawnSync(exe.file, [...exe.prefixArgs, ...mvnArgs], {
       cwd,
       encoding: 'utf-8',
@@ -96,23 +119,40 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
     const { text: stderrTail, truncated: t2 } = tail(stderr);
     const err = r.error as (Error & { code?: string }) | undefined;
     const timedOut = err?.code === 'ETIMEDOUT';
+    const signal = r.signal != null ? String(r.signal) : null;
+    // ★ F5：start 未落库就不补 finish（上下文齐 ≠ 已落库）；finish 回执显式带 append_ok/error。
+    const fin = attempt.recorded
+      ? finishAttempt(cwd, execCtx, attemptRef, {
+          command,
+          exit_code: r.status,
+          signal,
+          timed_out: timedOut,
+          log_ref: { stdout_tail_ref: 'stdoutTail', stderr_tail_ref: 'stderrTail' },
+        }, cwd)
+      : null;
+    if (fin) {
+      attempt.finished = fin.finished;
+      attempt.git_finished = fin.git_finished;
+      attempt.append_ok = fin.append_ok;
+      attempt.append_error = fin.error;
+    }
     if (timedOut) {
-      return {
+      return withAttempt(attempt, {
         ok: false, success: false, command, exitCode: r.status,
         filter: input.filter, filterNote, timedOut: true,
         stdoutTail, stderrTail, outputTruncated: t1 || t2,
         error: `mvn test 超时（>${Math.round(timeout / 1000)}s），进程已被终止。`,
-      };
+      });
     }
     if (err) {
-      return {
+      return withAttempt(attempt, {
         ok: false, success: false, command, exitCode: r.status,
         filter: input.filter, filterNote, timedOut: false,
         stdoutTail, stderrTail, outputTruncated: t1 || t2,
         error: `无法启动 mvn：${err.message}`,
-      };
+      });
     }
-    return {
+    return withAttempt(attempt, {
       ok: true,
       success: r.status === 0,
       command,
@@ -123,7 +163,7 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
       stdoutTail,
       stderrTail,
       outputTruncated: t1 || t2,
-    };
+    });
   }
   let pkg: { scripts?: Record<string, string> } | undefined;
   try {
@@ -165,6 +205,8 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
   if (!exe) {
     return fail('PATH 上找不到 npm（本工具需要它才能跑 scripts.test）—— 请确认 Node.js / npm 已安装并在 PATH 上。');
   }
+  // ★ P2：解析出真实命令之后、起进程之前落 attempt_started（输入指纹；pid unavailable）。
+  const attempt = startAttempt(cwd, execCtx, attemptRef, { command, filter: input.filter, cwd, timeoutMs: timeout });
   const r = spawnSync(exe.file, [...exe.prefixArgs, ...args], {
     cwd,
     timeout,
@@ -180,9 +222,26 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
 
   const err = r.error as (Error & { code?: string }) | undefined;
   const timedOut = err?.code === 'ETIMEDOUT';
+  const signal = r.signal != null ? String(r.signal) : null;
+  // ★ F5：start 未落库就不补 finish；finish 回执显式带 append_ok/error。
+  const fin = attempt.recorded
+    ? finishAttempt(cwd, execCtx, attemptRef, {
+        command,
+        exit_code: r.status,
+        signal,
+        timed_out: timedOut,
+        log_ref: { stdout_tail_ref: 'stdoutTail', stderr_tail_ref: 'stderrTail' },
+      }, cwd)
+    : null;
+  if (fin) {
+    attempt.finished = fin.finished;
+    attempt.git_finished = fin.git_finished;
+    attempt.append_ok = fin.append_ok;
+    attempt.append_error = fin.error;
+  }
 
   if (timedOut) {
-    return {
+    return withAttempt(attempt, {
       ok: false,
       success: false,
       command,
@@ -194,12 +253,12 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
       stderrTail,
       outputTruncated: t1 || t2,
       error: `测试超时（>${Math.round(timeout / 1000)}s），进程已被终止。`,
-    };
+    });
   }
 
   // spawn 层面的失败（如 npm 无法启动）：error 存在且非超时。如实返回，不吞。
   if (err) {
-    return {
+    return withAttempt(attempt, {
       ok: false,
       success: false,
       command,
@@ -211,11 +270,11 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
       stderrTail,
       outputTruncated: t1 || t2,
       error: `无法启动测试进程：${err.message}`,
-    };
+    });
   }
 
   // 退出码是唯一判据。exitCode 为 null（被信号杀死）时按失败处理。
-  return {
+  return withAttempt(attempt, {
     ok: true,
     success: r.status === 0,
     command,
@@ -226,7 +285,13 @@ export function runTests(input: { project_dir?: string; filter?: string; timeout
     stdoutTail,
     stderrTail,
     outputTruncated: t1 || t2,
-  };
+  });
+}
+
+/** 把 Attempt 记录回执附到结果上（未记录时回执原样保留 `recorded=false` 与原因）。 */
+function withAttempt(attempt: AttemptRecord, result: RunTestsResult): RunTestsResult {
+  result.attempt = attempt;
+  return result;
 }
 
 /** ok=false 的统一返回（退出码/输出均为空） */

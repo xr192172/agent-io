@@ -83,6 +83,37 @@ export function gitDirty(dir: string): boolean {
   return s.modified.length > 0 || s.untracked.length > 0;
 }
 
+/**
+ * ★ P2 只读快照：恢复 / `git_observed` 边界观察复用的唯一读数处。
+ *
+ * 三态诚实：git 不可读（不是仓 / 命令失败 / 无基线）⇒ `git_ok=false`、`head=null`、`reason` 写明，
+ * **不把空集当干净**（约束 9）。`dirty` 由既有 {@link gitStatus} 口径派生（未暂存 modified + 未跟踪）。
+ */
+export interface GitSnapshot {
+  git_ok: boolean;
+  head: string | null;
+  dirty: boolean;
+  modified: string[];
+  untracked: string[];
+  reason: string | null;
+}
+
+export function gitSnapshot(dir: string): GitSnapshot {
+  const head = run(dir, ['rev-parse', 'HEAD']);
+  if (!head.ok) {
+    return { git_ok: false, head: null, dirty: false, modified: [], untracked: [], reason: head.out };
+  }
+  const status = gitStatus(dir);
+  return {
+    git_ok: true,
+    head: head.out,
+    dirty: status.modified.length > 0 || status.untracked.length > 0,
+    modified: status.modified,
+    untracked: status.untracked,
+    reason: null,
+  };
+}
+
 /** 精确提交指定文件（只用被补丁改过的文件，不用 -A） */
 export function gitCommitFiles(dir: string, files: string[], message: string): { committed: boolean; out: string } {
   if (files.length === 0) return { committed: false, out: '无文件可提交' };

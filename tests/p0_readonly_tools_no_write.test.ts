@@ -102,8 +102,9 @@ test('④ 注册表自检：6 个写册工具 true，其余 false（主控裁定
   ]);
   const gotTrue = TOOL_DEFS.filter((d) => d.writes).map((d) => d.name).sort();
   assert.deepEqual(gotTrue, [...expectTrue].sort(), 'writes:true 清单必须逐字等于裁定口径');
-  // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（43→44）+ 第三刀退役 4 工具（first_hop/next_hop/gateway_provider/memory_observe 摘出 MCP 面）⇒ 44→40
-  assert.equal(TOOL_DEFS.length, 41, 'TOOL_DEFS 总数 41（合并 +1、退役 -4、台账写面 +1）；退役去向见 capability_map.ts#RETIRED_TOOLS');
+  // ★★ 第⑬项（2026-11-10）：chain_hop_args 合并（43→44）+ 第三刀退役 4 工具 ⇒ 44→40；
+  //   P2 恢复切片 +1 只读工具 `recover_run`（writes:false / safe-read）⇒ 41→42。
+  assert.equal(TOOL_DEFS.length, 42, 'TOOL_DEFS 总数 42（P2 +1 只读恢复工具）；退役去向见 capability_map.ts#RETIRED_TOOLS');
   // ★★★ 2026-11-06（T-t27）：`archive` 注册项摘除后的**不变量** —— 墓碑表里的名字不许还活着。
   //   这一条是"死名字复活"的唯一机器执行者（墓碑表在 capability_map.ts，注册表在 tool_registry.ts，
   //   两处一旦打架，旧名调用就会既"报已退役"又"真能调"）。

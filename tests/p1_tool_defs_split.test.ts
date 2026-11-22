@@ -30,7 +30,7 @@
  * ③ **工具面逐字节不变**：用仓里那把唯一的尺（`scripts/mcp/tool_surface.mjs`，起真 server 取
  *    `tools/list`）量 wire 字节，与 `scripts/mcp/tool-surface-baseline.json` 的 tools/bytes
  *    **完全相等** ⇒ 谁"顺手"改了一个描述 / 一个 schema 字段 / 一个注解，这条就红。
- * ④ **元数据齐全**：41 个工具逐个要求 name / title / description / inputSchema / annotations / writes
+ * ④ **元数据齐全**：42 个工具逐个要求 name / title / description / inputSchema / annotations / writes
  *    （缺一个 = MCP 面上的声明就少一格，与 `TOOL_DEFS` 的绑定期检查互为表里）。
  * ⑤ **lane 文件求值期不许 import 实现**（源码侧同一把尺的另一面）：不依赖 build，
  *    直接读 5 个 lane 的顶层 import 行。
@@ -109,7 +109,7 @@ test('簇 A ① 元数据轻量：import TOOL_DEFS 不拉任何实现模块（�
   assert.equal(fs.existsSync(REGISTRY), true, '缺 ' + REGISTRY + ' ⇒ 先 npm run build（本文件跑 dist）');
   const { urls, out } = probe(`${IMPORT_DEFS}\nconsole.log('N=' + TOOL_DEFS.length);`);
   const n = Number(/N=(\d+)/.exec(out)?.[1] ?? NaN);
-  assert.equal(n, 41, '元数据里必须仍有 41 个工具（实得 ' + out.trim() + '）');
+  assert.equal(n, 42, '元数据里必须仍有 42 个工具（实得 ' + out.trim() + '）');
 
   const leaked = present(urls);
   assert.deepEqual(
@@ -161,13 +161,13 @@ await d.handler({});`;
  * 分家**前**（真仓 HEAD `1f98ec72` 的 `dist/`）用同一把尺量出来的工具面指纹：
  *   41 个工具 / wire 160259 B / 规范化 sha256 = 下面这个值。
  * 分家后只接受一次显式有意识面变化：`ledger.list.include_superseded` 入参（T-#LEDGER-CURRENT-PROJECTION）。
- * 当前读数 = 41 工具 / wire 160383 B / sha256 见下；这是“唯一变化”后的新基线。
+ * P2 恢复切片再入一只读工具 `recover_run`：当前读数 = 42 工具 / wire 162886 B / sha256 见下。
  *
- * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那 baseline 的 bytes 已是 160383（与上值一致），
- *   但本测试继续钉住“本笔加载策略分家 + 唯一新入参”的 sha，防止未来有人只改 baseline 不改语义。
+ * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那 baseline 的 bytes 已是 162886（与上值一致），
+ *   但本测试继续钉住“本笔加载策略分家 + 唯一新入参 + P2 只读恢复工具”的 sha，防止未来有人只改 baseline 不改语义。
  */
-const SURFACE_SHA256_AT_HEAD = 'b401e5c4b2c419f5d9618ecb0de07c969d4b31b130c7ac65185eceb6a1679f87';
-const SURFACE_BYTES_AT_HEAD = 160383;
+const SURFACE_SHA256_AT_HEAD = 'e7609910131a48768b09744b5cada3ddbfe086050d2dfe405ab0da8865f25fef';
+const SURFACE_BYTES_AT_HEAD = 162886;
 
 test('簇 A ③ 工具面逐字节不变：tools/list 的规范化指纹 == 分家前 HEAD 的实测值（改一个描述/schema 字段即红）', async () => {
   assert.equal(fs.existsSync(SERVER), true, '缺 ' + SERVER + ' ⇒ 先 npm run build');
@@ -178,7 +178,7 @@ test('簇 A ③ 工具面逐字节不变：tools/list 的规范化指纹 == 分�
   const reading = await readToolsListWire({ projectDir: ROOT, serverEntry: SERVER, timeoutMs: 120_000 });
   const s = surfaceSummary(reading);
 
-  assert.equal(s.tools, 41, `工具总数必须仍是 41（实得 ${s.tools}）`);
+  assert.equal(s.tools, 42, `工具总数必须仍是 42（实得 ${s.tools}）`);
   assert.equal(s.tools, base.tools, `工具总数与 mcp_scan 基线一致（基线 ${base.tools} / 实测 ${s.tools}）`);
 
   const tools = [...reading.response.result.tools].sort((a, b) => String(a.name).localeCompare(String(b.name)));
@@ -202,9 +202,9 @@ test('簇 A ③ 工具面逐字节不变：tools/list 的规范化指纹 == 分�
   assert.equal(top.get('design_line'), 8448, 'design_line 的字节数变了：' + top.get('design_line'));
 });
 
-test('簇 A ④ 元数据齐全：41 个工具逐个有 name/title/description/inputSchema/annotations/writes', async () => {
+test('簇 A ④ 元数据齐全：42 个工具逐个有 name/title/description/inputSchema/annotations/writes', async () => {
   const { TOOL_DEFS } = await import(pathToFileURL(path.join(ROOT, 'src', 'application', 'tool_registry.ts')).href);
-  assert.equal(TOOL_DEFS.length, 41, '工具总数 41（实得 ' + TOOL_DEFS.length + '）');
+  assert.equal(TOOL_DEFS.length, 42, '工具总数 42（实得 ' + TOOL_DEFS.length + '）');
   for (const d of TOOL_DEFS) {
     assert.ok(d.name && typeof d.name === 'string', 'name 缺：' + JSON.stringify(d.name));
     assert.ok(d.title && d.title.length > 0, d.name + ' 缺 title');

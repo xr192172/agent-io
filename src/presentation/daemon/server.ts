@@ -16,6 +16,14 @@
 
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+// P1-ACTION-EFFECT-BOUNDARY-01：daemon 控制动作在 handler/执行核前消费同一纯裁决一次。
+import {
+  adjudicateActionEffect,
+  declareEffect,
+  type ActionEffect,
+  type Adjudication,
+  type TransportFacts,
+} from '../../application/action_effect.js';
 
 // ─────────────────────────────────────────────────────────────
 // 按依赖区域分桶的串行队列：同一 feature（同一块依赖区域）串行，
@@ -89,6 +97,40 @@ function hostAllowed(host: string | undefined, port: number): boolean {
   return host === `127.0.0.1:${port}` || host === `localhost:${port}` || host === `[::1]:${port}`;
 }
 
+/**
+ * daemon 非工具控制动作的效果登记（不强行 ToolDef 化；事实与 handler 注册位置同处）。
+ * 判据读数仍走 application/action_effect.ts 的同一纯裁决。
+ */
+const DAEMON_ACTION_EFFECTS: Readonly<Record<'daemon:dsl' | 'daemon:watch' | 'daemon:shutdown', ActionEffect>> = {
+  'daemon:dsl': declareEffect('may-write', ['design', 'derived-state'], {
+    note: 'dispatchDsl 写 DSL/派生图；串行队列与乐观锁既有闸不变。',
+  }),
+  'daemon:watch': declareEffect('may-write', ['derived-state'], {
+    conditionalWrite: true,
+    note: 'watch 队列/派生状态；resolveViolation 写台账派生状态。',
+  }),
+  'daemon:shutdown': declareEffect('may-write', ['external'], {
+    destructive: true,
+    note: '进程退出；零仓内调用者，不默认兼容（无 Origin ⇒ 拒）。',
+  }),
+};
+
+function daemonTransport(req: http.IncomingMessage): TransportFacts {
+  return {
+    channel: 'http-daemon',
+    method: req.method,
+    host: typeof req.headers.host === 'string' ? req.headers.host : undefined,
+    origin: typeof req.headers.origin === 'string' ? req.headers.origin : undefined,
+    remoteAddress: req.socket?.remoteAddress,
+    now: new Date().toISOString(),
+  };
+}
+
+function writeBoundaryDeny(res: http.ServerResponse, adj: Adjudication): void {
+  res.writeHead(adj.status || 403, { 'content-type': 'application/json' });
+  res.end(JSON.stringify({ error: adj.message, boundary: adj.reason }));
+}
+
 export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?: number; host?: string } = {}): DaemonServer {
   const wantPort = opts.port ?? (Number(process.env.AGENT_IO_DAEMON_PORT || 0) || 7600);
   const host = opts.host ?? '127.0.0.1';
@@ -131,6 +173,15 @@ export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?
     }
 
     if (req.method === 'POST' && url.pathname === '/api/dsl') {
+      const adj = adjudicateActionEffect({
+        actionKey: 'daemon:dsl',
+        effect: DAEMON_ACTION_EFFECTS['daemon:dsl'],
+        transport: daemonTransport(req),
+      });
+      if (!adj.allowed) {
+        writeBoundaryDeny(res, adj);
+        return;
+      }
       let body = '';
       req.on('data', (chunk) => {
         body += chunk;
@@ -177,6 +228,15 @@ export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?
     }
 
     if (req.method === 'POST' && url.pathname === '/api/shutdown') {
+      const adj = adjudicateActionEffect({
+        actionKey: 'daemon:shutdown',
+        effect: DAEMON_ACTION_EFFECTS['daemon:shutdown'],
+        transport: daemonTransport(req),
+      });
+      if (!adj.allowed) {
+        writeBoundaryDeny(res, adj);
+        return;
+      }
       // 先响应再退出：客户端拿到 200 才知道触发成功
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ ok: true, message: 'shutdown initiated' }));
@@ -185,6 +245,15 @@ export function createDaemonServer(handlers: DaemonServerHandlers, opts: { port?
     }
 
     if (req.method === 'POST' && url.pathname === '/api/watch') {
+      const adj = adjudicateActionEffect({
+        actionKey: 'daemon:watch',
+        effect: DAEMON_ACTION_EFFECTS['daemon:watch'],
+        transport: daemonTransport(req),
+      });
+      if (!adj.allowed) {
+        writeBoundaryDeny(res, adj);
+        return;
+      }
       let body = '';
       req.on('data', (chunk) => {
         body += chunk;

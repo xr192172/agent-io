@@ -101,7 +101,7 @@ const PATHS = [
 //   迁回属主册 tsp（一 path 一册断言不变量，batch1 1.3 实测冲突修复），总数不变分册变。
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 868; // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；历史断言语义不变。
+const CRITERIA_TOTAL = 900; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：890 → 900 = P1 五节点各 2 条判据（presentation/daemon/server.ts、application/tool_annotations.ts、application/meta/ledger/tool_schema.ts、application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；各 file-exists + run）共 10 条，出处 .agent-io/design/agent-io.dsl.json。 // ★ 2026-11-22（36-S1 判据守恒读数同步）：上一当前值 879 → 当前 890 = mutate 新增 7 条真实 call-exists + diff_impact 新增 4 条语义判据（7 + 4 = 11）；出处 = 当前设计册 .agent-io/design/agent-io.dsl.json（883）+ agent-io-toolface.dsl.json（7），归档册 task-system-plan 计 0。★ 旧读数 879 的出处保留在下面三段历史注释里，不回改。 // ★ 2026-11-20（DS-1R2 收尾）：877 → 879 = scheduling_policy 新增 planStanding（no_op 六条件）+ scopeDecision（scope 硬约束）两条行为判据；出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（DS-1 证据帧 / 只读影子调度）：868 → 877 = scheduling_evidence 3 + scheduling_policy 2 + evidence_frame 2 + shadow_scheduler 1 + schedule-shadow 1；每条都挂在新增文件节点上，出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；历史断言语义不变。
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -189,7 +189,7 @@ test('2.1b 计划册里这 50 个 path 的节点 / 语义文件 / 边都不在�
 // ════════════════════════════════════════════════════════════════════
 // 2.2 判据总数守恒
 // ════════════════════════════════════════════════════════════════════
-test('2.2 判据总数守恒：三册合计 868 条（A 类零负载 ⇒ 删 50 个节点一条判据不动）', () => {
+test('2.2 判据总数守恒：三册合计 900 条（A 类零负载 ⇒ 删 50 个节点一条判据不动）', () => {
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaTotal([s])}`).join(' · ');
   assert.equal(

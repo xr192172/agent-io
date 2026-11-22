@@ -45,7 +45,7 @@ import type { PipelineOptions } from './pipeline/refactor_pipeline.js';
 import type { Rule } from './rule_library/rule_library.js';
 import type { RefactorTarget, RefactorPlan } from './pipeline/refactor_plan.js';
 import type { ScanBounds } from '../../infrastructure/scan_bounds.js';
-import type { ToolDef } from '../types.js';
+import { declareActionEffects, declareEffect, type ActionToolDef } from '../action_effect.js';
 
 // ★ 2026-09-29（面收敛第二批）：本文件原先自带一个**私有** `requireStr` 守卫，本笔把它上提到
 //   `registry/plumbing.ts`（跨 lane 共用）—— 因为 `lanes/harvest.ts` 的新入口 `bricks` 也要用它，
@@ -115,10 +115,11 @@ function renderLiteralsSummary(
   return `★ 字面量扫描：${literals.length} 个 needle —— ${per.join(' · ')}${tail}`;
 }
 
-export const REFACTOR_TOOLS: ToolDef[] = [
+export const REFACTOR_TOOLS: ActionToolDef[] = [
   {
     name: 'diff_views',
     writes: false,
+    effect: declareEffect('safe-read', ['design', 'source', 'derived-state']),
     title: 'Design coverage check (design sheet vs live: what to backfill)',
     description:
       '覆盖体检（**不是核销**）：比 design 与 live 两份 DSL，报「设计册待填充」——文件层 / 符号·API 层 / 边层 / 已声明排除 / 视图陈旧。' +
@@ -147,6 +148,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'edit_code',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { note: 'applyWrites 落源文件；改动清单落派生状态。' }),
     // ★★★ 2026-11-17（T-#HEARTBEAT-DERIVED）：**`writes: false`** —— 本卡把 T-#EDITCODE-WRITES-FLAG 的临时修
     //   **退休**了（那次登记成 true 只堵住一个工具，且让 `writes` 对注册表说谎）。
     //   病（实测回执）：`invokeTool` 给每个工具包 `runDslWriteScope({via:'tool', who:def.name})`，
@@ -255,6 +257,13 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'rename_symbols',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], {
+      note: '动作级拆分见 actions（§2.6.13，analyze 分支）；整批改名落源；引用改写清单落派生状态。',
+      actions: declareActionEffects({
+        'analyze=suggest': declareEffect('may-write', ['source', 'external'], { conditionalWrite: true, note: 'use_llm 缺省 true 走 callChat；降级仅本地检测；无文件/索引写。' }),
+        'analyze=similar': declareEffect('may-write', ['source', 'external'], { conditionalWrite: true, note: 'use_llm 缺省 true 走 callChat；降级仅本地聚类；无文件/索引写。' }),
+      }),
+    }),
     trustAnnotated: true, // 改名决策读的是引用清单 ⇒ 陈旧断言会漏报改名点（见 trustNoteFor）
     title: 'Rename identifiers — module-level symbols (cross-file) or file-local bindings (scope-isolated)',
     description:
@@ -544,6 +553,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'rename_files',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { note: '文件改名落源；批量 dry-run 清单落派生状态。' }),
     trustAnnotated: true, // 改文件名决策同理（见 trustNoteFor）
     title: 'Batch file renames with import-reference rewrites (whole-batch dry-run first)',
     description:
@@ -633,6 +643,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'move_domain',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { note: '跨域搬迁落源；迁移计划落派生状态。' }),
     title: 'Move a whole domain (one block) — relocating its files to the declared new dir',
     description:
       '★ **一次搬完一个域**（整块搬迁，T166）：按**域表声明的变化**把旧家那一整块搬到新家，' +
@@ -676,6 +687,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'move_symbol',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { note: '符号搬迁落源；迁移计划落派生状态。' }),
     title: 'Move a module-level symbol across files (semantic refactor, redirects importers)',
     description:
       '跨文件移动模块级符号（语义重构第一棒）：把 file 里的模块级符号 symbol 搬到 to_file，' +
@@ -747,6 +759,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'find_references',
     writes: false,
+    effect: declareEffect('may-write', ['derived-state', 'source'], { conditionalWrite: true, note: '主要读缓存/源；仅增量建索引分支写派生状态。' }),
     trustAnnotated: true, // 陈旧断言 = 引用清单静默漏报（见 trustNoteFor）
     title: 'Find symbol references (callers/importers, structural field refs), read-only',
     description:
@@ -872,6 +885,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'structure_gap',
     writes: false,
+    effect: declareEffect('safe-read', ['source', 'vcs-history']),
     // ★ 刻意**不**标 `trustAnnotated`（同族里最容易照抄错的一处）：本工具**不读符号索引**
     //   ——它只读结构域表 JSON + `readdirSync` 扫目录。而 `trustNoteFor` 报的是"符号索引里有
     //   陈旧断言"，那对本工具的结论**没有任何影响** ⇒ 标了就是**假告警**（狼来了）。
@@ -948,6 +962,10 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'deprecate_offline',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'external'], {
+      destructive: true,
+      note: '删除/注释离线符号落源；注释工具链为外部。',
+    }),
     title: 'Deprecate & retire internally-authored modules (dead-import cleanup + compile-level verification)',
     description:
       '废弃积木**下线链**（C 链）：废弃证据自取（`detectDeadImports` 全量扫 + 编译级验收），把**项目内自研源码模块**真正下线。' +
@@ -1002,6 +1020,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'annotate_functions',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state', 'external'], {
+      note: '动作级拆分见 actions（§2.6.8，mode 分支）；注释落源；候选落派生状态；LLM 为外部。',
+      actions: declareActionEffects({
+        scan: declareEffect('safe-read', ['source'], { note: 'useLlm=false；只读覆盖报告。' }),
+        dry_run: declareEffect('may-write', ['external'], { note: 'LLM 生成候选；不落盘源码/册子。' }),
+        apply: declareEffect('may-write', ['source', 'derived-state', 'external'], { note: '恒走 applyWrites；索引写穿 + 契约反馈基线。' }),
+      }),
+    }),
     title: '函数语义注释：扫描覆盖 → LLM 补全缺失 → body指纹同步过期（TS/JS + Go）',
     description:
       '让"函数做什么"由源码自带语义注释承载，而非每次由 LLM 从中重新提取。对 TS/JS + Go 项目的每个函数检查其上方是否有语义化注释：' +
@@ -1119,6 +1145,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'refactor_pipeline',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'external'], { note: '计划落源/改造链；外部测试与工具链。' }),
     title: 'Run deterministic refactor pipeline (dead imports + dead statements + package migration + function annotation)',
     description:
       '确定性重构管线：把可自动执行的瘦身改写串成一条链，一次调用按序执行、统一增量验证、失败只回滚到最近绿点。' +
@@ -1322,6 +1349,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'refactor_judge',
     writes: false,
+    effect: declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: '评判/裁决记录落派生状态。' }),
     title: 'LLM review gate: collect issues, decide adopt/reject, escalate the unsure to human (via context/inbox)',
     description:
       'LLM 审闭环的裁决门：接受候选问题清单，逐条裁【采纳/驳回/不确定(+置信度+理由)】，' +
@@ -1381,6 +1409,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'snapshot',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], {
+      destructive: true,
+      note: '动作级拆分见 actions（§2.6.6）；rollback 覆盖/删除源码文件，无 dry_run、不可撤回。',
+      actions: declareActionEffects({
+        list: declareEffect('safe-read', ['derived-state'], { note: 'listFileSnapshots 仅 readdir。' }),
+        rollback: declareEffect('may-write', ['source', 'derived-state'], { destructive: true, note: 'copyFileSync 恢复 + rmSync 删新建；未经过源码写闸。' }),
+      }),
+    }),
     title: 'Code snapshots (undo points): list them / roll back to one — single entry',
     description:
       '代码快照统一入口：**没有独立工具** —— 列快照走 action=list、回滚走 action=rollback（两者操作的是同一个快照库）。' +
@@ -1439,6 +1475,14 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'rules',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], {
+      note: '动作级拆分见 actions（§2.6.7）；规则库/基线归派生状态；apply 命中才落源码。',
+      actions: declareActionEffects({
+        export: declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: 'dry_run=false 且三关 validation.ok 才 writeRule；缺省 dry=true。' }),
+        apply: declareEffect('may-write', ['source', 'derived-state'], { conditionalWrite: true, note: 'dry_run=false 才 applyWrites；缺省 dry=true；索引写穿。' }),
+        check: declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: 'update_baseline=true 才 writeBaseline；缺省 false 只读比对；基线覆盖不可逆。' }),
+      }),
+    }),
     title: 'Rule library (fix → rule): export / apply / check with CI ratchet — single entry',
     description:
       '规则库统一入口：**没有独立工具** —— 导出 / 应用 / 检查分别是 action=export / apply / check（三者操作的是**同一个库**）。' +
@@ -1677,6 +1721,7 @@ export const REFACTOR_TOOLS: ToolDef[] = [
   {
     name: 'apply_refactor_plan',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { note: '计划落源；结果清单落派生状态。' }),
     title: 'Apply a refactor plan from apply_refactor_plan targets mode (idempotent, fingerprint-checked)',
     description:
       '「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按本工具 `targets` 形态产出的清单落盘（不重算清单、不再要 old_text）。' +

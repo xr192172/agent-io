@@ -151,6 +151,11 @@ import { dropTaskHistoryBatch, taskHistoryDbPath, recordTaskHistory, type TaskHi
 //   ★ 本文件只调它：读端（complete 的提示）与写端（add / follows）共读同一把尺，不各算一遍。
 import { assertFollowsTarget, buildTodoChains, chainBadge } from '../../../domain/todo_chain.js';
 import { contentHash } from '../../../infrastructure/index/symbols.js';
+// ★★★ P2 执行事件流：complete 证据落盘后挂 `evidence_added`（引用/指纹；证据本体与 verdict 权威仍在卡上）。
+//   审计旁路：记不上不阻断收口，只进回执 warnings（非持久，不假定已记）；持久对账以卡上证据为准，恢复侧据此反查事件缺失。
+import { ensureRunStarted, appendRunEvent } from '../../observe/runtime/run_events.js';
+import { gitSnapshot } from '../../../infrastructure/git.js';
+import { projectRootOf } from '../../../infrastructure/project_registry.js';
 // ★★★ 2026-11-06（R54-history）：版本史**已外置**到 `<f>.history.jsonl` ——
 //   `criteriaChangedSince`（publish 结清重开账的唯一判据）必须走 union，漏改会让它恒 false。
 import { appendHistoryEntries, bookHasInlineHistory, historyAnomaly, readHistoryLog, resolveHistory } from '../../../infrastructure/decision_history.js';
@@ -3243,6 +3248,48 @@ export async function completeTask(input: TaskOpInput): Promise<EditResult> {
     state: 'done',
     evidence: [...(card.evidence ?? []), persisted],
   }, Date.now()));
+
+  // ★★★ P2：证据落盘后记 `evidence_added` —— 只引用证据 kind/时刻/署名/指纹；**不复制 verdict / 证据本体**，
+  //   结论与新鲜度唯一权威仍在卡上证据（避免第二真相）。收尾边界附一份 HEAD/脏树快照。
+  //   ★ 事件追加失败只进回执 closeNote（非持久）：持久对账靠卡上证据本身 + write_log + Git 漂移；
+  //     恢复侧据此反查「证据存在但事件缺失」。根取不到 ⇒ 不记并留缺口（0.12）。
+  const eventRoot =
+    typeof dsl.source_root === 'string' && dsl.source_root.trim() ? dsl.source_root : projectRootOf(feature);
+  if (eventRoot) {
+    const runCtx = {
+      task: { feature, node_id },
+      owner: card.owner ?? null,
+      leaseGeneration: typeof card.lease_generation === 'number' ? card.lease_generation : null,
+      actor: signer.actor ?? card.owner ?? null,
+      via: 'complete',
+      session: card.claimed_session ?? resolveSessionId(),
+    };
+    ensureRunStarted(eventRoot, runCtx);
+    const fp = persisted.fingerprint ?? null;
+    // ★ F7：幂等键纳入证据指纹 hash + 落盘时刻：同次重放（同指纹同时刻）幂等；
+    //   重开后的第二条证据 / 新指纹 ⇒ 新事实可追加，不被旧事件吞掉。
+    const fpHash = contentHash(JSON.stringify(fp ?? {}));
+    const ev = appendRunEvent(eventRoot, {
+      ...runCtx,
+      kind: 'evidence_added',
+      dedupeKey: `evidence:${node_id}:${fpHash}:${persisted.at}`,
+      body: {
+        evidence: {
+          kind: persisted.kind,
+          at: persisted.at,
+          agent: persisted.agent ?? null,
+          fingerprint: fp
+            ? { what: fp.what, input: fp.input, code: fp.code ?? null, covers: fp.covers ?? [] }
+            : null,
+        },
+        card_ref: { feature, node_id },
+        git_observed: { stage: 'evidence_added', snapshot: gitSnapshot(eventRoot) },
+      },
+    });
+    if (!ev.ok) {
+      closeNote += `\n⚠️ 执行事件未记（run_events · evidence_added · ${node_id}）：${ev.error}（持久对账以卡上证据为准）`;
+    }
+  }
 
   // ★★★ 2026-10-23：**说清"哪些键真落了盘"** —— 「有意不存」和「静默丢掉」在回执上长得一样，
   //   所以把**实际落盘的键**逐个念出来（名单外的键不会被念：它们本来就不该进证据）。

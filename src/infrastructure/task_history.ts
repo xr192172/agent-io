@@ -182,6 +182,34 @@ CREATE TABLE IF NOT EXISTS write_log (
   gate_branch  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_write_log_file ON write_log(file);
+-- ★★★ P2（引擎原生可恢复执行）：**执行事件流**（Run / Attempt / 边界观察）append-only 表。
+--   判据同 write_log / ledger_events：不可重建的审计事实 ⇒ 住 tasks.db，不新建第二个库文件。
+--   · run_id = 某 task + owner + lease_generation 下的一次执行上下文（派生见 domain/run_events.ts#runIdOf）；
+--   · task_feature / task_node_id 是**软引用**（事件先于立卡 / 无卡写都可能发生）⇒ 不建 FK；
+--   · body 保留完整事件 JSON（未知键不静默裁掉）；不持久化 status/result/HEAD/next_step/is_alive/verdict；
+--   · UNIQUE(run_id, seq) 兜底同 run 顺序号；触发器禁 UPDATE/DELETE（与 ledger_events 同一条硬约束）。
+CREATE TABLE IF NOT EXISTS run_events (
+  id            INTEGER PRIMARY KEY,
+  run_id        TEXT NOT NULL,
+  task_feature  TEXT,
+  task_node_id  TEXT,
+  seq           INTEGER NOT NULL,
+  kind          TEXT NOT NULL CHECK (kind IN (
+    'run_started','attempt_started','attempt_finished','source_written','evidence_added','git_observed'
+  )),
+  at            TEXT NOT NULL,
+  actor         TEXT,
+  via           TEXT,
+  session       TEXT,
+  body          TEXT NOT NULL,
+  UNIQUE (run_id, seq)
+);
+CREATE INDEX IF NOT EXISTS idx_run_events_task ON run_events(task_feature, task_node_id);
+CREATE INDEX IF NOT EXISTS idx_run_events_run ON run_events(run_id, seq);
+CREATE TRIGGER IF NOT EXISTS run_events_no_update BEFORE UPDATE ON run_events
+  BEGIN SELECT RAISE(ABORT, '[run_events] run_events 是 append-only：不许 UPDATE（追加一条新事件）'); END;
+CREATE TRIGGER IF NOT EXISTS run_events_no_delete BEFORE DELETE ON run_events
+  BEGIN SELECT RAISE(ABORT, '[run_events] run_events 是 append-only：不许 DELETE（追加一条新事件）'); END;
 -- ★★★ 2026-11-17（T-#LEDGER-ENGINE L1）：**台账**（docs/todo.md 的引擎化）同库加表。
 --   判据同 write_log：不可重建的审计数据 ⇒ 住 tasks.db，不建新库文件 ⇒ manifest 卷表不撞。
 --   ★ 主键用自增 rowid，业务号是 ref_id：**部分唯一索引**只钉活跃 ref_id，销账后同号可再挂。
@@ -491,7 +519,7 @@ type TasksReadSkip = 'unreachable' | 'no-db' | 'no-table';
  */
 export function openTasksDbForRead(
   projectRoot: string,
-  table: 'live_cards' | 'task_history' | 'plans' | 'write_log' | 'ledger_rows' | 'ledger_events' | 'ledger_review_queue',
+  table: 'live_cards' | 'task_history' | 'plans' | 'write_log' | 'ledger_rows' | 'ledger_events' | 'ledger_review_queue' | 'run_events',
 ): { db: DatabaseSync } | { skip: TasksReadSkip; file: string } {
   const file = getTasksDbFile(projectRoot);
   if (!isReachableRoot(projectRoot)) return { skip: 'unreachable', file };

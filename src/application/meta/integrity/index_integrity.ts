@@ -327,6 +327,24 @@ export function countStaleResolvedRefs(db: ReturnType<typeof getProjectCacheDb>)
 }
 
 /** 一条陈旧断言的定位信息（`file:line` + 名字）—— 让 blocker **可行动** */
+/**
+ * ★ DS-1R：`countStaleResolvedRefs` 的**双出口**版本 —— 查询失败返回 `ok:false`，
+ * 不再把"查不了"折成 `0`（`0` 在四个读端上都等于"没有陈旧断言"）。
+ * 原函数保持返回 number（既有 `stale > 0` 比较零改动）。
+ */
+export function countStaleResolvedRefsEx(
+  db: ReturnType<typeof getProjectCacheDb>,
+): { ok: true; count: number } | { ok: false; reason: string } {
+  try {
+    const row = db
+      .prepare(`SELECT COUNT(*) c FROM unresolved_refs u WHERE ${STALE_RESOLVED_WHERE}`)
+      .get() as { c: number } | undefined;
+    return { ok: true, count: row?.c ?? 0 };
+  } catch (e) {
+    return { ok: false, reason: `陈旧断言查询失败：${(e as Error).message}` };
+  }
+}
+
 export interface StaleRefSite {
   name: string;
   file: string;
@@ -481,7 +499,7 @@ function receiptOf(
  * 只能报“未索引”，报不出**“需重建”**这个真正的原因。
  * 所以这里用 `readOnly` 直接读文件（不改盘），把“旧版本 → 需重建”说在开库之前。
  */
-function readRawSchemaVersion(root: string): { exists: boolean; version: number | null } {
+export function readRawSchemaVersion(root: string): { exists: boolean; version: number | null } {
   const dbFile = projectCacheDbPath(root);
   if (!fs.existsSync(dbFile)) return { exists: false, version: null };
   let db: DatabaseSync | null = null;
