@@ -47,6 +47,8 @@ import { createRebuildThrottler } from '../../application/observe/runtime/watch_
 //   适配器只做「入参怎么来、产物怎么出」，**不重做保鲜 / 身份 / 校验 / 告警**（那些在 `invokeTool` 里）。
 import { TOOL_DEFS } from '../../application/tool_registry.js';
 import { invokeTool } from '../mcp/server_registry.js';
+// P1-ACTION-EFFECT-BOUNDARY-01：/api/opl 执行核前的同一纯裁决（工具面裁决在 invokeTool 内）。
+import { adjudicateActionEffect, type TransportFacts } from '../../application/action_effect.js';
 import { DATA_MARKER, parseDataBlock } from '../../application/plumbing.js';
 import type { ToolDef } from '../../application/types.js';
 import { archLayer } from '../../infrastructure/analysis/structure/arch_layer.js';
@@ -93,6 +95,31 @@ import {
 } from '../../infrastructure/llm_gateway.js';
 
 const PORT = parseInt(process.argv[2]) || 3000;
+
+// ──────────────────────────────────────────────────────────────────────────
+// P1-ACTION-EFFECT-BOUNDARY-01 · 测试缝（默认 null / 不挂服务；生产行为逐字不变）
+//   · `setOplCoreSpy`：测试注入后在 /api/opl 执行核调用点记一次 op；拒绝路径在裁决处返回，不会触达。
+//   · `activeServeServer`：startServer 起服后回存句柄，供聚焦测试取随机回环端口并关闭；
+//     生产 CLI 入口不读这两个导出。
+// ──────────────────────────────────────────────────────────────────────────
+let oplCoreSpy: ((op: string) => void) | null = null;
+export function setOplCoreSpy(spy: ((op: string) => void) | null): void {
+  oplCoreSpy = spy;
+}
+let activeServeServer: http.Server | null = null;
+export function activeServePort(): number {
+  const addr = activeServeServer?.address();
+  return addr && typeof addr === 'object' ? addr.port : 0;
+}
+export function stopActiveServeServer(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!activeServeServer) return resolve();
+    activeServeServer.close(() => {
+      activeServeServer = null;
+      resolve();
+    });
+  });
+}
 const PUBLIC_DIR = path.join(process.cwd(), 'output');
 /**
  * ★★★ 2026-10-18：界面层的"活态 DSL"改为读【设计侧】。
@@ -1270,6 +1297,25 @@ async function handleApiOpl(req: http.IncomingMessage, res: http.ServerResponse)
       sendError(res, 400, '缺少 feature 或 op 参数');
       return;
     }
+    // P1-ACTION-EFFECT-BOUNDARY-01：opl 在执行核（opl* 函数）前消费同一纯裁决一次。
+    const oplAdj = adjudicateActionEffect({
+      toolName: 'opl',
+      actionKey: op,
+      transport: {
+        channel: 'http-serve',
+        method: req.method,
+        host: typeof req.headers.host === 'string' ? req.headers.host : undefined,
+        origin: typeof req.headers.origin === 'string' ? req.headers.origin : undefined,
+        remoteAddress: req.socket?.remoteAddress,
+        now: new Date().toISOString(),
+      },
+    });
+    if (!oplAdj.allowed) {
+      sendError(res, oplAdj.status || 403, oplAdj.message);
+      return;
+    }
+    // 测试缝：裁决放行后、执行核 switch 前记一次；拒绝路径到不了这里（spy 计数 0 的证据点）。
+    oplCoreSpy?.(op);
     let result;
     switch (op) {
       case 'add':
@@ -2591,7 +2637,21 @@ async function handleApiTool(req: http.IncomingMessage, res: http.ServerResponse
     }
   }
 
-  const r = await invokeTool(def, coerceArgsFor(def.inputSchema, args), 'http');
+  // P1-ACTION-EFFECT-BOUNDARY-01：信封事实只在此处抽取一次，交给 invokeTool 内的同一纯裁决；
+  //   不读 actor / session / User-Agent / X-Forwarded-* 做放行。
+  const toolTransport: TransportFacts = {
+    channel: 'http-serve',
+    method: req.method,
+    host: typeof req.headers.host === 'string' ? req.headers.host : undefined,
+    origin: typeof req.headers.origin === 'string' ? req.headers.origin : undefined,
+    remoteAddress: req.socket?.remoteAddress,
+    now: new Date().toISOString(),
+  };
+  const r = await invokeTool(def, coerceArgsFor(def.inputSchema, args), 'http', toolTransport);
+  if (r.boundary && !r.boundary.allowed) {
+    sendError(res, r.boundary.status || 403, r.text);
+    return;
+  }
   sendJson(res, r.isError ? 400 : 200, { ok: !r.isError, tool: def.name, message: messageOf(r.text), data: parseDataBlock(r.text) });
 }
 
@@ -2778,7 +2838,7 @@ const ROUTES: readonly HttpRoute[] = [
     } },
 ];
 
-export async function startServer(port?: number): Promise<void> {
+export async function startServer(port?: number): Promise<{ port: number }> {
   // ★ 路由表自检必须在**起服务之前**跑（不是"存在即可"）：
   //   重复注册 / 前缀抢匹配都是"某条路由永远不可达"，而那在运行期表现为**静默 404**
   //   —— 不报错的错。放在这里 = 表一错就起不来。
@@ -2860,6 +2920,7 @@ export async function startServer(port?: number): Promise<void> {
     handleStaticFile(req, res);
   });
 
+  activeServeServer = server;
   return new Promise((resolve) => {
     server.listen(listenPort, bindHost, () => {
       const bound = bindHost === '0.0.0.0' ? `（已绑定 0.0.0.0，局域网可访问）` : `（仅本机 ${bindHost}）`;
@@ -2916,7 +2977,8 @@ export async function startServer(port?: number): Promise<void> {
         }
       }
 
-      resolve();
+      const addr = server.address();
+      resolve({ port: addr && typeof addr === 'object' ? addr.port : listenPort });
     });
   });
 }

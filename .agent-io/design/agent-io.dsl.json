@@ -4615,33 +4615,144 @@
               "kind": "run",
               "why": "锁的「拥有者」必须唯一且可判：`runMutate` 体内既有 `acquireLock(ROOT)` 也在 finally 里 `restoreAll('finally')`（取锁与还原成对、同一层）；而 `planMutants` 只在 `runMutateLocked` 体内 —— 这正是「读输入被锁包住」的结构形态。★ 另钉失配文案必须给出两边 sha256（「计划时 sha256」）与「先取锁再读输入」这句归因，否则读者只能靠猜「是竞态还是巧合」。",
               "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/mutate.mjs'), 'utf8'); const i = s.indexOf('export async function runMutate('); const j = s.indexOf('async function runMutateLocked'); if (i < 0 || j < 0 || j < i) return false; const owner = s.slice(i, j); const locked = s.slice(j, j + 400); return owner.includes('acquireLock(ROOT)') && owner.includes(\"restoreAll('finally')\") && !owner.includes('planMutants(') && locked.includes('planMutants(') && s.includes('计划时 sha256') && s.includes('先取锁再读输入'); })()"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "journalBegin",
+              "target": "journalDir",
+              "why": "journalDir 的真实消费者是 journalBegin（`cache.db#edges` call 边：scripts/mutate.mjs#journalBegin → scripts/mutate.mjs#journalDir，L106），同一条边也在 journalExpect(L152)/journalCommit(L179)/journalRecover(L236)。判据只断「journalBegin 调用 journalDir」这一处接线 —— 把 journalDir 改成别处返回路径、或去掉这次调用，它就红。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "journalBegin",
+              "target": "journalRelOf",
+              "why": "journalRelOf 的真实消费者是 journalBegin（call 边 L108；journalExpect L154、journalCommit L181 同形）。它保证「写日志前先把绝对路径收成项目内相对路径」这条不被绕过 —— 删掉这次调用，路径越界就再无入口拦截。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "runMutateLocked",
+              "target": "journalBegin",
+              "why": "journalBegin 的真实消费者是 runMutateLocked（call 边 L1196）：写变异**之前**必须落盘原文与 mtime，否则硬杀（SIGKILL/TerminateProcess）之后没有任何可恢复依据。这条边消失 = 崩溃安全日志形同不存在。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "runMutateLocked",
+              "target": "journalExpect",
+              "why": "journalExpect 的真实消费者是 runMutateLocked（call 边 L1199）：写完变异**立刻**登记预期指纹，恢复时才能区分「我的变异」与「别人后来的新工作」（DS-1C V-01 的核心）。这条边消失 ⇒ 只剩原文 sha，冲突判定退化。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "restoreAll",
+              "target": "journalCommit",
+              "why": "journalCommit 的真实消费者是 restoreAll（call 边 L340）：正常还原成功后销账，否则正常退出的日志会残留成「上一轮没正常收尾」的假警报。删掉这次调用，日志永远清不掉。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "runMutate",
+              "target": "journalRecover",
+              "why": "journalRecover 的真实消费者是 runMutate（call 边 L1138）：取锁之后、测量之前先恢复；这条边消失 ⇒ 残留日志不恢复就开始量，读数建在「别人变异中的内容」上。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "scripts/mutate.mjs",
+              "symbol": "journalRecover",
+              "target": "commitEntry",
+              "why": "commitEntry 的真实消费者是 journalRecover（call 边 L265、L292）：恢复与销账共用同一条删除路径，免得两处各写一份。删掉它 ⇒ 恢复成功后原文/元数据不会被清，下次启动又撞「同路径已有未销账日志」。"
             }
           ],
-          "updated_at": "2026-11-01T21:07:25.909Z"
+          "updated_at": "2026-11-21T15:50:19.686Z",
+          "agent": "agent:ds1-independent-closeout"
         },
         "task": {
           "id": "file_scripts_mutate_mjs",
           "summary": "判据突变器（scripts/mutate.mjs）：改 src 一处 → 判该条判据 → 逐字节还原。不变量三条 —— ① 锁（.agent-io/mutate.lock）**必须先于**任何源码读取，否则计划窗口不受保护；② 读输入与写变异同处一把锁；③ 失配时必须指出双方 sha256，且不许用「重跑一次」掩盖。",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "agent:t35",
-          "claimed_at": "2026-11-06T19:19:16.864Z",
-          "lease_generation": 2,
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:04:04.306Z",
+          "lease_generation": 5,
           "claimed_session": "unknown",
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "JOURNAL_ROOT",
+                "fp": "df2260c16abad9d9c7ef6e3c42cdbd1ea941ce5a"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "commitEntry",
+                "fp": "e98e77bd4d2599097ceab7f4bf351429016b6680"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalBegin",
+                "fp": "9815a803e507fcf158a755e2719d34b0747a992e"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalCommit",
+                "fp": "d8f8396db05e4c4811548f2a8812b47a01f1d717"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalDir",
+                "fp": "411c9cacebb4d46f1d8ce46dc39a7d8c4e4a78d6"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalExpect",
+                "fp": "22fb77f14a338ec7bba30ed1d70d5096b2b13e3f"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalRecover",
+                "fp": "21f16fc433306b63f66102c8e2299b824973151a"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "journalRelOf",
+                "fp": "c025708d7dfa6ac032319bfb5c15fd2805391120"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "planMutants",
+                "fp": "d11f3d77569cc87e316a5d498e90fbcb7d09257f"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "restoreAll",
+                "fp": "af1e51af384857fe527484dea29ec51547a5d311"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "runMutate",
+                "fp": "b5442930eed14ac591032123be7e22b5761c8d2c"
+              },
+              {
+                "file": "scripts/mutate.mjs",
+                "name": "runMutateLocked",
+                "fp": "360956648294ee758ecacd287a194a92b552dfa1"
+              }
+            ],
             "files": [
               {
                 "path": "scripts/mutate.mjs",
-                "content_hash": "146cb9ad32eb02b22b28d1df48687ea02f6140d1"
+                "content_hash": "574d0aa26fc675db4d2cb12f9f48bec8e757848a"
               }
             ],
-            "computed_at": "2026-11-06T19:19:16.794Z",
+            "computed_at": "2026-11-21T16:04:04.190Z",
             "basis": [
-              "node-path"
+              "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-06T19:32:04.658Z",
+          "last_heartbeat_at": "2026-11-21T16:08:31.408Z",
           "evidence": [
             {
               "kind": "reading",
@@ -4668,11 +4779,102 @@
               },
               "observed": "719 pass / 0 fail / 0 unsupported。planMutants 对零突变点候选已改为 continue（原因照旧进 skipReasons，带分母不静默），并写明该豁免何时失效",
               "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:08:31.408Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（真实命令：node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_mutate_restore_safety && node scripts/run-tests.mjs --filter p0_mutate_lock_window",
+                "input": "b93806e775359093d3187fba042b46efdb45fd03",
+                "code": "de47ce1a4151c270e882a1b6ce76ffbcfbde57d1",
+                "covers": [
+                  "scripts/mutate.mjs"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是 file_src_application_meta_registry_project_actual_fields_ts（既有、与本卡无关，未冒充通过）。② 本卡 9 条判据现判：run×2（锁先于读输入 42781<44213；runMutate 与 runMutateLocked 分工 + 双方 sha256）pass；call-exists×7（journalBegin→journalDir L106 · journalBegin→journalRelOf L108 · runMutateLocked→journalBegin L1196 · runMutateLocked→journalExpect L1199 · restoreAll→journalCommit L340 · runMutate→journalRecover L1138 · journalRecover→commitEntry L265）pass ⇒ 9 pass / 0 fail / 0 unsupported / 0 pending，cardStanding=satisfied。③ 画布 12 条 entry 的 judgement_ref 现判 12/12 pass；出口闭环 realized 0 / not_yet 12 / stale 0 / unjudgeable 0、changed_unplanned=[]、unplanned=[]（not_yet 是 22 号重冻结把 base 挪到改后内容的已知边界，已挂 T-#REFREEZE-ERASES-EXIT-EVIDENCE，不冒充已同步）。④ 定向测试真跑：p0_mutate_restore_safety 16/16、p0_mutate_lock_window 5/5，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ JOURNAL_ROOT 裁定（26 号 §2）：模块内 let，不可调用、不被 import，call/import/type_ref 边 0 条 ⇒ call-exists / edge-exists 对其**不适用**（不编造判据，也不算作 pass）；其被使用的证据 = identifiers 三处（L64 声明 / L340 journalCommit(JOURNAL_ROOT, abs) / L1135 JOURNAL_ROOT = ROOT）+ 上述恢复安全 16 例。⑥ 接管身份：actor=agent:ds1-independent-closeout，lease_generation=5，taken_over_from={from_owner:agent:ds1-independent-closeout, from_claimed_at:2026-11-21T15:35:09.724Z}（上一轮是本窗口自己的过期租约；按 renewTask 规则过期不许 renew ⇒ claim+supersedes 兼容接管，9 条判据逐条表态全部仍成立）。⑦ 无 heavy.lock / mutate.lock / mutate-journal 残留；无本卡未决 review 队列项（17 条未决项无一指向 scripts/mutate.mjs）。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（真实命令：node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_mutate_restore_safety && node scripts/run-tests.mjs --filter p0_mutate_lock_window",
+              "why": "收口依据 = 26 号企划 §6 授权 + 本轮现跑读数；判据、画布、整册、测试四处证据都是本轮现取，不引用旧结论。"
             }
           ],
-          "reopened_at": "2026-11-06T19:19:16.864Z",
-          "reopen_reason": "T-35：修 scripts/mutate.mjs 的 planMutants —— 它对「零突变点」的候选计数了 no_mutant 却仍吐出一条零突变体的计划，导致 tests/p0_mutate_is_real ①（op_data_spec.ts#requiredKeyIndexGaps 是纯查询函数）红在一个没有名字的地方",
-          "reopened_from": "subagent:plan-semantics"
+          "reopened_at": "2026-11-21T13:07:11.976Z",
+          "reopen_reason": "T-07：给 mutate 加崩溃安全日志与启动恢复（硬杀路径的还原证据），并在正常还原后销账",
+          "reopened_from": "agent:ds1-independent-closeout",
+          "taken_over_from": {
+            "from_owner": "agent:ds1-independent-closeout",
+            "from_claimed_at": "2026-11-21T15:35:09.724Z",
+            "age_hours": 0.5,
+            "last_heartbeat_at": "2026-11-21T15:35:09.724Z"
+          },
+          "dissent_reason": "过期租约重新接管（兼容档）：同一张卡、同一个 actor（上一轮也是本窗口），画布仍是已纠偏的那一版（12 entries / 26 untouched / symbols_at_freeze 66 = 当前 66），9 条判据现判全部 pass，逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_scripts_mutate_mjs 的 2 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_scripts_mutate_mjs",
+              "why": "过期租约重新接管（兼容档）：同一张卡、同一个 actor（上一轮也是本窗口），画布仍是已纠偏的那一版（12 entries / 26 untouched / symbols_at_freeze 66 = 当前 66），9 条判据现判全部 pass，逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：scripts/mutate.mjs 里 `const unlock = acquireLock(ROOT)` 在偏移 42781、`await planMutants(` 在 44213（前者在前），`runMutateLocked` 仍在 —— 本轮重冻结/接管/加接线判据都没动源码，这条『锁必须早于任何源码读取』未被推翻。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：runMutate（偏移 41922）体内有 `acquireLock(ROOT)` 与 `restoreAll('finally')`、不含 `planMutants(`；`planMutants(` 只在 runMutateLocked（44132）；`计划时 sha256` 与 `先取锁再读输入` 两句仍在 —— 取锁与还原同一层的结构没被 journal 改动破坏。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：cache.db#edges 的 call 边 `scripts/mutate.mjs#journalBegin → scripts/mutate.mjs#journalDir`（L106）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#3",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#journalBegin → #journalRelOf`（L108）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#4",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#runMutateLocked → #journalBegin`（L1196）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#5",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#runMutateLocked → #journalExpect`（L1199）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#6",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#restoreAll → #journalCommit`（L340）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#7",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#runMutate → #journalRecover`（L1138）仍在，现判 pass。"
+                },
+                {
+                  "ref": "decision:file_scripts_mutate_mjs#8",
+                  "verdict": "仍成立",
+                  "why": "仍成立：call 边 `#journalRecover → #commitEntry`（L265）仍在，现判 pass。"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_scripts_mutate_mjs",
+              "at": "2026-11-21T15:35:09.724Z",
+              "why": "租约接管（兼容档）：已真实通读 34 个冻结后符号 —— 其中 8 个是本轮新增的 journal 机制（JOURNAL_ROOT/journalDir/journalRelOf/journalBegin/journalExpect/journalCommit/journalRecover + commitEntry），3 个是本轮改过的已有函数（restoreAll/runMutate/runMutateLocked），其余 26 个（existence 棘轮族与存活体抽样族）逐个读过并写进 untouched 的 why。画布已按真实改集重写并重冻结：entries 12 条、untouched 26 条、symbols_at_freeze 66 个 = 当前 66 个顶层符号（fps 46 条 body_hash）；两条 run 判据现算仍成立，不改它的任何结论。"
+            },
+            {
+              "by": "file_scripts_mutate_mjs",
+              "at": "2026-11-21T16:04:04.306Z",
+              "why": "过期租约重新接管（兼容档）：同一张卡、同一个 actor（上一轮也是本窗口），画布仍是已纠偏的那一版（12 entries / 26 untouched / symbols_at_freeze 66 = 当前 66），9 条判据现判全部 pass，逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ]
         },
         "status": "done",
         "overlay": {
@@ -4680,10 +4882,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-06T19:23:24Z",
-            "command": "design_line {action:\"judge\", feature:\"agent-io\"}（CLI 新进程）",
             "kind": "reading",
-            "observed": "719 pass / 0 fail / 0 unsupported。planMutants 对零突变点候选已改为 continue（原因照旧进 skipReasons，带分母不静默），并写明该豁免何时失效"
+            "at": "2026-11-21T16:08:28.783Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（真实命令：node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_mutate_restore_safety && node scripts/run-tests.mjs --filter p0_mutate_lock_window",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是 file_src_application_meta_registry_project_actual_fields_ts（既有、与本卡无关，未冒充通过）。② 本卡 9 条判据现判：run×2（锁先于读输入 42781<44213；runMutate 与 runMutateLocked 分工 + 双方 sha256）pass；call-exists×7（journalBegin→journalDir L106 · journalBegin→journalRelOf L108 · runMutateLocked→journalBegin L1196 · runMutateLocked→journalExpect L1199 · restoreAll→journalCommit L340 · runMutate→journalRecover L1138 · journalRecover→commitEntry L265）pass ⇒ 9 pass / 0 fail / 0 unsupported / 0 pending，cardStanding=satisfied。③ 画布 12 条 entry 的 judgement_ref 现判 12/12 pass；出口闭环 realized 0 / not_yet 12 / stale 0 / unjudgeable 0、changed_unplanned=[]、unplanned=[]（not_yet 是 22 号重冻结把 base 挪到改后内容的已知边界，已挂 T-#REFREEZE-ERASES-EXIT-EVIDENCE，不冒充已同步）。④ 定向测试真跑：p0_mutate_restore_safety 16/16、p0_mutate_lock_window 5/5，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ JOURNAL_ROOT 裁定（26 号 §2）：模块内 let，不可调用、不被 import，call/import/type_ref 边 0 条 ⇒ call-exists / edge-exists 对其**不适用**（不编造判据，也不算作 pass）；其被使用的证据 = identifiers 三处（L64 声明 / L340 journalCommit(JOURNAL_ROOT, abs) / L1135 JOURNAL_ROOT = ROOT）+ 上述恢复安全 16 例。⑥ 接管身份：actor=agent:ds1-independent-closeout，lease_generation=5，taken_over_from={from_owner:agent:ds1-independent-closeout, from_claimed_at:2026-11-21T15:35:09.724Z}（上一轮是本窗口自己的过期租约；按 renewTask 规则过期不许 renew ⇒ claim+supersedes 兼容接管，9 条判据逐条表态全部仍成立）。⑦ 无 heavy.lock / mutate.lock / mutate-journal 残留；无本卡未决 review 队列项（17 条未决项无一指向 scripts/mutate.mjs）。",
+            "why": "收口依据 = 26 号企划 §6 授权 + 本轮现跑读数；判据、画布、整册、测试四处证据都是本轮现取，不引用旧结论。"
           }
         }
       },
@@ -5602,33 +5805,33 @@
         "task": {
           "id": "file_src_application_cross_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/cross — 0 个函数（导入自 11 个模块）（src/application/cross/index.ts） ← 节点 file_src_application_cross_index_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_cross_index_ts\"].responsibility"
           },
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:28:49.387Z",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:06:39.912Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/cross/index.ts",
-                "name": "CROSS_TOOLS",
-                "fp": "51a6336a55a50ffc823d6f2860ce17f678774af4"
+                "name": "writes",
+                "fp": ""
               }
             ],
             "files": [
               {
                 "path": "src/application/cross/index.ts",
-                "content_hash": "dcb70caf1cfd13b478270817fa1cc1f983ec8936"
+                "content_hash": "1183829ebac06ac8272a5a7b20173302928f5b7b"
               }
             ],
-            "computed_at": "2026-11-03T11:28:49.256Z",
+            "computed_at": "2026-11-21T22:06:39.804Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/cross/index.ts#writes"
           },
           "evidence": [
             {
@@ -5681,14 +5884,14 @@
               "command": "node -e \"match(/^    writes: (?:true|false),/gm)\" 计数 src/application/cross/index.ts && npx tsc --noEmit"
             }
           ],
-          "lease_generation": 2,
+          "lease_generation": 3,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-03T11:28:49.387Z",
-          "reopen_reason": "重开 file_src_application_cross_index_ts（上一轮 payload-budget 等已完成）：本轮只为 ToolDef 字面量补 writes 字段（卡 1.1 填充端），不改上一轮判据覆盖的行为",
-          "reopened_from": "subagent:payload-budget",
-          "last_heartbeat_at": "2026-11-03T11:58:23.937Z"
+          "reopened_at": "2026-11-21T22:06:39.912Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：cross/index.ts 四个 cross 工具唯一 ToolDef 所在，仅限补效果声明、不改 handler/行为（企划 §8）；旧 evidence 保留，不推翻既有结论",
+          "reopened_from": "subagent:batch1-11b-write",
+          "last_heartbeat_at": "2026-11-21T22:06:39.912Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "code_health 工具壳：入参（complexity_threshold / top / detail）+ 回执渲染（按 kind 聚合 + kind×file 滚落 + 截断账 + detail 出口）；不改任何判定逻辑。",
           "expectations": [
@@ -8480,7 +8683,7 @@
         "task": {
           "id": "file_src_application_design_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/design — 0 个函数（导入自 18 个模块）（src/application/design/index.ts） ← 节点 file_src_application_design_index_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_design_index_ts\"].responsibility",
@@ -8556,28 +8759,28 @@
               ]
             }
           },
-          "owner": "agent:t33",
-          "claimed_at": "2026-11-06T17:50:21.943Z",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:09:49.242Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/application/design/index.ts",
                 "name": "DESIGN_TOOLS",
-                "fp": "f5a1d5b02d3284b0405998febd47f7592646c556"
+                "fp": "edec48e2d45a08619823686bbab5c1eebf3a031e"
               }
             ],
             "files": [
               {
                 "path": "src/application/design/index.ts",
-                "content_hash": "1f7730ec3cbb4a58c82cb0498c5347d142e34b5e"
+                "content_hash": "e5099635fa02ebef80cb9e6f1706881ef76f723a"
               }
             ],
-            "computed_at": "2026-11-06T17:50:21.858Z",
+            "computed_at": "2026-11-21T22:09:49.138Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 1 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -8931,12 +9134,12 @@
               "command": "design_line {action:'judge', feature:'agent-io'}"
             }
           ],
-          "reopened_at": "2026-11-06T17:50:21.943Z",
-          "reopen_reason": "T-33：只改 edit_dsl.description —— 加 15 个高频必填键索引，同一串里删两段复刻（358+215 B）省回增量，净增 −263 B",
-          "reopened_from": "agent:t27",
-          "lease_generation": 17,
+          "reopened_at": "2026-11-21T22:09:49.242Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：design/index.ts 为仅限补效果声明的现有 lane 文件（企划 §8）；旧 evidence 21 条保留，不推翻既有结论",
+          "reopened_from": "agent:t33",
+          "lease_generation": 18,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T18:32:28.162Z",
+          "last_heartbeat_at": "2026-11-21T22:09:49.242Z",
           "taken_over_from": {
             "from_owner": "subagent:text-has-fix",
             "from_claimed_at": "2026-11-04T14:32:33.086Z",
@@ -8957,7 +9160,7 @@
             }
           ]
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "design_line 工具面：六步读数 / 重写计划 / judge 整册判据批（+「旧 dist」提示）/ drift 漂移台账 / rules 码表，以及各自的 schema 声明（action enum 与专属参数）。★ 2026-11-02：handler 读的 code_dir 补进 schema；action describe 补 diff",
           "expectations": [
@@ -11289,11 +11492,11 @@
         "task": {
           "id": "file_src_application_meta_index_ts",
           "summary": "explore_code 的对外契约说清「平铺是主形态」：action 枚举由 EXPLORE_ACTIONS 派生，args 只作 watch 子动作的兼容别名",
-          "state": "candidate",
+          "state": "claimed",
           "judge_gate": "strict",
-          "owner": null,
-          "claimed_at": null,
-          "lease_generation": 6,
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:41:50.240Z",
+          "lease_generation": 7,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
@@ -11306,16 +11509,16 @@
             "files": [
               {
                 "path": "src/application/meta/index.ts",
-                "content_hash": "1e3a7ca544076d934319fec39c2816a87c97ded8"
+                "content_hash": "cfee2f871b36e5c5db724c05a8104e5f09e8ef16"
               }
             ],
-            "computed_at": "2026-11-06T14:00:29.479Z",
+            "computed_at": "2026-11-21T21:41:50.136Z",
             "basis": [
               "canvas"
             ],
-            "note": "1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/meta/index.ts#writes"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 5 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/meta/index.ts#writes"
           },
-          "last_heartbeat_at": "2026-11-06T14:02:36.516Z",
+          "last_heartbeat_at": "2026-11-21T21:41:50.240Z",
           "evidence": [
             {
               "kind": "reading",
@@ -11386,12 +11589,9 @@
           "reopened_at": "2026-11-06T14:00:29.556Z",
           "reopen_reason": "删 archive ToolDef 注册项 + 给 edit_dsl 描述加一句「原 archive 已并入」",
           "reopened_from": "subagent:batch1-11b-write",
-          "prepared_snapshot": null,
-          "release_reason": "本文件改动已完成；先放回候选以解开它对其余卡（capability_map 画布含本文件）的占位，收口证据待 build 后与其它卡一并 complete",
-          "released_by": "agent:t27",
-          "released_at": "2026-11-06T14:02:36.516Z"
+          "prepared_snapshot": null
         },
-        "status": "draft",
+        "status": "in_progress",
         "overlay": {
           "path": "src/application/meta/index.ts",
           "kind": "file",
@@ -11424,13 +11624,94 @@
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility"
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_meta_integrity_index_integrity_ts\"].responsibility",
+            "supersedes": {
+              "against": "file_src_application_meta_integrity_index_integrity_ts",
+              "why": "过期租约接管（兼容档）：src/application/meta/integrity/index_integrity.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/application/meta/integrity/index_integrity.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/application/meta/integrity/index_integrity.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/application/meta/integrity/index_integrity.ts：must 2 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#3",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf("
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#4",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('function receiptOf("
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#5",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const t = fs.readFileSync(path.join(root, 'tests/p0_change_set_truth.test.ts'), 'utf8'); const needle = [\"i.code === 'changeset_unreadable'\", \"i.s"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#6",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf('const summaryReason"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#7",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const dup1 = s.includes('变更集读不出：${c.error"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#8",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/application/meta/integrity/index_integrity.ts 的 `indexIntegrityCore()` **调用了** `freshnessScope()`（L856）"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#9",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/integrity/index_integrity.ts'), 'utf8'); const at = s.indexOf(\"code: 'files_not_fr"
+                },
+                {
+                  "ref": "decision:file_src_application_meta_integrity_index_integrity_ts#10",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { let t = ''; try { t = fs.readFileSync(path.join(root, 'tests/p0_freshness_scope.test.ts'), 'utf8'); } catch { return false; } return t.includes(\"a"
+                }
+              ]
+            }
           },
-          "owner": "subagent:stale-fix",
-          "claimed_at": "2026-11-05T14:46:57.458Z",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:30:12.034Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "IndexIntegrityResult",
+                "fp": "325191e58aa3771523d903c4d4c78fbe7ee9cc87"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "countStaleResolvedRefsEx",
+                "fp": "04ec0fd7a094ef8a0eeda3151bd20cb1e971b43f"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "indexIntegrityCore",
+                "fp": "d1cb6e03c8f9e4e750f85e8e038baa40a9a14faf"
+              },
+              {
+                "file": "src/application/meta/integrity/index_integrity.ts",
+                "name": "renderIntegrity",
+                "fp": "c6274cf7d48e7c2d784b4f07017f8550a1a69527"
+              },
               {
                 "file": "tests/p0_change_set_truth.test.ts",
                 "name": "corruptDiffColumn",
@@ -11439,11 +11720,15 @@
             ],
             "files": [
               {
+                "path": "src/application/meta/integrity/index_integrity.ts",
+                "content_hash": "ea7fc2c29c24e7446d465b029d8273336317668a"
+              },
+              {
                 "path": "tests/p0_change_set_truth.test.ts",
-                "content_hash": "fe8edd97d9344bc87239153d9182e23e4db31034"
+                "content_hash": "84c8904c2c67cbc041f29b142c5ae394ec7db5c9"
               }
             ],
-            "computed_at": "2026-11-05T14:46:57.334Z",
+            "computed_at": "2026-11-21T16:30:11.925Z",
             "basis": [
               "canvas"
             ]
@@ -11546,14 +11831,46 @@
               },
               "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。",
               "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:33:41.967Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+                "input": "00498edf515c4f1b367c091391e1201dcb0cab95",
+                "code": "f0f3418ffba5bfc23ca6298c2d4f901ed70e7c76",
+                "covers": [
+                  "src/application/meta/integrity/index_integrity.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 11 条判据现判 11/11 pass（3 条 source-has + 6 条 run + 1 条 call-exists indexIntegrityCore→freshnessScope + 1 条 run 读 tests/p0_freshness_scope.test.ts；cardStanding=satisfied）。③ 画布（本卡有）：sync_status 保留出口读数后补 entry `create:countStaleResolvedRefsEx`（本轮 diff 新增导出，真实消费者 shadow_scheduler#createReadOnlyPorts，call 边 L140），重冻结 ⇒ 19+1 = 当前符号数、planCoverageGaps=(none)、changed_unplanned=[]；★ planJudgementGaps 1 条 advisory 如实上报；出口 not_yet 4 = 重冻结边界（已挂 #720）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 4 → 5，claimed_at=2026-11-21T16:30:12.034Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+              "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
             }
           ],
-          "reopened_at": "2026-11-05T14:46:57.458Z",
-          "reopen_reason": "STALE_INDEX / index_integrity 的「索引不可信」是假阳：把索引器永不重解析的 .md/.json/tests 算成落后。只改新鲜度判据（按保鲜范围分类 + 范围外降 info），不动 integrityVerdict 公式。",
-          "reopened_from": "subagent:close-evidence",
-          "lease_generation": 3,
+          "reopened_at": "2026-11-20T08:59:44.067Z",
+          "reopen_reason": "DS-1/DS-1R 期间对该文件做过真实修改（DS-1R2 复核 §7 要求认账并归属）：只读端口/双出口/收集器/注入参数等**追加**，既有消费者行为保持不变；本卡取写权以承接 DS-1R2 收尾",
+          "reopened_from": "agent:ds1r2-closeout",
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T14:57:54.956Z"
+          "last_heartbeat_at": "2026-11-21T16:33:41.968Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1r2-closeout",
+            "from_claimed_at": "2026-11-20T08:59:44.067Z",
+            "age_hours": 31.5,
+            "last_heartbeat_at": "2026-11-20T08:59:44.067Z"
+          },
+          "dissent_reason": "过期租约接管（兼容档）：src/application/meta/integrity/index_integrity.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "disputed_by": [
+            {
+              "by": "file_src_application_meta_integrity_index_integrity_ts",
+              "at": "2026-11-21T16:30:12.034Z",
+              "why": "过期租约接管（兼容档）：src/application/meta/integrity/index_integrity.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ]
         },
         "status": "done",
         "decision": {
@@ -11647,10 +11964,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T23:08:00+08:00",
-            "command": "node --import tsx --test tests/p0_freshness_scope.test.ts ; node dist/src/presentation/cli/cli.js index_integrity --json '{\"project_dir\":\"D:/agentio/dev/agent-io\"}'（不传 refresh / 传 refresh 两组）; 消融：notFreshInScope=notFreshAll 后重跑 ; node scripts/judge-all.mjs",
             "kind": "reading",
-            "observed": "① 改前：verdict=untrusted · not_fresh=20 · not_fresh_out_of_scope=0；20 = 6 .md + 3 .json + 11 tests + **0 src**；scope 513 / indexed 627。② 改后（不传 refresh）：verdict=**trusted** · 不一致 20（范围内 0 ｜ 范围外 20）· issues 只剩 files_not_fresh_out_of_scope(info)。③ 改后（refresh:true）：verdict=trusted · 走查 513 / 重同步 0 / 失败 0。④ 真信号未削弱：改完未保鲜时 verdict=untrusted，唯一 blocker = 1 个范围内文件 src/application/meta/integrity/index_integrity.ts。⑤ tests/p0_freshness_scope.test.ts 3/3 pass；消融（notFreshInScope=notFreshAll）⇒ T1 必红；恢复后 3/3 绿。⑥ judge-all：本节点 11 条全 pass（全册 682 / 680 pass）。"
+            "at": "2026-11-21T16:33:28.324Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 11 条判据现判 11/11 pass（3 条 source-has + 6 条 run + 1 条 call-exists indexIntegrityCore→freshnessScope + 1 条 run 读 tests/p0_freshness_scope.test.ts；cardStanding=satisfied）。③ 画布（本卡有）：sync_status 保留出口读数后补 entry `create:countStaleResolvedRefsEx`（本轮 diff 新增导出，真实消费者 shadow_scheduler#createReadOnlyPorts，call 边 L140），重冻结 ⇒ 19+1 = 当前符号数、planCoverageGaps=(none)、changed_unplanned=[]；★ planJudgementGaps 1 条 advisory 如实上报；出口 not_yet 4 = 重冻结边界（已挂 #720）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 4 → 5，claimed_at=2026-11-21T16:30:12.034Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
           },
           "signature": "v2:3dc94094bbb9"
         },
@@ -11937,13 +12255,13 @@
         "task": {
           "id": "file_src_application_observe_index_ts",
           "summary": "【L1 待建构】入口层 · src/application/observe — 0 个函数（导入自 19 个模块）（src/application/observe/index.ts） ← 节点 file_src_application_observe_index_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_observe_index_ts\"].responsibility"
           },
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:28:54.200Z",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:05:20.525Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -11956,10 +12274,10 @@
             "files": [
               {
                 "path": "src/application/observe/index.ts",
-                "content_hash": "75f64fdea289b729015dc064471b226e76a9b209"
+                "content_hash": "64529b6ae9bc94a7510ad60e9f152b4fe4b754a2"
               }
             ],
-            "computed_at": "2026-11-03T11:28:54.076Z",
+            "computed_at": "2026-11-21T22:05:20.417Z",
             "basis": [
               "canvas"
             ],
@@ -12001,14 +12319,14 @@
               "command": "node -e \"match(/^    writes: (?:true|false),/gm)\" 计数 src/application/observe/index.ts && npx tsc --noEmit"
             }
           ],
-          "lease_generation": 1,
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "reopened_at": "2026-11-03T11:28:54.200Z",
-          "reopen_reason": "重开 file_src_application_observe_index_ts（上一轮 payload-budget 等已完成）：本轮只为 ToolDef 字面量补 writes 字段（卡 1.1 填充端），不改上一轮判据覆盖的行为",
-          "reopened_from": "subagent:real-defects",
-          "last_heartbeat_at": "2026-11-03T11:58:29.223Z"
+          "reopened_at": "2026-11-21T22:05:20.525Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：observe/index.ts 为仅限补效果声明的现有 lane 文件（企划 §8）；旧 evidence 保留，不推翻既有结论，不新增审批档",
+          "reopened_from": "subagent:batch1-11b-write",
+          "last_heartbeat_at": "2026-11-21T22:05:20.525Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "observe 单入口：ACTION_SPEC 认的参数与 action 必须都能从 zod 契约传进来",
           "expectations": [
@@ -14082,14 +14400,14 @@
         "task": {
           "id": "file_src_application_refactor_index_ts",
           "summary": "工具表 lane 文件（src/application/refactor/index.ts）：ToolDef 字面量带必填 writes（= 是否经 saveDSL/saveDesignSheet 写设计册；写源码/产物文件不算）—— 卡 1.1 填充端",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_refactor_index_ts\"].responsibility"
           },
-          "owner": "subagent:r13-token",
-          "claimed_at": "2026-11-04T17:34:34.941Z",
-          "lease_generation": 3,
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:09:11.936Z",
+          "lease_generation": 4,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
@@ -14097,21 +14415,22 @@
               {
                 "file": "src/application/refactor/index.ts",
                 "name": "REFACTOR_TOOLS",
-                "fp": "d45f535357173068171f147c628a752d90055756"
+                "fp": "b76587223a83cbcc92691b6e3b2eff3440ffbd18"
               }
             ],
             "files": [
               {
                 "path": "src/application/refactor/index.ts",
-                "content_hash": "a3dc332680024c69170641d351bd52b083b2e3ca"
+                "content_hash": "2037af13c277d164532852473952b80b3454587c"
               }
             ],
-            "computed_at": "2026-11-04T04:25:33.959Z",
+            "computed_at": "2026-11-21T22:09:11.830Z",
             "basis": [
               "canvas"
-            ]
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
-          "last_heartbeat_at": "2026-11-04T18:53:37.929Z",
+          "last_heartbeat_at": "2026-11-21T22:09:11.936Z",
           "evidence": [
             {
               "kind": "reading",
@@ -14178,11 +14497,11 @@
               "command": "node scripts/mcp/mcp_scan.mjs && node scripts/judge-all.mjs"
             }
           ],
-          "reopened_at": null,
-          "reopen_reason": "重开 index.ts 的卡：只需把 replace_text 的 symbol 作用域闸与『切进标识符即拒』写进工具面描述（新增的 run 判据现为红）",
-          "reopened_from": "subagent:m5-write"
+          "reopened_at": "2026-11-21T22:09:11.936Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：refactor/index.ts 为仅限补效果声明的现有 lane 文件（企划 §8）；旧 evidence 4 条保留，不推翻既有结论",
+          "reopened_from": "subagent:r13-token"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "工具表 lane 文件（src/application/refactor/index.ts）：ToolDef 字面量带必填 writes（= 是否经 saveDSL/saveDesignSheet 写设计册；写源码/产物文件不算）—— 卡 1.1 填充端",
           "expectations": [
@@ -15196,14 +15515,14 @@
         "task": {
           "id": "file_src_application_tool_registry_ts",
           "summary": "【L1 待建构】核心层 · src/application — 1 个函数（导入自 8 个模块）（src/application/tool_registry.ts） ← 节点 file_src_application_tool_registry_ts",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_application_tool_registry_ts\"].responsibility"
           },
-          "owner": "subagent:batch1-11b-write",
-          "claimed_at": "2026-11-03T11:24:46.157Z",
-          "lease_generation": 1,
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:07:37.256Z",
+          "lease_generation": 2,
           "claimed_session": "unknown",
           "prepared_snapshot": null,
           "read_set": {
@@ -15217,16 +15536,16 @@
             "files": [
               {
                 "path": "src/application/tool_registry.ts",
-                "content_hash": "857d97684310adda55406bb428b12685080805f5"
+                "content_hash": "13fc434e347ed6c7b4ab673c5340a4170d1ea3c1"
               }
             ],
-            "computed_at": "2026-11-03T11:24:42.930Z",
+            "computed_at": "2026-11-21T22:07:37.149Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/tool_registry.ts#bindWritesOf"
+            "note": "1 条 edge-* 判据的**两端只作读**（判边界要读对方）⇒ 不算占位；把对方文件算进来会让所有跨文件任务互相拒（这正是 imports 兜底被否掉的同一个坑）；卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）；1 个点名的符号此刻**不存在**（fp 为空 ⇒ 按“要新建它”记）：src/application/tool_registry.ts#bindWritesOf"
           },
-          "last_heartbeat_at": "2026-11-03T11:57:31.573Z",
+          "last_heartbeat_at": "2026-11-21T22:07:37.256Z",
           "evidence": [
             {
               "kind": "reading",
@@ -15246,9 +15565,12 @@
               "observed": "L30 import bindWritesOf、L74 bindWritesOf(Object.fromEntries(TOOL_DEFS.map(d => [d.name, d.writes])))；tsc 0 error",
               "command": "Select-String bindWritesOf src/application/tool_registry.ts && npx tsc --noEmit"
             }
-          ]
+          ],
+          "reopened_at": "2026-11-21T22:07:37.256Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：tool_registry.ts 由 TOOL_DEFS 汇总派生效果声明，不另建中央手抄 switch/动作表/URL 表（企划 §8）；旧 evidence 保留",
+          "reopened_from": "subagent:batch1-11b-write"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "tool_registry：工具表唯一汇总点 + 写册白名单绑定端（加载期 bindWritesOf(Object.fromEntries(TOOL_DEFS.map(d=>[d.name,d.writes]))))—— writes 字段是唯一事实源，不许手抄第二份（0.9）",
           "expectations": [
@@ -18432,7 +18754,88 @@
           "borderRadius": 4
         },
         "arch_layer": "core",
-        "path": "src/infrastructure/analysis/impact/diff_impact.ts"
+        "path": "src/infrastructure/analysis/impact/diff_impact.ts",
+        "task": {
+          "id": "file_src_infrastructure_analysis_impact_diff_impact_ts",
+          "summary": "【L1 待建构】diff_impact.ts（src/infrastructure/analysis/impact/diff_impact.ts） ← 节点 file_src_infrastructure_analysis_impact_diff_impact_ts",
+          "state": "done",
+          "judge_gate": "strict",
+          "discussion": {
+            "micro": "L1 建构卡 · summary 出处：node.label"
+          },
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:47:17.300Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p1_impact_selection && node scripts/run-tests.mjs --filter p1_shadow_scheduler && edit_dsl {type:\"decision\",op:\"update\"}（写入预判 I1 当场判 4 条）",
+                "input": "981efa3c93bb7d7ac8116ceb9c7dcf3f25673c02",
+                "code": "4114af24206074e03b4b37c76e6a8d4921973197",
+                "covers": [
+                  "src/infrastructure/analysis/diagnosis/impact_analyzer.ts",
+                  "src/infrastructure/analysis/facts/semantic_digest.ts",
+                  "src/presentation/http/serve.ts"
+                ]
+              },
+              "observed": "① 本卡原先 decision=null（真 L1 无判据），本轮经正式设计写端补上**真实 decision**（责任 / 验收 / rationale），并写了 4 条判据：call-exists ×3（analyzeImpact→diffImpact L25 · handleApiDiffImpact→diffImpact L1133 · semanticDigest→diffImpact L196，三条都是 cache.db#edges 里的真实生产调用边）+ run ×1（注入语义的结构：`db?: Database;` 在接口里、`if (input.db)` 先于 `db = getProjectCacheDb(root)`、catch 只在池分支之后、注入分支到池分支之间没有 emptyResult 降级）。② 现判 4/4 pass（写端 I1 当场判 0 红；强制度：4 条全为语义类，0 条存在类）—— 没有用 file-exists / source-has 冒充行为。③ 行为证据真跑：p1_impact_selection 15/15、p1_shadow_scheduler 14/14（均 exit 0，临时目录隔离、真数据仓 sha 前后一致）—— 本卡不把活 DB 对象塞进 behavior-cases。④ 本卡没有画布（plans 无行）⇒ 无画布闸，出口如实报「无从对账」；无未决 review / 读集冲突。⑤ 状态仍是 candidate（本轮没有另立 claim：31 号 §4 明确「若新卡已是 satisfied candidate，可按现行规则处理，不为形式重复领取」），按 t_done_from_candidate 凭证据收口并署名。",
+              "command": "node scripts/run-tests.mjs --filter p1_impact_selection && node scripts/run-tests.mjs --filter p1_shadow_scheduler && edit_dsl {type:\"decision\",op:\"update\"}（写入预判 I1 当场判 4 条）",
+              "why": "收口依据 = 31 号 §4 + 现行 candidate-satisfied 规则；生产接线、结构、行为三层证据分别来自 call-exists / run / 定向测试，互不冒充。"
+            }
+          ],
+          "last_heartbeat_at": "2026-11-21T16:47:17.301Z"
+        },
+        "status": "done",
+        "decision": {
+          "summary": "影响面计算的**注入与读失败语义**（DS-1R）：`DiffImpactInput` 新增可选 `db`（调用方已打开的**只读**连接）；注入时本函数只用它做 SELECT、不 close、且**不再把读失败降级成空结果**（读不到 ≠ 无影响）；缺省仍走 `getProjectCacheDb` 池，既有调用点零改动。反向追溯算法本体（callers/callees、max_depth、去重）未重写。",
+          "expectations": [
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/diagnosis/impact_analyzer.ts",
+              "symbol": "analyzeImpact",
+              "target": "diffImpact",
+              "why": "生产路径真调：`cache.db#edges` 有 call 边 analyzeImpact → diffImpact（L25，src/infrastructure/analysis/diagnosis/impact_analyzer.ts）。删掉这次调用 ⇒ 影响面诊断不再算，本判据当场红。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/presentation/http/serve.ts",
+              "symbol": "handleApiDiffImpact",
+              "target": "diffImpact",
+              "why": "HTTP 端点是另一个真消费者：call 边 handleApiDiffImpact → diffImpact（L1133，src/presentation/http/serve.ts）。这条保证「对外 API 仍然接在同一个实现上」，而不是另写一份影响面。"
+            },
+            {
+              "kind": "call-exists",
+              "path": "src/infrastructure/analysis/facts/semantic_digest.ts",
+              "symbol": "semanticDigest",
+              "target": "diffImpact",
+              "why": "语义摘要也真调：call 边 semanticDigest → diffImpact（L196，src/infrastructure/analysis/facts/semantic_digest.ts）。三条边来自三条不同生产路径（诊断 / HTTP / 摘要），任一被改成别的实现或本地重写，这条就红。"
+            },
+            {
+              "kind": "run",
+              "path": "src/infrastructure/analysis/impact/diff_impact.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/analysis/impact/diff_impact.ts'), 'utf8'); const iInj = s.indexOf('if (input.db)'); const iPool = s.indexOf('db = getProjectCacheDb(root)'); const iCatch = s.indexOf('} catch (e) {', iPool); const noDegrade = s.slice(iInj, iPool).indexOf('emptyResult') < 0; return s.includes('db?: Database;') && iInj > 0 && iPool > iInj && iCatch > iPool && noDegrade; })()",
+              "why": "注入语义的**结构判据**：接口里有 `db?: Database;`、`if (input.db)` 出现在 `db = getProjectCacheDb(root)` 之前、catch 只出现在池分支之后、且注入分支到池分支之间**没有** emptyResult 降级。★ 它只证明分支形状（不是运行时行为）；运行时行为由 p1_impact_selection / p1_shadow_scheduler 真跑承担 —— 两件事分开记，不互相冒充。★ 会红的情形：把注入分支删掉、或让注入也走 catch+emptyResult 降级。"
+            }
+          ],
+          "rationale": "只读消费者（影子调度 / 幂等诊断）若走 `getProjectCacheDb`，会 mkdir + 设 WAL + schema 落后时迁移 —— 一次只读诊断就变成隐式写；注入连接是唯一不改既有调用点的解法。而注入后若继续把读失败降级成空结果，只读方会把「读不到」当成「无影响」= 假绿，所以注入分支必须 fail-loud。",
+          "acceptance": "生产调用点真调 `diffImpact`（analyzeImpact / handleApiDiffImpact / semanticDigest 三条**真实 call 边**）；「注入优先、catch 只包池分支、注入路径不出现 emptyResult 降级」由 run 判据钉结构；行为证据来自 p1_impact_selection 与 p1_shadow_scheduler 的真跑（本卡不把活 DB 对象塞进 behavior-cases）。",
+          "updated_at": "2026-11-21T16:46:59.948Z",
+          "agent": "agent:ds1-independent-closeout"
+        },
+        "overlay": {
+          "path": "src/infrastructure/analysis/impact/diff_impact.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:47:16.010Z",
+            "command": "node scripts/run-tests.mjs --filter p1_impact_selection && node scripts/run-tests.mjs --filter p1_shadow_scheduler && edit_dsl {type:\"decision\",op:\"update\"}（写入预判 I1 当场判 4 条）",
+            "observed": "① 本卡原先 decision=null（真 L1 无判据），本轮经正式设计写端补上**真实 decision**（责任 / 验收 / rationale），并写了 4 条判据：call-exists ×3（analyzeImpact→diffImpact L25 · handleApiDiffImpact→diffImpact L1133 · semanticDigest→diffImpact L196，三条都是 cache.db#edges 里的真实生产调用边）+ run ×1（注入语义的结构：`db?: Database;` 在接口里、`if (input.db)` 先于 `db = getProjectCacheDb(root)`、catch 只在池分支之后、注入分支到池分支之间没有 emptyResult 降级）。② 现判 4/4 pass（写端 I1 当场判 0 红；强制度：4 条全为语义类，0 条存在类）—— 没有用 file-exists / source-has 冒充行为。③ 行为证据真跑：p1_impact_selection 15/15、p1_shadow_scheduler 14/14（均 exit 0，临时目录隔离、真数据仓 sha 前后一致）—— 本卡不把活 DB 对象塞进 behavior-cases。④ 本卡没有画布（plans 无行）⇒ 无画布闸，出口如实报「无从对账」；无未决 review / 读集冲突。⑤ 状态仍是 candidate（本轮没有另立 claim：31 号 §4 明确「若新卡已是 satisfied candidate，可按现行规则处理，不为形式重复领取」），按 t_done_from_candidate 凭证据收口并署名。",
+            "why": "收口依据 = 31 号 §4 + 现行 candidate-satisfied 规则；生产接线、结构、行为三层证据分别来自 call-exists / run / 定向测试，互不冒充。"
+          }
+        }
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -21793,31 +22196,92 @@
           "state": "done",
           "judge_gate": "strict",
           "discussion": {
-            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility"
+            "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_infrastructure_index_db_ts\"].responsibility",
+            "supersedes": {
+              "against": "file_src_infrastructure_index_db_ts",
+              "why": "过期租约接管（兼容档）：src/infrastructure/index/db.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/roots.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts：must 0 全在 / mustNot 1 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#3",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#4",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts 的 `openDb()` **调用了** `cacheSchemaIsCurrent()`（L535）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#5",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts：must 1 全在 / mustNot 0 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#6",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts 的 `migrateV15ToV16()` **调用了** `dropViewsBeforeTableSwap()`（L310）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#7",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts 的 `migrateCacheIfNeeded()` **调用了** `dropViewsBeforeTableSwap()`（L398）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#8",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/db.ts：must 0 全在 / mustNot 4 全无（匹配文本：剥注释）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#9",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8'); return s.includes('@authority 符号索引') && s.includes('@authori"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_db_ts#10",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：/SCHEMA_VERSION = 18/.test(fs.readFileSync(path.join(root, 'src/infrastructure/index/db.ts'), 'utf8')) && /DROP TABLE IF EXISTS occurrences/.test(fs.readFi"
+                }
+              ]
+            }
           },
-          "owner": "subagent:r11-ident",
-          "claimed_at": "2026-11-05T05:19:01.500Z",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:30:17.728Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/db.ts",
-                "name": "findCacheDb",
-                "fp": "3aec002f28cca82f55f71072250cb3dca46aab58"
+                "name": "cacheSchemaIsCurrent",
+                "fp": "e6867672fc1d7fec2e2494f63a10412c2b4acd6f"
               },
               {
                 "file": "src/infrastructure/index/db.ts",
-                "name": "nearestCacheDb",
-                "fp": "a51e0300e529aafb3785a83942b0d93d39fbe386"
+                "name": "openDb",
+                "fp": "2f234a1da5fa5e92a91c8a46b1cf871fbe5db1cf"
               }
             ],
             "files": [
               {
                 "path": "src/infrastructure/index/db.ts",
-                "content_hash": "a27156df31d2b9a4feaa25ad2fa7cc47fc78a125"
+                "content_hash": "05d5d7f563ccf097e5af9ac76eaffe7d5df407ed"
               }
             ],
-            "computed_at": "2026-11-05T05:19:01.262Z",
+            "computed_at": "2026-11-21T16:30:17.621Z",
             "basis": [
               "canvas"
             ]
@@ -21942,14 +22406,47 @@
               },
               "observed": "schema_versions_max 18、v18 行写入、tables 20→19、sqlite_master 里 occurrences 0 行；index_integrity 的 schema_outdated blocker 消失（state=ready）。",
               "command": "node .agent-io/scratch/r11/probe_migrate.mjs \"D:\\\\agentio\\\\dev\\\\agent-io\""
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:33:50.967Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+                "input": "02820662a14ead8186bdcfe2c1573cd1a5ebd4c6",
+                "code": "7763b2631f15ec0a20b4188c4a892a0ca1fc941a",
+                "covers": [
+                  "src/infrastructure/index/db.ts",
+                  "src/infrastructure/roots.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 11 条判据现判 11/11 pass（5 条 source-has + 3 条 call-exists + 2 条 run，含 #10「v18 版本号 + occurrences DROP」与 #4「openDb 先问形状再决定写」；cardStanding=satisfied）。③ 画布（本卡有）：sync_status 把 migrateCacheIfNeeded / alignCacheSchema 两条推进为 done（openDb 由出口吸收为待补条目），随后补 `rewrite:openDb`（自 11-05 冻结以来 body_hash cce8622e→50965669）与 `rewrite:cacheSchemaIsCurrent`（本轮 DS-1R 把它导出；body_hash 未变 ⇒ 出口的 changed_unplanned 抓不到它，但语义上确实改了），并**更正** 11-05 那份 untouched 把 openDb 写成「不动」的错误；重冻结后 planCoverageGaps=(none)、changed_unplanned=[]、缺口 0 处；出口 not_yet 4 = 重冻结边界（已挂 #720）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 3 → 4，claimed_at=2026-11-21T16:30:17.728Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+              "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
             }
           ],
-          "reopened_at": "2026-11-05T05:19:01.500Z",
-          "reopen_reason": "R11：v18 迁移 —— SCHEMA_VERSION 17→18 并在 migrateCacheIfNeeded 里 DROP 旧库 occurrences 表",
-          "reopened_from": "subagent:fix-migration",
-          "lease_generation": 2,
+          "reopened_at": "2026-11-20T08:59:38.449Z",
+          "reopen_reason": "DS-1/DS-1R 期间对该文件做过真实修改（DS-1R2 复核 §7 要求认账并归属）：只读端口/双出口/收集器/注入参数等**追加**，既有消费者行为保持不变；本卡取写权以承接 DS-1R2 收尾",
+          "reopened_from": "agent:ds1r2-closeout",
+          "lease_generation": 4,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T06:07:21.965Z"
+          "last_heartbeat_at": "2026-11-21T16:33:50.968Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1r2-closeout",
+            "from_claimed_at": "2026-11-20T08:59:38.449Z",
+            "age_hours": 31.5,
+            "last_heartbeat_at": "2026-11-20T08:59:38.449Z"
+          },
+          "dissent_reason": "过期租约接管（兼容档）：src/infrastructure/index/db.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "disputed_by": [
+            {
+              "by": "file_src_infrastructure_index_db_ts",
+              "at": "2026-11-21T16:30:17.728Z",
+              "why": "过期租约接管（兼容档）：src/infrastructure/index/db.ts 的 11 条判据现判全部 pass（cardStanding=satisfied，11 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ]
         },
         "status": "done",
         "decision": {
@@ -22054,10 +22551,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T06:00:00.000Z",
-            "command": "node .agent-io/scratch/r11/probe_migrate.mjs \"D:\\\\agentio\\\\dev\\\\agent-io\"",
             "kind": "reading",
-            "observed": "schema_versions_max 18、v18 行写入、tables 20→19、sqlite_master 里 occurrences 0 行；index_integrity 的 schema_outdated blocker 消失（state=ready）。"
+            "at": "2026-11-21T16:33:28.324Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 11 条判据现判 11/11 pass（5 条 source-has + 3 条 call-exists + 2 条 run，含 #10「v18 版本号 + occurrences DROP」与 #4「openDb 先问形状再决定写」；cardStanding=satisfied）。③ 画布（本卡有）：sync_status 把 migrateCacheIfNeeded / alignCacheSchema 两条推进为 done（openDb 由出口吸收为待补条目），随后补 `rewrite:openDb`（自 11-05 冻结以来 body_hash cce8622e→50965669）与 `rewrite:cacheSchemaIsCurrent`（本轮 DS-1R 把它导出；body_hash 未变 ⇒ 出口的 changed_unplanned 抓不到它，但语义上确实改了），并**更正** 11-05 那份 untouched 把 openDb 写成「不动」的错误；重冻结后 planCoverageGaps=(none)、changed_unplanned=[]、缺口 0 处；出口 not_yet 4 = 重冻结边界（已挂 #720）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 3 → 4，claimed_at=2026-11-21T16:30:17.728Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
           },
           "signature": "v2:83038fd904a5"
         },
@@ -22243,26 +22741,36 @@
           "summary": "R17 racy-git：文件变没变只有一把尺（stat 判据 + racy 窗口），两份实现收成一个 helper",
           "state": "done",
           "judge_gate": "strict",
-          "owner": "subagent:stale-fix",
-          "claimed_at": "2026-11-05T14:46:57.784Z",
-          "lease_generation": 2,
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:30:09.374Z",
+          "lease_generation": 4,
           "claimed_session": "unknown",
           "read_set": {
             "symbols": [
               {
                 "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "StaleIndexProbe",
+                "fp": "a74ee59ef26ae9db9790ab4acba51627330ee4db"
+              },
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
                 "name": "detectStaleIndex",
-                "fp": "975ace8235445b9a707fa661e8d4f684631103a8"
+                "fp": "384c597bd86cf4947c66c04dc0bc5492fb28a1cc"
               },
               {
                 "file": "src/infrastructure/index/index_freshness.ts",
-                "name": "ensureFreshIndex",
-                "fp": "95c28e175426a9721ff74fe8d26c890bd74a48c0"
+                "name": "freshnessScope",
+                "fp": "475873dc5b6e3c151c7c33a229708eb8e1a7b067"
               },
               {
                 "file": "src/infrastructure/index/index_freshness.ts",
-                "name": "isStatUnchanged",
-                "fp": "e2e51419b35625cad92924cda1093ff5fb8c6006"
+                "name": "indexCoversDisk",
+                "fp": "ffc73bb95316e695f9c18f66a6f6ca6eff5aeb86"
+              },
+              {
+                "file": "src/infrastructure/index/index_freshness.ts",
+                "name": "indexCoversDiskEx",
+                "fp": "7fa7d7596f83ab67fd8f2e00680c92fbd6280307"
               },
               {
                 "file": "src/infrastructure/index/watch_project.ts",
@@ -22273,19 +22781,19 @@
             "files": [
               {
                 "path": "src/infrastructure/index/index_freshness.ts",
-                "content_hash": "9c31260f1c459efb5889e7b3ce445de774abf6ed"
+                "content_hash": "777f12a5ee053f592be0556fc1981fca6846b1ae"
               },
               {
                 "path": "src/infrastructure/index/watch_project.ts",
                 "content_hash": "fabd01579f006d93b9b318db27808218acc797ef"
               }
             ],
-            "computed_at": "2026-11-05T14:46:57.657Z",
+            "computed_at": "2026-11-21T16:30:09.266Z",
             "basis": [
               "canvas"
             ]
           },
-          "last_heartbeat_at": "2026-11-05T14:57:55.398Z",
+          "last_heartbeat_at": "2026-11-21T16:33:34.412Z",
           "evidence": [
             {
               "kind": "reading",
@@ -22320,11 +22828,87 @@
               },
               "observed": "① 改前 detect 真读数：indexed 627 · stride 2 · scanned 314 · stale 9 —— **9/9 全在保鲜范围外、in-scope 0 个**。② 改后回执带分母：「抽样 257/513 个「索引器会重解析」的文件里有 0 个已被改动；另 115 个 .md/.json/tests 类已索引文件在保鲜范围外（不计入）」。③ freshnessScope 成为唯一权威：indexCoversDisk 与 detectStaleIndex 都调它 ⇒ 入口数 2→1。④ fail-closed：空项目根 ⇒ ok=false + scopeFallback=true + total===indexedTotal。",
               "command": "node .agent-io/scratch/stale/probe_detect.mjs（复刻 stride 抽样 + walkFiles 分类）; node --import tsx --test tests/p0_freshness_scope.test.ts"
+            },
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:33:34.411Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+                "input": "6c859b7d14298159866e57891dfa1f4538a2255f",
+                "code": "b2e277a53bab2e573ad8b0cfcef322d99c36e7d9",
+                "covers": [
+                  "src/infrastructure/index/index_freshness.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 7 条判据现判 7/7 pass（isStatUnchanged symbol-exists + 2 条 call-exists、freshnessScope symbol-exists + 2 条 call-exists、1 条 run；cardStanding=satisfied）。③ 画布（本卡有）：先跑 sync_status 保留出口读数，再补 entry `create:indexCoversDiskEx`（本轮 diff 新增的导出，真实消费者 shadow_scheduler#createReadOnlyPorts，call 边 L141）与 untouched `FreshnessScope`（11-05 冻结后才进索引的 interface，本轮 diff 未触及），apply:true 重冻结 ⇒ symbols_at_freeze 30 = 当前 30、planCoverageGaps=(none)、出口 changed_unplanned=[]；★ planJudgementGaps 仍点名 1 条「indexCoversDiskEx 缺接线类判据」—— 本轮不扩判据（29 号未授权），如实上报不静默过滤；出口 not_yet 5 是重冻结边界（已挂 T-#REFREEZE-ERASES-EXIT-EVIDENCE）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 3 → 4，claimed_at=2026-11-21T16:30:09.374Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+              "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
             }
           ],
-          "reopened_at": "2026-11-05T14:46:57.784Z",
-          "reopen_reason": "新增 freshnessScope 作为「保鲜重解析范围」唯一权威（三处共用），detectStaleIndex 按其过滤再抽样并带「抽样 N / 全量 M」分母。",
-          "reopened_from": "subagent:racy-fix"
+          "reopened_at": "2026-11-20T08:59:41.285Z",
+          "reopen_reason": "DS-1/DS-1R 期间对该文件做过真实修改（DS-1R2 复核 §7 要求认账并归属）：只读端口/双出口/收集器/注入参数等**追加**，既有消费者行为保持不变；本卡取写权以承接 DS-1R2 收尾",
+          "reopened_from": "agent:ds1r2-closeout",
+          "taken_over_from": {
+            "from_owner": "agent:ds1r2-closeout",
+            "from_claimed_at": "2026-11-20T08:59:41.285Z",
+            "age_hours": 31.5,
+            "last_heartbeat_at": "2026-11-20T08:59:41.285Z"
+          },
+          "dissent_reason": "过期租约接管（兼容档）：src/infrastructure/index/index_freshness.ts 的 7 条判据现判全部 pass（cardStanding=satisfied，7 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_infrastructure_index_index_freshness_ts 的 7 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_infrastructure_index_index_freshness_ts",
+              "why": "过期租约接管（兼容档）：src/infrastructure/index/index_freshness.ts 的 7 条判据现判全部 pass（cardStanding=satisfied，7 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts（现解析）有 `isStatUnchanged`（L230-236）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts 的 `ensureFreshIndex()` **调用了** `isStatUnchanged()`（L814）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts 的 `ensureFreshIndex()` **调用了** `changedSymbolNames()`（L890）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#3",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const a = fs.readFileSync(path.join(root, 'src/infrastructure/index/index_freshness.ts'), 'utf8'); const b = fs.readFileSync(path.join(root, 'src/"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#4",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts（现解析）有 `freshnessScope`（L275-285）（缓存命中）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#5",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts 的 `indexCoversDisk()` **调用了** `freshnessScope()`（L731）"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_index_index_freshness_ts#6",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/infrastructure/index/index_freshness.ts 的 `detectStaleIndex()` **调用了** `freshnessScope()`（L355）"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_infrastructure_index_index_freshness_ts",
+              "at": "2026-11-21T16:30:09.374Z",
+              "why": "过期租约接管（兼容档）：src/infrastructure/index/index_freshness.ts 的 7 条判据现判全部 pass（cardStanding=satisfied，7 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ]
         },
         "status": "done",
         "overlay": {
@@ -22332,10 +22916,11 @@
           "kind": "file",
           "progress": "done",
           "progress_evidence": {
-            "at": "2026-11-05T23:08:00+08:00",
-            "command": "node .agent-io/scratch/stale/probe_detect.mjs（复刻 stride 抽样 + walkFiles 分类）; node --import tsx --test tests/p0_freshness_scope.test.ts",
             "kind": "reading",
-            "observed": "① 改前 detect 真读数：indexed 627 · stride 2 · scanned 314 · stale 9 —— **9/9 全在保鲜范围外、in-scope 0 个**。② 改后回执带分母：「抽样 257/513 个「索引器会重解析」的文件里有 0 个已被改动；另 115 个 .md/.json/tests 类已索引文件在保鲜范围外（不计入）」。③ freshnessScope 成为唯一权威：indexCoversDisk 与 detectStaleIndex 都调它 ⇒ 入口数 2→1。④ fail-closed：空项目根 ⇒ ok=false + scopeFallback=true + total===indexedTotal。"
+            "at": "2026-11-21T16:33:28.324Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 7 条判据现判 7/7 pass（isStatUnchanged symbol-exists + 2 条 call-exists、freshnessScope symbol-exists + 2 条 call-exists、1 条 run；cardStanding=satisfied）。③ 画布（本卡有）：先跑 sync_status 保留出口读数，再补 entry `create:indexCoversDiskEx`（本轮 diff 新增的导出，真实消费者 shadow_scheduler#createReadOnlyPorts，call 边 L141）与 untouched `FreshnessScope`（11-05 冻结后才进索引的 interface，本轮 diff 未触及），apply:true 重冻结 ⇒ symbols_at_freeze 30 = 当前 30、planCoverageGaps=(none)、出口 changed_unplanned=[]；★ planJudgementGaps 仍点名 1 条「indexCoversDiskEx 缺接线类判据」—— 本轮不扩判据（29 号未授权），如实上报不静默过滤；出口 not_yet 5 是重冻结边界（已挂 T-#REFREEZE-ERASES-EXIT-EVIDENCE）。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 3 → 4，claimed_at=2026-11-21T16:30:09.374Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
           }
         }
       },
@@ -25073,7 +25658,52 @@
           "borderRadius": 4
         },
         "arch_layer": "entry",
-        "path": "src/presentation/daemon/server.ts"
+        "path": "src/presentation/daemon/server.ts",
+        "decision": {
+          "summary": "daemon 控制面：/api/dsl、/api/watch、/api/shutdown 在控制 handler 前消费同一纯裁决；保留串行队列、乐观锁、Host 白名单；补 Origin/连接远端地址事实采集与非回环 deny，不新增第二控制面。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/presentation/daemon/server.ts",
+              "why": "daemon 三口唯一 HTTP 服务端；裁决注入点在 handlers.dslWrite/watch/shutdown 之前（盘点 §6.3）"
+            },
+            {
+              "kind": "run",
+              "path": "src/presentation/daemon/server.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/daemon/server.ts'), 'utf8'); return s.includes('hostAllowed') && s.includes('/api/dsl') && s.includes('/api/watch') && s.includes('/api/shutdown') && s.includes('enqueueDslWrite') && !/req\\.headers\\.origin|headers\\['origin'\\]/.test(s); })()",
+              "why": "daemon 三口（dsl/watch/shutdown）必须在控制 handler 前消费同一纯裁决；既有 Host 白名单与按 feature 串行队列保留。本判据机械核对三口与 hostAllowed/串行队列仍在本文件、且现状确无 Origin 读取（缺口如实记账，收口时由裁决补齐，不伪称已有 Origin 保护）。"
+            }
+          ],
+          "updated_at": "2026-11-21T21:44:18.817Z",
+          "agent": "agent:action-effect-boundary"
+        },
+        "task": {
+          "id": "file_src_presentation_daemon_server_ts",
+          "summary": "daemon 控制面：/api/dsl、/api/watch、/api/shutdown 在控制 handler 前消费同一纯裁决；保留串行队列、乐观锁、Host 白名单；补 Origin/连接远端地址事实采集与非回环 deny，不新增第二控制面。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:53:52.805Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/presentation/daemon/server.ts",
+                "content_hash": "c9609329315de5e6d7b01961e4d62f61ab9f0ed9"
+              }
+            ],
+            "computed_at": "2026-11-21T21:53:52.703Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T21:53:52.805Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_http_contract_ts",
@@ -25124,27 +25754,33 @@
         "task": {
           "id": "file_src_presentation_http_serve_ts",
           "summary": "画布三格/批注层退场：注释不得再指向不存在的 canvas_store",
-          "state": "done",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_http_serve_ts\"].responsibility"
           },
-          "owner": "subagent:p0-injection",
-          "claimed_at": "2026-11-05T04:06:29.162Z",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T22:10:08.191Z",
           "prepared_snapshot": null,
           "read_set": {
-            "symbols": [],
+            "symbols": [
+              {
+                "file": "src/presentation/http/serve.ts",
+                "name": "handleApiRevealFile",
+                "fp": "c2beb83ff91132f7b071cec79b4893b0d3f8d551"
+              }
+            ],
             "files": [
               {
                 "path": "src/presentation/http/serve.ts",
-                "content_hash": "a1c8a96a6f12a2f9107ae56e8d1082431e49f485"
+                "content_hash": "bac4baca7fe524be0d33b78555bb17700539ec85"
               }
             ],
-            "computed_at": "2026-11-05T04:06:29.028Z",
+            "computed_at": "2026-11-21T22:10:08.083Z",
             "basis": [
-              "expectations",
-              "node-path"
-            ]
+              "canvas"
+            ],
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -25191,14 +25827,14 @@
               "command": "design_line action=judge feature=agent-io（另：grep -n 'windowsVerbatimArguments' src/presentation/http/serve.ts）"
             }
           ],
-          "reopened_at": "2026-11-05T04:06:29.162Z",
-          "reopen_reason": "P0 命令注入：handleApiRevealFile 用 exec 拼 explorer 命令行（abs 来自 HTTP 入参）⇒ 改用 spawn + windowsVerbatimArguments，不经 shell",
-          "reopened_from": "agent:wish-machine",
-          "lease_generation": 1,
+          "reopened_at": "2026-11-21T22:10:08.191Z",
+          "reopen_reason": "P1-ACTION-EFFECT-BOUNDARY-01：serve.ts 通用工具口/opl 写面在 handler 前消费同一纯裁决（企划 §8）；旧 evidence 3 条保留，不推翻既有结论",
+          "reopened_from": "subagent:p0-injection",
+          "lease_generation": 2,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-05T04:15:29.722Z"
+          "last_heartbeat_at": "2026-11-21T22:10:08.191Z"
         },
-        "status": "done",
+        "status": "in_progress",
         "decision": {
           "summary": "HTTP 服务面（DSL / git-diff / reveal-file / LLM 等本地 API）；reveal-file 走 argv、不经 shell",
           "expectations": [
@@ -25371,13 +26007,13 @@
         "task": {
           "id": "file_src_presentation_mcp_server_registry_ts",
           "summary": "响应注入的陈旧告警与索引根解析：两个告警读同一份构建事实，索引根上溯到真项目根",
-          "state": "candidate",
+          "state": "claimed",
           "judge_gate": "strict",
           "discussion": {
             "micro": "L1 建构卡 · summary 出处：semantic.files[\"file_src_presentation_mcp_server_registry_ts\"].responsibility"
           },
-          "owner": null,
-          "claimed_at": null,
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:41:51.621Z",
           "prepared_snapshot": null,
           "read_set": {
             "symbols": [
@@ -25395,14 +26031,14 @@
             "files": [
               {
                 "path": "src/presentation/mcp/server_registry.ts",
-                "content_hash": "e8fd179cb7354f074c55c9bffb7d23b2a67512bb"
+                "content_hash": "2b60897873fe0ca51a54d2b25623888ab6598f84"
               }
             ],
-            "computed_at": "2026-11-06T14:02:46.031Z",
+            "computed_at": "2026-11-21T21:41:51.523Z",
             "basis": [
               "canvas"
             ],
-            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 1 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
+            "note": "卡已有**画布坍缩集** ⇒ 按「改集」占位：本次**不采用**显式声明的读集（声明 0 个符号 / 4 个文件被忽略 —— 两套取并集正是假阻塞的来源）"
           },
           "evidence": [
             {
@@ -25526,14 +26162,11 @@
           "reopened_at": "2026-11-06T14:02:46.114Z",
           "reopen_reason": "atomic_call 未知工具名分支接墓碑表",
           "reopened_from": "subagent:stale-fix",
-          "lease_generation": 4,
+          "lease_generation": 5,
           "claimed_session": "unknown",
-          "last_heartbeat_at": "2026-11-06T14:17:00.173Z",
-          "release_reason": "本轮未改 server_registry.ts（atomic_call 墓磑接线需先重冻结画布：base.content_hash 已过期）⇒ 归还写权",
-          "released_by": "agent:t27",
-          "released_at": "2026-11-06T14:17:00.173Z"
+          "last_heartbeat_at": "2026-11-21T21:41:51.621Z"
         },
-        "status": "draft",
+        "status": "in_progress",
         "decision": {
           "summary": "陈旧断言只有一把尺；STALE_INDEX 只在保鲜范围内有陈旧时亮（带分母 + fix 不错药）",
           "expectations": [
@@ -36574,6 +37207,93 @@
               "why": "损坏必须**能被识别并说出原因** —— 静默当\"没有基线\"会让\"基线坏了\"退化成\"全跑\"，静默当\"有效\"会直接假绿。"
             }
           ]
+        },
+        "task": {
+          "id": "file_src_application_design_verified_snapshot_ts",
+          "summary": "快照四件：① 项目内容版本 + 每文件 sha256；② 事实图/影响关系版本（`.agent-io/cache.db` 指纹）；③ 每项测试/契约的**实际 verdict + 命令 + 证据时点**；④ 本次范围（实跑 / 继承 / 未判定 + 原因）。\n核心是一个**纯函数** `planInheritance()`：判定次序 = 快照损坏 → 事实图不可信/变了 → 公共底座变了 → 逐条比对（未变 + 上次 pass 才继承）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:30:14.812Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/design/verified_snapshot.ts",
+                "content_hash": "8680081c01e408f5bde61033e456789104f8c955"
+              }
+            ],
+            "computed_at": "2026-11-21T16:30:14.687Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T16:33:45.946Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1r2-closeout",
+            "from_claimed_at": "2026-11-20T08:59:51.566Z",
+            "age_hours": 31.5,
+            "last_heartbeat_at": "2026-11-20T08:59:51.566Z"
+          },
+          "reopened_from": "agent:ds1r2-closeout",
+          "dissent_reason": "过期租约接管（兼容档）：src/application/design/verified_snapshot.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_application_design_verified_snapshot_ts 的 2 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_application_design_verified_snapshot_ts",
+              "why": "过期租约接管（兼容档）：src/application/design/verified_snapshot.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_application_design_verified_snapshot_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))"
+                },
+                {
+                  "ref": "decision:file_src_application_design_verified_snapshot_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：(() => { const s = fs.readFileSync(input.file, 'utf-8'); return s.includes(\"status: 'corrupt'\") && s.includes(\"指纹不符\"); })()"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_application_design_verified_snapshot_ts",
+              "at": "2026-11-21T16:30:14.812Z",
+              "why": "过期租约接管（兼容档）：src/application/design/verified_snapshot.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:33:45.946Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+                "input": "4451159a0f883fda0251e3c6d3754a498ab693f8"
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 2 条 run 判据现判 2/2 pass（needles + `status: 'corrupt'` 断言；cardStanding=satisfied）。③ 本卡没有画布（plans 无行）⇒ 出口闭环如实报「没有画布 ⇒ 无从对账」。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:30:14.812Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+              "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/design/verified_snapshot.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:33:28.324Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 2 条 run 判据现判 2/2 pass（needles + `status: 'corrupt'` 断言；cardStanding=satisfied）。③ 本卡没有画布（plans 无行）⇒ 出口闭环如实报「没有画布 ⇒ 无从对账」。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:30:14.812Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+          }
         }
       },
       {
@@ -36669,6 +37389,93 @@
               "why": "三条验收（O(改动数) / 文件级兜底 / 不可信即 undetermined）必须有用例，跑在 npm test 门里。"
             }
           ]
+        },
+        "task": {
+          "id": "file_src_infrastructure_analysis_facts_impact_set_ts",
+          "summary": "`impactOfChanged(root, changed)` 对每个改动文件调一次 `diffImpact(direction:'callers')`，取 **`impacted_files`（含 import 文件级边）∪ `impacted_symbols`**，并用索引的 `nodes` 表把符号兜底解析成文件。\n`intersectsImpact(observes, symbols, impact)` 做集合相交（文件级 + 符号级，不做子串猜测）。",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:30:06.635Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/infrastructure/analysis/facts/impact_set.ts",
+                "content_hash": "3ab135cd61af0f9d002d689e7d98d3cda69657a1"
+              }
+            ],
+            "computed_at": "2026-11-21T16:30:06.540Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T16:33:30.150Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1r2-closeout",
+            "from_claimed_at": "2026-11-20T08:59:58.925Z",
+            "age_hours": 31.5,
+            "last_heartbeat_at": "2026-11-20T08:59:58.925Z"
+          },
+          "reopened_from": "agent:ds1r2-closeout",
+          "dissent_reason": "过期租约接管（兼容档）：src/infrastructure/analysis/facts/impact_set.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_infrastructure_analysis_facts_impact_set_ts 的 2 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_infrastructure_analysis_facts_impact_set_ts",
+              "why": "过期租约接管（兼容档）：src/infrastructure/analysis/facts/impact_set.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_infrastructure_analysis_facts_impact_set_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))"
+                },
+                {
+                  "ref": "decision:file_src_infrastructure_analysis_facts_impact_set_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：断言成立：input.needles.every((k) => fs.readFileSync(input.file, 'utf-8').includes(k))"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_infrastructure_analysis_facts_impact_set_ts",
+              "at": "2026-11-21T16:30:06.635Z",
+              "why": "过期租约接管（兼容档）：src/infrastructure/analysis/facts/impact_set.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:33:30.150Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+                "input": "812e0c27d94db511176bbc8bb1ee08f9980641a3"
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 2 条 run 判据现判 2/2 pass（needles 断言：src/infrastructure/analysis/facts/impact_set.ts 与 tests/p1_impact_selection.test.ts 里的针全在；cardStanding=satisfied）。③ 本卡没有画布（plans 无行）⇒ 出口闭环如实报「没有画布 ⇒ 无从对账」，不冒充已对账。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:30:06.635Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+              "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/infrastructure/analysis/facts/impact_set.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:33:28.324Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p1_impact_selection/p1_verified_snapshot/p0_execution_eligibility/p0_source_has_needle_power/p0_freshness_scope",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）；同一波次内判据与源码未变，按 29 号 §4 复用该读数（时间见 W8-judge-waveB.out.txt）。② 本卡 2 条 run 判据现判 2/2 pass（needles 断言：src/infrastructure/analysis/facts/impact_set.ts 与 tests/p1_impact_selection.test.ts 里的针全在；cardStanding=satisfied）。③ 本卡没有画布（plans 无行）⇒ 出口闭环如实报「没有画布 ⇒ 无从对账」，不冒充已对账。④ 接管：接管：owner 从 agent:ds1r2-closeout 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:30:06.635Z，逐条 judgements 覆盖本卡全部判据且全部仍成立（兼容档）。⑤ 目标回归：p1_impact_selection 15/15、p1_verified_snapshot 18/18、p0_execution_eligibility 20/20、p0_source_has_needle_power 9/9、p0_freshness_scope 3/3，全部 exit 0，临时目录隔离、真数据仓 sha 前后一致。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+          }
         }
       },
       {
@@ -37136,7 +37943,52 @@
         "label": "tool_annotations.ts",
         "type": "file",
         "path": "src/application/tool_annotations.ts",
-        "title": "43 工具的 MCP ToolAnnotations 声明清单（唯一住处）"
+        "title": "43 工具的 MCP ToolAnnotations 声明清单（唯一住处）",
+        "decision": {
+          "summary": "43 工具 MCP ToolAnnotations 唯一住处：混合工具由新效果事实保守投影 hints；放行绝不读取 hint，writes 与 annotations 两层不混用。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/tool_annotations.ts",
+              "why": "annotations 唯一住处；本卡只做保守投影，不把 hint 接进任何放行判据"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/tool_annotations.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/tool_annotations.ts'), 'utf8'); return s.includes('TOOL_ANNOTATIONS') && /readOnlyHint|destructiveHint|idempotentHint|openWorldHint/.test(s) && s.includes('annotations'); })()",
+              "why": "annotations 只是对外 hints、不作放行依据；验收机械核对本表仍是逐工具注解的唯一住处（TOOLED_ANNOTATIONS 键表），混合工具可由新效果事实保守投影，但裁决/放行绝不读取 hint，也不在此表长出中央权限 switch。"
+            }
+          ],
+          "updated_at": "2026-11-21T21:44:18.689Z",
+          "agent": "agent:action-effect-boundary"
+        },
+        "task": {
+          "id": "file_src_application_tool_annotations_ts",
+          "summary": "43 工具 MCP ToolAnnotations 唯一住处：混合工具由新效果事实保守投影 hints；放行绝不读取 hint，writes 与 annotations 两层不混用。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:53:37.904Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/tool_annotations.ts",
+                "content_hash": "99a866067a81d52adbda4d0fff4bd9a9bd44d600"
+              }
+            ],
+            "computed_at": "2026-11-21T21:53:37.799Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T21:53:37.904Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_cascade_ts",
@@ -39597,7 +40449,52 @@
         "x": 1920,
         "y": 400,
         "type": "file",
-        "path": "src/application/meta/ledger/tool_schema.ts"
+        "path": "src/application/meta/ledger/tool_schema.ts",
+        "decision": {
+          "summary": "台账工具 schema 叶子：仅在既有动作结构上补动作效果声明（effect/resources/conditional-write/destructive）；不改台账 11 动作闭集、不改 by 署名口径，不新增审批档。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/meta/ledger/tool_schema.ts",
+              "why": "台账动作闭集 schema 所在文件；本卡只补效果声明列，不改动作枚举与必填规则"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/meta/ledger/tool_schema.ts",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/application/meta/ledger/tool_schema.ts'), 'utf8'); const actions = ['hang','annotate','close','reopen','supersede','verdict','list','get','conflicts','review_queue','resolve_review']; return actions.every((a) => s.includes(`'${a}'`)) && /LEDGER_ACTIONS\\s*=\\s*\\[/.test(s) && s.includes('RECORD_KINDS'); })()",
+              "why": "台账动作闭集是本卡补效果声明的唯一来源；验收必须能机械核对 11 个动作仍在一处登记（hang/annotate/close/reopen/supersede/verdict 写、list/get/conflicts/review_queue/resolve_review 读），不许在 registry 或 HTTP 层另抄第二份动作表。"
+            }
+          ],
+          "updated_at": "2026-11-21T21:44:18.558Z",
+          "agent": "agent:action-effect-boundary"
+        },
+        "task": {
+          "id": "file_src_application_meta_ledger_tool_schema_ts",
+          "summary": "台账工具 schema 叶子：仅在既有动作结构上补动作效果声明（effect/resources/conditional-write/destructive）；不改台账 11 动作闭集、不改 by 署名口径，不新增审批档。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:53:20.446Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/meta/ledger/tool_schema.ts",
+                "content_hash": "76f82b55581a58053e05135b4cf5be8378a56993"
+              }
+            ],
+            "computed_at": "2026-11-21T21:53:20.339Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T21:53:20.446Z"
+        },
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_registry_catalog_ts",
@@ -40138,6 +41035,842 @@
             "at": "2026-11-20T13:20:00+08:00"
           }
         }
+      },
+      {
+        "id": "file_src_domain_scheduling_evidence_ts",
+        "label": "scheduling_evidence.ts",
+        "x": 60,
+        "y": 60,
+        "width": 260,
+        "height": 64,
+        "type": "file",
+        "path": "src/domain/scheduling_evidence.ts",
+        "decision": {
+          "status": "active",
+          "author": "llm",
+          "summary": "证据帧的纯判据：缺版本不判新鲜、scope 空不等于全项目、路径别名先归一（仅同键多 id 才歧义）、冲突只在当前有效且范围相容时成立",
+          "acceptance": "behavior-cases 真跑 versionAlignment 的 stale/unavailable、scopeOfSignal 的 undeclared、resolveSubjectCandidates 的『合并』与『真歧义』两个方向；任一分支被改坏则该条判据红",
+          "rationale": "旧 source hash 的 pass 被当成当前通过是本类能力的头号假绿；只有把版本对齐做成纯函数，才能在无盘、无索引的情况下把这条语义钉死。",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_evidence.ts",
+              "symbol": "versionAlignment",
+              "cases": [
+                {
+                  "given": [
+                    "aaaa1111bbbb2222",
+                    "cccc3333dddd4444"
+                  ],
+                  "expect": "{\"freshness\":\"stale\",\"reason\":\"version-mismatch:aaaa1111bbbb≠cccc3333dddd\"}"
+                },
+                {
+                  "given": [
+                    null,
+                    "cur"
+                  ],
+                  "expect": "{\"freshness\":\"unavailable\",\"reason\":\"version-unknown:产出侧没有版本\"}"
+                }
+              ],
+              "why": "版本不一致必须是 stale（旧证据不许当当前证据）、缺版本必须不可判（不许当新鲜）——这两条是本卡的语义地基。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_evidence.ts",
+              "symbol": "scopeOfSignal",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "scope": []
+                    }
+                  ],
+                  "expect": "undeclared"
+                }
+              ],
+              "why": "scope=[] 只能是「没声明范围」，不许被读成「全项目有效」。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_evidence.ts",
+              "symbol": "resolveSubjectCandidates",
+              "cases": [
+                {
+                  "given": [
+                    [
+                      {
+                        "raw": "src/a.ts"
+                      },
+                      {
+                        "raw": "./src/a.ts"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"resolved\":[{\"key\":\"src/a.ts\",\"raws\":[\"./src/a.ts\",\"src/a.ts\"]}],\"ambiguous\":[]}"
+                },
+                {
+                  "given": [
+                    [
+                      {
+                        "raw": "src/a.ts",
+                        "id": "n1"
+                      },
+                      {
+                        "raw": "./src/a.ts",
+                        "id": "n2"
+                      }
+                    ]
+                  ],
+                  "expect": "{\"resolved\":[],\"ambiguous\":[{\"key\":\"src/a.ts\",\"ids\":[\"n1\",\"n2\"],\"raws\":[\"./src/a.ts\",\"src/a.ts\"]}]}"
+                }
+              ],
+              "why": "★ DS-1R2 修正：旧判据把『同一对象的两种写法』当歧义（已证错）。现在只有同一归一键对应多个稳定 id 才是歧义；写法差异必须合并、原始写法保留以便回溯。"
+            }
+          ],
+          "updated_at": "2026-11-20T08:58:54.180Z",
+          "agent": "ds1r2-closeout"
+        },
+        "task": {
+          "id": "file_src_domain_scheduling_evidence_ts",
+          "summary": "证据帧的纯判据：缺版本不判新鲜、scope 空不等于全项目、同路径多候选保留歧义、冲突两边都留",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:25:00.249Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/scheduling_evidence.ts",
+                "content_hash": "16c25c0d6a8fc913b350b1364010ae21cded5738"
+              }
+            ],
+            "computed_at": "2026-11-21T16:25:00.140Z",
+            "basis": [
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T16:28:07.009Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1-exec-window",
+            "from_claimed_at": "2026-11-20T06:47:32.838Z",
+            "age_hours": 33.6,
+            "last_heartbeat_at": "2026-11-20T06:47:32.838Z"
+          },
+          "reopened_from": "agent:ds1-exec-window",
+          "dissent_reason": "过期租约接管（兼容档）：src/domain/scheduling_evidence.ts 的 3 条判据现判全部 pass（cardStanding=satisfied，3 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_domain_scheduling_evidence_ts 的 3 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_domain_scheduling_evidence_ts",
+              "why": "过期租约接管（兼容档）：src/domain/scheduling_evidence.ts 的 3 条判据现判全部 pass（cardStanding=satisfied，3 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_domain_scheduling_evidence_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：2/2 case 一致（src/domain/scheduling_evidence.ts 的 `versionAlignment` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_domain_scheduling_evidence_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：1/1 case 一致（src/domain/scheduling_evidence.ts 的 `scopeOfSignal` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_domain_scheduling_evidence_ts#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：2/2 case 一致（src/domain/scheduling_evidence.ts 的 `resolveSubjectCandidates` 经金丝雀 harness 现跑）"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_domain_scheduling_evidence_ts",
+              "at": "2026-11-21T16:25:00.249Z",
+              "why": "过期租约接管（兼容档）：src/domain/scheduling_evidence.ts 的 3 条判据现判全部 pass（cardStanding=satisfied，3 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:28:07.008Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+                "input": "a2bd3510ae40a860c70867b65cb321b110bc32b4",
+                "code": "0bb6e668ba4f1452731fb8d89d9d38f22aa32cf7",
+                "covers": [
+                  "src/domain/scheduling_evidence.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 3 条判据现判 3/3 pass：versionAlignment 2/2 case、scopeOfSignal 1/1 case、resolveSubjectCandidates 2/2 case（behavior-cases 经金丝雀 harness 现跑，cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:00.249Z，逐条 judgements 覆盖 3 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"，不冒充已对账；改集与工作树 diff 的对应关系见 E0/E2。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+              "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/scheduling_evidence.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:28:05.488Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 3 条判据现判 3/3 pass：versionAlignment 2/2 case、scopeOfSignal 1/1 case、resolveSubjectCandidates 2/2 case（behavior-cases 经金丝雀 harness 现跑，cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:00.249Z，逐条 judgements 覆盖 3 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"，不冒充已对账；改集与工作树 diff 的对应关系见 E0/E2。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+          }
+        }
+      },
+      {
+        "id": "file_src_domain_scheduling_policy_ts",
+        "label": "scheduling_policy.ts",
+        "x": 60,
+        "y": 164,
+        "width": 260,
+        "height": 64,
+        "type": "file",
+        "path": "src/domain/scheduling_policy.ts",
+        "decision": {
+          "status": "active",
+          "author": "llm",
+          "summary": "缺口→候选→硬过滤→确定排序→预算截断；动作只声明 would_close_gaps 不关闭当前缺口；no_op 是六条件合取；scope 是候选生成时的硬约束（全量入口共用一处裁决）",
+          "acceptance": "behavior-cases 真跑 costRank（未知≠0）、planStanding（六条件）、scopeDecision（in/out/undeclared）；source-has 钉只读断言与词表；任一分支被改坏则判据红",
+          "rationale": "首版没有任何实测耗时，一旦引入加权分数或 confidence，排序就会把未知成本伪装成收益；规则号＋四段确定键才是可解释、可复算、可重放的。",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_policy.ts",
+              "symbol": "costRank",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "known": false,
+                      "why": "未实测"
+                    }
+                  ],
+                  "expect": "[1,0]"
+                },
+                {
+                  "given": [
+                    {
+                      "known": true,
+                      "ms": 0
+                    }
+                  ],
+                  "expect": "[0,0]"
+                }
+              ],
+              "why": "「成本未知」与「零成本」必须落在不同排序组：未知不许当 0，也不许当免费。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_policy.ts",
+              "symbol": "planStanding",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "open_gaps": [
+                        "g1"
+                      ],
+                      "undetermined": 0,
+                      "conflicts": 0,
+                      "fresh_fail": 0,
+                      "unsupported": 0,
+                      "actions": 0,
+                      "deferred": 0
+                    }
+                  ],
+                  "expect": "unresolved"
+                },
+                {
+                  "given": [
+                    {
+                      "open_gaps": [],
+                      "undetermined": 1,
+                      "conflicts": 0,
+                      "fresh_fail": 0,
+                      "unsupported": 0,
+                      "actions": 0,
+                      "deferred": 0
+                    }
+                  ],
+                  "expect": "unresolved"
+                },
+                {
+                  "given": [
+                    {
+                      "open_gaps": [],
+                      "undetermined": 0,
+                      "conflicts": 0,
+                      "fresh_fail": 0,
+                      "unsupported": 0,
+                      "actions": 0,
+                      "deferred": 0
+                    }
+                  ],
+                  "expect": "no_op"
+                }
+              ],
+              "why": "★ no_op 的唯一出处：有缺口/不可判/冲突/失败/未支持都必须是 unresolved（『没有建议』≠『没活干』）。"
+            },
+            {
+              "kind": "behavior-cases",
+              "path": "src/domain/scheduling_policy.ts",
+              "symbol": "scopeDecision",
+              "cases": [
+                {
+                  "given": [
+                    {
+                      "goal": {
+                        "text": "g",
+                        "judgement_refs": [],
+                        "scope": [
+                          "tests/a.ts"
+                        ]
+                      }
+                    },
+                    "tests/a.ts"
+                  ],
+                  "expect": "in"
+                },
+                {
+                  "given": [
+                    {
+                      "goal": {
+                        "text": "g",
+                        "judgement_refs": [],
+                        "scope": [
+                          "tests/a.ts"
+                        ]
+                      }
+                    },
+                    "tests/b.ts"
+                  ],
+                  "expect": "out"
+                },
+                {
+                  "given": [
+                    {
+                      "goal": {
+                        "text": "g",
+                        "judgement_refs": [],
+                        "scope": []
+                      }
+                    },
+                    "tests/b.ts"
+                  ],
+                  "expect": "undeclared"
+                }
+              ],
+              "why": "★ S-01 的判据：scope 是硬约束（范围外=out），未声明只能是 undeclared（不许冒充已授权）；all-eligible 永远是 out。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/domain/scheduling_policy.ts",
+              "must": [
+                "assertReadOnlyPlan(",
+                "costRank(",
+                "planStanding(",
+                "export const SHADOW_ACTIONS"
+              ],
+              "mustNot": [
+                "confidence"
+              ],
+              "why": "只读断言、成本键、动作词表与 no-op 判据必须同处；文件里不许出现 confidence 这类伪精确分数。 ★ DS-1R2：must 全部改成调用/声明形态 —— 裸名会被 import 行单独满足（p0_source_has_needle_power 的 blind 针）。"
+            }
+          ],
+          "updated_at": "2026-11-20T09:14:41.875Z",
+          "agent": "ds1r2-closeout"
+        },
+        "task": {
+          "id": "file_src_domain_scheduling_policy_ts",
+          "summary": "缺口→候选→硬过滤→确定排序→预算截断；成本未知与零成本分开，计划里不许出现写类动作",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:25:08.428Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/domain/scheduling_policy.ts",
+                "content_hash": "4da8e7140d5c015e134ff545b22e9fd35c8be8d4"
+              }
+            ],
+            "computed_at": "2026-11-21T16:25:08.317Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T16:28:10.616Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1-exec-window",
+            "from_claimed_at": "2026-11-20T06:46:52.520Z",
+            "age_hours": 33.6,
+            "last_heartbeat_at": "2026-11-20T06:46:52.520Z"
+          },
+          "reopened_from": "agent:ds1-exec-window",
+          "dissent_reason": "过期租约接管（兼容档）：src/domain/scheduling_policy.ts 的 4 条判据现判全部 pass（cardStanding=satisfied，4 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_domain_scheduling_policy_ts 的 4 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_domain_scheduling_policy_ts",
+              "why": "过期租约接管（兼容档）：src/domain/scheduling_policy.ts 的 4 条判据现判全部 pass（cardStanding=satisfied，4 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_domain_scheduling_policy_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：2/2 case 一致（src/domain/scheduling_policy.ts 的 `costRank` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_domain_scheduling_policy_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：3/3 case 一致（src/domain/scheduling_policy.ts 的 `planStanding` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_domain_scheduling_policy_ts#2",
+                  "verdict": "仍成立",
+                  "why": "仍成立：3/3 case 一致（src/domain/scheduling_policy.ts 的 `scopeDecision` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_domain_scheduling_policy_ts#3",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/domain/scheduling_policy.ts：must 4 全在 / mustNot 1 全无（匹配文本：剥注释）（缓存命中）"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_domain_scheduling_policy_ts",
+              "at": "2026-11-21T16:25:08.428Z",
+              "why": "过期租约接管（兼容档）：src/domain/scheduling_policy.ts 的 4 条判据现判全部 pass（cardStanding=satisfied，4 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:28:10.616Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+                "input": "049a64eb4aa0d8021d5a8444b2d1035bdab0d059",
+                "code": "d8f2eb54141112b8e4bc3b9114d48230365f13ca",
+                "covers": [
+                  "src/domain/scheduling_policy.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 4 条判据现判 4/4 pass：costRank 2/2 case、planStanding 3/3 case、scopeDecision 3/3 case、source-has must 4 全在 / mustNot 1 全无（cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:08.428Z，逐条 judgements 覆盖 4 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+              "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/domain/scheduling_policy.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:28:05.488Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 4 条判据现判 4/4 pass：costRank 2/2 case、planStanding 3/3 case、scopeDecision 3/3 case、source-has must 4 全在 / mustNot 1 全无（cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:08.428Z，逐条 judgements 覆盖 4 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_scheduling_evidence_frame_ts",
+        "label": "evidence_frame.ts",
+        "x": 60,
+        "y": 268,
+        "width": 260,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/scheduling/evidence_frame.ts",
+        "decision": {
+          "status": "active",
+          "author": "llm",
+          "summary": "用注入端口组装证据帧；继承/重跑/不可判复用 planInheritance；范围越界/读不到/索引不可用都判不可判；resolved ref 的当前 verdict 未读成未决缺口（S-02/T-01/T-03）",
+          "acceptance": "behavior-cases 真跑 scopeEscape 三档；source-has 以调用形态钉住 planInheritance/observesAlignment/scopeEscape 与 ref-verdict-pending",
+          "rationale": "复制一份继承算法就会有第二权威：一处改了另一处不知道。端口化的另一半价值是把「哪一步可能写盘」变成调用方必须显式声明的决策。",
+          "expectations": [
+            {
+              "kind": "behavior-cases",
+              "path": "src/application/scheduling/evidence_frame.ts",
+              "symbol": "scopeEscape",
+              "cases": [
+                {
+                  "given": [
+                    "D:/other/repo"
+                  ],
+                  "expect": "绝对路径（D:/other/repo）"
+                },
+                {
+                  "given": [
+                    "../escape"
+                  ],
+                  "expect": "越界（../escape 含 ..）"
+                },
+                {
+                  "given": [
+                    "src/a.ts"
+                  ],
+                  "expect": "null"
+                }
+              ],
+              "why": "目标范围落在仓库外时必须判 out-of-scope，否则跨项目路径会被当成本项目事实。"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/application/scheduling/evidence_frame.ts",
+              "must": [
+                "planInheritance({",
+                "observesAlignment({",
+                "scopeEscape(",
+                "ref-verdict-pending:"
+              ],
+              "mustNot": [
+                "function planInheritance"
+              ],
+              "why": "继承裁决必须调用既有唯一实现；S-02 要求 resolved ref 产生 ref-verdict-pending 缺口。★ DS-1R3：把原先的 unavailable( 换成真正有调用点的 scopeEscape(（前者在该文件里已无命中 ⇒ 判据实测红）。"
+            }
+          ],
+          "updated_at": "2026-11-21T13:05:17.511Z",
+          "agent": "ds1r3-closeout"
+        },
+        "task": {
+          "id": "file_src_application_scheduling_evidence_frame_ts",
+          "summary": "用注入端口组装证据帧；继承/重跑/不可判复用 planInheritance，不写第二套算法",
+          "state": "done",
+          "judge_gate": "strict",
+          "owner": "agent:ds1-independent-closeout",
+          "claimed_at": "2026-11-21T16:25:11.248Z",
+          "lease_generation": 2,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/scheduling/evidence_frame.ts",
+                "content_hash": "be6a661ee1168fdebdd0920cd51b8907c0ae24ce"
+              }
+            ],
+            "computed_at": "2026-11-21T16:25:11.135Z",
+            "basis": [
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T16:28:17.393Z",
+          "taken_over_from": {
+            "from_owner": "agent:ds1-exec-window",
+            "from_claimed_at": "2026-11-20T06:47:39.978Z",
+            "age_hours": 33.6,
+            "last_heartbeat_at": "2026-11-20T06:47:39.979Z"
+          },
+          "reopened_from": "agent:ds1-exec-window",
+          "dissent_reason": "过期租约接管（兼容档）：src/application/scheduling/evidence_frame.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+          "discussion": {
+            "micro": "异议领卡：推翻 file_src_application_scheduling_evidence_frame_ts 的 2 条判据（改集相交 0 个符号）",
+            "supersedes": {
+              "against": "file_src_application_scheduling_evidence_frame_ts",
+              "why": "过期租约接管（兼容档）：src/application/scheduling/evidence_frame.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。",
+              "judgements": [
+                {
+                  "ref": "decision:file_src_application_scheduling_evidence_frame_ts#0",
+                  "verdict": "仍成立",
+                  "why": "仍成立：3/3 case 一致（src/application/scheduling/evidence_frame.ts 的 `scopeEscape` 经金丝雀 harness 现跑）"
+                },
+                {
+                  "ref": "decision:file_src_application_scheduling_evidence_frame_ts#1",
+                  "verdict": "仍成立",
+                  "why": "仍成立：src/application/scheduling/evidence_frame.ts：must 4 全在 / mustNot 1 全无（匹配文本：剥注释）（缓存命中）"
+                }
+              ]
+            }
+          },
+          "disputed_by": [
+            {
+              "by": "file_src_application_scheduling_evidence_frame_ts",
+              "at": "2026-11-21T16:25:11.248Z",
+              "why": "过期租约接管（兼容档）：src/application/scheduling/evidence_frame.ts 的 2 条判据现判全部 pass（cardStanding=satisfied，2 条全过 / 0 fail / 0 unsupported），逐条表态见 judgements —— 不改它的任何结论。"
+            }
+          ],
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:28:17.393Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+                "input": "ba6a66525c28190e0ad0e6f365e10dd71a09dda4",
+                "code": "e9f4472173dca3059d12a73e07960c07f1e98c9f",
+                "covers": [
+                  "src/application/scheduling/evidence_frame.ts"
+                ]
+              },
+              "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 2 条判据现判 2/2 pass：scopeEscape 3/3 case、source-has must 4 全在 / mustNot 1 全无（cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:11.248Z，逐条 judgements 覆盖 2 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+              "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+              "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+            }
+          ]
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/scheduling/evidence_frame.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:28:05.488Z",
+            "command": "design_line {action:'judge', feature:'agent-io'}（node dist/src/presentation/cli/cli.js design_line --input B2-judge-book.json）&& node scripts/run-tests.mjs --filter p0_scheduling && node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+            "observed": "① 整册判据批（design_line action=judge feature=agent-io，879 条）：878 pass / 0 fail / 1 unsupported —— 唯一 unsupported 是既有节点 file_src_application_meta_registry_project_actual_fields_ts（与本卡无关，不冒充通过）。② 本卡 2 条判据现判 2/2 pass：scopeEscape 3/3 case、source-has must 4 全在 / mustNot 1 全无（cardStanding=satisfied）。③ 接管：owner 从 agent:ds1-exec-window 换手给 agent:ds1-independent-closeout，lease_generation 1 → 2，claimed_at=2026-11-21T16:25:11.248Z，逐条 judgements 覆盖 2 条判据且全部仍成立。④ 目标回归：p0_scheduling 5 文件 88/88、p1_shadow_scheduler 14/14，均 exit 0，临时目录隔离、真数据仓 sha 前后一致（46be01ddd2c1）。⑤ 本卡没有画布（plans 无行）⇒ 出口闭环如实报\"没有画布 ⇒ 无从对账\"。⑥ 无该卡未决 review 队列项；无 heavy.lock / mutate.lock / mutate-journal 残留。",
+            "why": "收口依据 = 29 号 §3.F 的六条条件 + 本轮现跑读数；判据、整册、测试三处证据都是本轮现取。"
+          }
+        }
+      },
+      {
+        "id": "file_src_application_scheduling_shadow_scheduler_ts",
+        "label": "shadow_scheduler.ts",
+        "x": 60,
+        "y": 372,
+        "width": 260,
+        "height": 64,
+        "type": "file",
+        "path": "src/application/scheduling/shadow_scheduler.ts",
+        "decision": {
+          "status": "active",
+          "author": "llm",
+          "summary": "只读端口适配层：形状闸（cacheSchemaIsCurrent）+ 注入只读连接算影响面 + 索引内部读失败一律降级 + 返回前再断只读；热 WAL 特判（walPending）已删除",
+          "acceptance": "source-has 钉形状闸、注入式影响面、双出口降级与只读断言；p1_shadow_scheduler 用真仓与坏形状库证明运行前后逐字节不变",
+          "rationale": "仓里最省事的读法是 getProjectCacheDb()，它会 mkdir + 设 WAL + schema 落后时迁移；影子模式只要走它一次，就把只读诊断变成了一次隐式迁移。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "src/application/scheduling/shadow_scheduler.ts",
+              "must": [
+                "readOnly: true",
+                "assertReadOnlyPlan(",
+                "cacheSchemaIsCurrent(",
+                "impactOfChanged(",
+                "countStaleResolvedRefsEx("
+              ],
+              "mustNot": [
+                "scheduleBackfill",
+                "importProject"
+              ],
+              "why": "只读契约从\"热 WAL 特判\"升级为\"形状闸 + 注入只读连接\"（walPending 已随写档路径删除，见 DS-1R2；不作为 mustNot，因为它在文件里已不存在 ⇒ 会变成永远为真的弱针）；索引内部读失败（stale-ref / 覆盖 / stat）必须走 Ex 双出口降级。"
+            }
+          ],
+          "updated_at": "2026-11-20T09:14:25.594Z",
+          "agent": "ds1r2-closeout"
+        },
+        "task": {
+          "id": "file_src_application_scheduling_shadow_scheduler_ts",
+          "summary": "只读端口适配层：readOnly 开库、schema 落后不开库、不经统一调用咽喉的自动保鲜；返回前再断一次只读",
+          "state": "done",
+          "judge_gate": "strict",
+          "evidence": [
+            {
+              "kind": "reading",
+              "at": "2026-11-21T16:46:52.214Z",
+              "by": "llm",
+              "agent": "agent:ds1-independent-closeout",
+              "verdict": "pass",
+              "fingerprint": {
+                "what": "node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+                "input": "0d5f570184050d3b8511e7efaeb92a45a4cdad2c",
+                "code": "2bc1b924faf2ba19fab1ebeb862c12736f1ebd81",
+                "covers": [
+                  "src/application/scheduling/shadow_scheduler.ts"
+                ]
+              },
+              "observed": "① 本卡当前唯一判据是 1 条 source-has（must 5 全在 / mustNot 2 全无），现判 pass —— 但这只是**结构证据**，不能代表只读行为；② 真正的零写入 / 行为证据 = p1_shadow_scheduler 14/14 真跑通过（该套件按卡上 acceptance 的口径用真仓与坏形状库断言运行前后 sha256 逐字节不变，用例第 12/47-48 行即这条断言；跑在 mkdtemp 临时目录里）；③ 独立复核：17 号报告已把本卡的只读契约（readOnly / 形状闸 / 注入只读连接 / 双出口降级）列入 DS-1 定向证据；④ 本卡没有画布（plans 无行）⇒ 无画布闸、出口如实报「无从对账」；无未决 review / 读集冲突；⑤ 状态是 candidate + satisfied（cardStanding=satisfied，1/1 pass），按 t_done_from_candidate 直接收口，没有为形式去 claim、没有改源码。",
+              "command": "node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+              "why": "收口依据 = 31 号 §3 + 现行 candidate-satisfied 规则；结构判据（source-has）与行为证据（定向测试）分开记，不让文本针冒充行为。"
+            }
+          ],
+          "last_heartbeat_at": "2026-11-21T16:46:52.214Z"
+        },
+        "status": "done",
+        "overlay": {
+          "path": "src/application/scheduling/shadow_scheduler.ts",
+          "kind": "file",
+          "progress": "done",
+          "progress_evidence": {
+            "kind": "reading",
+            "at": "2026-11-21T16:46:51.378Z",
+            "command": "node scripts/run-tests.mjs --filter p1_shadow_scheduler",
+            "observed": "① 本卡当前唯一判据是 1 条 source-has（must 5 全在 / mustNot 2 全无），现判 pass —— 但这只是**结构证据**，不能代表只读行为；② 真正的零写入 / 行为证据 = p1_shadow_scheduler 14/14 真跑通过（该套件按卡上 acceptance 的口径用真仓与坏形状库断言运行前后 sha256 逐字节不变，用例第 12/47-48 行即这条断言；跑在 mkdtemp 临时目录里）；③ 独立复核：17 号报告已把本卡的只读契约（readOnly / 形状闸 / 注入只读连接 / 双出口降级）列入 DS-1 定向证据；④ 本卡没有画布（plans 无行）⇒ 无画布闸、出口如实报「无从对账」；无未决 review / 读集冲突；⑤ 状态是 candidate + satisfied（cardStanding=satisfied，1/1 pass），按 t_done_from_candidate 直接收口，没有为形式去 claim、没有改源码。",
+            "why": "收口依据 = 31 号 §3 + 现行 candidate-satisfied 规则；结构判据（source-has）与行为证据（定向测试）分开记，不让文本针冒充行为。"
+          }
+        }
+      },
+      {
+        "id": "file_scripts_schedule-shadow_mjs",
+        "label": "schedule-shadow.mjs",
+        "x": 380,
+        "y": 60,
+        "width": 260,
+        "height": 64,
+        "type": "file",
+        "path": "scripts/schedule-shadow.mjs",
+        "decision": {
+          "status": "active",
+          "author": "llm",
+          "summary": "只读诊断入口：改动集接既有 changedPathsOf 唯一实现（逐路来源完整性 + changedNote），输出计划但不执行，不做任何写盘",
+          "acceptance": "source-has 以**调用形态**钉住 changedPathsOf 与 pathToFileURL（裸名会被 import 行单独满足 ⇒ 盲针），并断言无写盘 API；退出码三态在头注与实现里一致",
+          "rationale": "入口一旦自带一份改动集或写缓存，就成了第三处权威；三态退出码是让「判不了」不被读成「通过」的最小机制。",
+          "expectations": [
+            {
+              "kind": "source-has",
+              "path": "scripts/schedule-shadow.mjs",
+              "must": [
+                "changedPathsOf(",
+                "git_since_last_judge",
+                "changedNote",
+                "runShadowScheduler({"
+              ],
+              "mustNot": [
+                "writeFileSync",
+                "appendFileSync",
+                "mkdirSync",
+                "rmSync"
+              ],
+              "why": "复用既有改动集唯一实现（changedPathsOf 调用），并把 R-06 的三路来源矩阵（git_since_last_judge）与 changedNote 接线钉在**实体行**上；入口一个字节都不写。★ DS-1R3 T-05：原来的 pathToFileURL( 落在动态 import 行 ⇒ 实测 A 档盲针，已换成实体行针。"
+            }
+          ],
+          "updated_at": "2026-11-21T12:45:56.495Z",
+          "agent": "ds1r3-closeout"
+        },
+        "task": {
+          "id": "file_scripts_schedule-shadow_mjs",
+          "summary": "只读诊断入口：改动集接既有 changedPathsOf 唯一实现，输出计划但不执行，不做任何写盘",
+          "state": "candidate",
+          "judge_gate": "strict"
+        },
+        "status": "draft"
+      },
+      {
+        "id": "file_src_application_action_effect_ts",
+        "label": "action_effect.ts",
+        "type": "file",
+        "path": "src/application/action_effect.ts",
+        "title": "动作效果唯一纯模块：派生 safe-read/may-write、resources、conditional-write、destructive 事实；纯函数，无 fs/网络/时钟副作用",
+        "decision": {
+          "summary": "动作效果唯一权威纯模块：从 ToolDef/action 既有注册项派生效果事实（effect: safe-read|may-write；resources: source|design|derived-state|vcs-history|external；conditional-write；destructive 标注）；裁决与 handler 分层，不复制第二份权限/URL/动作清单，不新增 principal。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/application/action_effect.ts",
+              "why": "本卡唯一新增纯模块：动作效果权威事实与纯裁决输入/输出形状的住处；施工前文件不存在属正常红。"
+            },
+            {
+              "kind": "run",
+              "path": "src/application/action_effect.ts",
+              "expect": "(() => { const p = path.join(root, 'src/application/action_effect.ts'); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); const effectTiers = ['safe-read', 'may-write']; const resources = ['source', 'design', 'derived-state', 'vcs-history', 'external']; return effectTiers.every((t) => s.includes(t)) && resources.every((r) => s.includes(r)) && !/https?:\\/\\/|fetch\\(|spawnSync|execFileSync|writeFileSync|createServer/.test(s); })()",
+              "why": "行为族验收：模块必须从既有注册项派生效果事实，声明 effect 两档与五类资源域；作为纯模块不得含网络/子进程/落盘/服务创建等副作用原语（裁决与 handler 分层，不复制第二份 URL/动作清单）。"
+            }
+          ],
+          "updated_at": "2026-11-21T21:48:36.442Z",
+          "agent": "agent:action-effect-boundary"
+        },
+        "task": {
+          "id": "file_src_application_action_effect_ts",
+          "summary": "动作效果唯一权威纯模块：从 ToolDef/action 既有注册项派生效果事实（effect: safe-read|may-write；resources: source|design|derived-state|vcs-history|external；conditional-write；destructive 标注）；裁决与 handler 分层，不复制第二份权限/URL/动作清单，不新增 principal。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:54:18.992Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "src/application/action_effect.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-21T21:54:18.886Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T21:54:18.993Z"
+        },
+        "status": "in_progress"
+      },
+      {
+        "id": "file_tests_p1_action_effect_boundary_test_ts",
+        "label": "p1_action_effect_boundary.test.ts",
+        "type": "file",
+        "path": "tests/p1_action_effect_boundary.test.ts",
+        "title": "本卡定向边界反例集：隔离 AGENT_IO_HOME + 临时项目 + 随机回环端口 + 注入 handler；R1–R13 受控消融，不触真实服务",
+        "decision": {
+          "summary": "本卡专属定向测试与隔离夹具：覆盖 GET 写动作 405/403、恶意 Origin/Host 拒绝、非回环 deny、Origin:null/unknown/缺资源域 deny、/api/opl 拒绝不进执行核、条件写回执不反降、actor/via/session 不改变裁决；只读核对既有写闸，不改真实服务。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "tests/p1_action_effect_boundary.test.ts",
+              "why": "本卡专属定向测试与隔离夹具：覆盖传输边界反例；施工前文件不存在属正常红。"
+            },
+            {
+              "kind": "run",
+              "path": "tests/p1_action_effect_boundary.test.ts",
+              "expect": "(() => { const p = path.join(root, 'tests/p1_action_effect_boundary.test.ts'); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); const cases = ['/api/tool/', '/api/opl', '/api/dsl', '/api/shutdown', 'Origin', 'Host', 'loopback', 'deny']; return cases.every((c) => s.includes(c)) && !/http\\.createServer\\(|startServer\\(|createDaemonServer\\(/.test(s); })()",
+              "why": "行为族验收：定向测试必须点名通用工具口/opl/daemon 三口与 Origin/Host/回环/deny 反例；夹具走注入 handler 与隔离 AGENT_IO_HOME，不得启动真实服务（不向真实项目/快照/daemon 发 rollback/shutdown）。"
+            }
+          ],
+          "updated_at": "2026-11-21T21:48:36.570Z",
+          "agent": "agent:action-effect-boundary"
+        },
+        "task": {
+          "id": "file_tests_p1_action_effect_boundary_test_ts",
+          "summary": "本卡专属定向测试与隔离夹具：覆盖 GET 写动作 405/403、恶意 Origin/Host 拒绝、非回环 deny、Origin:null/unknown/缺资源域 deny、/api/opl 拒绝不进执行核、条件写回执不反降、actor/via/session 不改变裁决；只读核对既有写闸，不改真实服务。",
+          "state": "claimed",
+          "judge_gate": "strict",
+          "owner": "agent:action-effect-boundary",
+          "claimed_at": "2026-11-21T21:54:34.566Z",
+          "lease_generation": 1,
+          "claimed_session": "unknown",
+          "read_set": {
+            "symbols": [],
+            "files": [
+              {
+                "path": "tests/p1_action_effect_boundary.test.ts",
+                "content_hash": ""
+              }
+            ],
+            "computed_at": "2026-11-21T21:54:34.458Z",
+            "basis": [
+              "declared",
+              "expectations",
+              "node-path"
+            ]
+          },
+          "last_heartbeat_at": "2026-11-21T21:54:34.566Z"
+        },
+        "status": "in_progress"
       }
     ],
     "edges": [
@@ -55594,7 +57327,7 @@
         ],
         "lines": 243,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/plumbing.ts",
           "src/infrastructure/analysis/cross_repo/index.ts",
@@ -57129,7 +58862,7 @@
         ],
         "lines": 884,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/db/gen_design_db.ts",
           "src/application/design/db/judgement_run.ts",
@@ -58891,7 +60624,7 @@
         ],
         "lines": 1135,
         "layer": "entry",
-        "status": "draft",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/dsl_ops/update_feature.ts",
           "src/application/meta/archive/archive_node.ts",
@@ -60020,7 +61753,7 @@
         ],
         "lines": 400,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/meta/proposals/handler.ts",
           "src/application/observe/capture/feature_line.ts",
@@ -61819,7 +63552,7 @@
         ],
         "lines": 1806,
         "layer": "entry",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/plumbing.ts",
           "src/application/refactor/annotate/function_annotation.ts",
@@ -63141,7 +64874,7 @@
         ],
         "lines": 71,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/cross/index.ts",
           "src/application/design/index.ts",
@@ -67347,7 +69080,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/infrastructure/analysis/impact/diff_impact.ts"
+        "path": "src/infrastructure/analysis/impact/diff_impact.ts",
+        "status": "done"
       },
       {
         "id": "file_src_infrastructure_analysis_impact_impact_ledger_store_ts",
@@ -78874,7 +80608,8 @@
             "notes": "from:cache.db@1793769239773"
           }
         ],
-        "path": "src/presentation/daemon/server.ts"
+        "path": "src/presentation/daemon/server.ts",
+        "status": "in_progress"
       },
       {
         "id": "file_src_presentation_http_contract_ts",
@@ -79106,7 +80841,7 @@
         ],
         "lines": 2962,
         "layer": "core",
-        "status": "done",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/design/derive/derive_chain.ts",
           "src/application/design/derive/opl.ts",
@@ -79409,7 +81144,7 @@
         ],
         "lines": 1152,
         "layer": "core",
-        "status": "draft",
+        "status": "in_progress",
         "expected_deps": [
           "src/application/dispatch.ts",
           "src/application/meta/index.ts",
@@ -81624,7 +83359,8 @@
         "expected_deps": [
           "src/application/types.ts"
         ],
-        "path": "src/application/tool_annotations.ts"
+        "path": "src/application/tool_annotations.ts",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_design_cascade_ts",
@@ -82849,7 +84585,8 @@
       {
         "id": "file_src_application_meta_ledger_tool_schema_ts",
         "path": "src/application/meta/ledger/tool_schema.ts",
-        "responsibility": ""
+        "responsibility": "",
+        "status": "in_progress"
       },
       {
         "id": "file_src_application_meta_registry_catalog_ts",
@@ -83068,6 +84805,48 @@
             "notes": "from:cache.db@1795149891130"
           }
         ]
+      },
+      {
+        "id": "file_src_domain_scheduling_evidence_ts",
+        "path": "src/domain/scheduling_evidence.ts",
+        "responsibility": "调度证据帧的纯类型/形状判据/版本对齐（无 IO）：区分 pass|fail|unsupported|pending|unknown 与 fresh|stale|unavailable|conflicting；缺版本不判新鲜；scope=[] 不等于全项目",
+        "status": "done"
+      },
+      {
+        "id": "file_src_domain_scheduling_policy_ts",
+        "path": "src/domain/scheduling_policy.ts",
+        "responsibility": "影子调度纯策略（无 IO）：缺口→候选动作→硬过滤→规则号/依赖/相关度/成本/字典序确定排序→预算截断；动作词表里没有写/完成/提交/回滚",
+        "status": "done"
+      },
+      {
+        "id": "file_src_application_scheduling_evidence_frame_ts",
+        "path": "src/application/scheduling/evidence_frame.ts",
+        "responsibility": "通过注入的只读端口组装 Evidence Frame：不自己开库、不建索引；继承/重跑/不可判只调 verified_snapshot 的唯一判据，不复制第二套算法",
+        "status": "done"
+      },
+      {
+        "id": "file_src_application_scheduling_shadow_scheduler_ts",
+        "path": "src/application/scheduling/shadow_scheduler.ts",
+        "responsibility": "只读影子调度器：把现有事实读端接成端口（cache.db 只以 readOnly 打开、schema 落后不开库、不经 invokeTool 的自动保鲜），输出 Shadow Plan 且不执行",
+        "status": "done"
+      },
+      {
+        "id": "file_scripts_schedule-shadow_mjs",
+        "path": "scripts/schedule-shadow.mjs",
+        "responsibility": "DS-1 只读诊断入口：人读 + JSON 投影，退出码三态（0 产出 / 1 用法错 / 2 判不了）；不执行建议、不建索引、不写盘",
+        "status": "draft"
+      },
+      {
+        "id": "file_src_application_action_effect_ts",
+        "path": "src/application/action_effect.ts",
+        "responsibility": "动作效果唯一纯模块：派生 safe-read/may-write、resources、conditional-write、destructive 事实；纯函数，无 fs/网络/时钟副作用",
+        "status": "in_progress"
+      },
+      {
+        "id": "file_tests_p1_action_effect_boundary_test_ts",
+        "path": "tests/p1_action_effect_boundary.test.ts",
+        "responsibility": "本卡定向边界反例集：隔离 AGENT_IO_HOME + 临时项目 + 随机回环端口 + 注入 handler；R1–R13 受控消融，不触真实服务",
+        "status": "in_progress"
       }
     ]
   },
@@ -83129,13 +84908,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2814,
+  "_dsl_rev": 2935,
   "_sync": {
-    "saved_at": "2026-11-20T05:17:25.288Z",
+    "saved_at": "2026-11-21T22:10:08.289Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2150848151,
+    "age": 2298011152,
     "dbSchemaVersion": 17,
     "via": "edit_dsl:edit_dsl"
   },

@@ -450,7 +450,14 @@ function requireDbFile(): never {
  * ★ 失败方向：取不到形状/版本 ⇒ 返回 false（走"要对齐"那条路）—— 宁可多写一次，也不要在一个
  *   形状不明的库上假称"已对齐"（那会让缺列的老库永远读不到新列）。
  */
-function cacheSchemaIsCurrent(db: Database): boolean {
+/**
+ * 库**形状**是否已经等于当前 schema（版本 + 关键表/列）。
+ *
+ * ★ 导出原因（DS-1R）：只读消费者要在**决定是否碰库之前**用同一把尺判形状 ——
+ *   只看版本号会让"版本 18 但缺列/缺表"的库穿过闸门，进而在写档打开时被迁移。
+ *   ★ 它是**唯一**形状判据；别在别处另写一份（新增列/表时漏改一处就是静默放行）。
+ */
+export function cacheSchemaIsCurrent(db: Database): boolean {
   try {
     if (!tableExists(db, 'files')) return false;
     if (!hasColumn(db, 'files', 'id')) return false;

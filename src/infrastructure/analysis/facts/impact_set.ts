@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { diffImpact } from '../impact/diff_impact.js';
-import { getProjectCacheDb } from '../../index/db.js';
+import { getProjectCacheDb, type Database } from '../../index/db.js';
 
 const norm = (p: string): string => p.replace(/\\/g, '/').replace(/^\.\//, '');
 
@@ -46,22 +46,37 @@ export type ImpactOptions = {
   impactFn?: typeof diffImpact;
   /** 文件存在性判定（测试注入） */
   exists?: (rel: string) => boolean;
+  /**
+   * ★ DS-1R：**已打开的只读连接**（只读消费者注入）。
+   * 缺省走 `getProjectCacheDb` 池（既有调用点零改动）；注入时本模块不建库、不迁移、不设 WAL。
+   */
+  db?: Database;
 };
 
+/** 取连接：注入优先（只读），否则走池（写档，既有行为） */
+function connOf(root: string, injected?: Database): Database {
+  return injected ?? getProjectCacheDb(root);
+}
+
 /** 改动文件在索引里有没有节点（用索引自己的 nodes.file_path 判，不猜） */
-function indexedFiles(root: string): Set<string> {
+/**
+ * 改动文件在索引里有没有节点（用索引自己的 nodes.file_path 判，不猜）。
+ * ★ T-04：查询失败**不许折成空集** —— 空集会被调用方读成"索引里一个文件都没有 ⇒ 跳过缺索引检查"。
+ *   返回 `ok:false` 让上层判不可判；`ok:true` + 空集只表示"查到了、确实零对象"。
+ */
+function indexedFiles(root: string, injected?: Database): { ok: true; set: Set<string> } | { ok: false; reason: string } {
   const out = new Set<string>();
   try {
-    const db = getProjectCacheDb(root) as unknown as {
+    const db = connOf(root, injected) as unknown as {
       prepare: (s: string) => { all: (...a: unknown[]) => Array<{ file_path?: string }> };
     };
     for (const r of db.prepare('SELECT DISTINCT file_path FROM nodes WHERE file_path IS NOT NULL').all()) {
       if (typeof r.file_path === 'string') out.add(norm(r.file_path));
     }
-  } catch {
-    return out; // 打不开 ⇒ 空集 ⇒ 上层判 ok:false（不猜）
+  } catch (e) {
+    return { ok: false, reason: `索引查询失败（nodes.file_path）：${(e as Error).message} ⇒ 影响关系不可判` };
   }
-  return out;
+  return { ok: true, set: out };
 }
 
 /**
@@ -87,7 +102,7 @@ export function impactOfChanged(root: string, changed: readonly string[], opts: 
   for (const f of files) {
     let rep;
     try {
-      rep = impactFn({ project_dir: root, changed: [f], direction: 'callers', max_depth: maxDepth });
+      rep = impactFn({ project_dir: root, changed: [f], direction: 'callers', max_depth: maxDepth, ...(opts.db ? { db: opts.db } : {}) });
     } catch (e) {
       return { ok: false, reason: `波及计算抛错（${f}）：${String(e && (e as Error).message ? (e as Error).message : e).slice(0, 120)}` };
     }
@@ -121,10 +136,19 @@ export function impactOfChanged(root: string, changed: readonly string[], opts: 
   //      所以：`src/**` 缺失 ⇒ `ok:false`；`tests/**`、`scripts/**` ⇒ 直接算"自身波及"。
   const mustBeIndexed = files.filter((f) => f.startsWith('src/'));
   for (const f of files) if (!f.startsWith('src/')) outFiles.add(f); // 非 src 代码：只波及自己
-  const indexed = indexedFiles(root);
-  if (indexed.size > 0 && mustBeIndexed.length > 0) {
+  const indexed = indexedFiles(root, opts.db);
+  // ★ T-04：**查询失败** ≠ "索引里零对象" ⇒ 直接不可判（不许往下走成 ok:true）
+  if (!indexed.ok) return { ok: false, reason: indexed.reason };
+  if (mustBeIndexed.length > 0 && indexed.set.size === 0) {
+    // ★ T-04：索引里一个文件都查不到（空库/坏库）⇒ 无法判断谁依赖它（不是"没影响"）
+    return {
+      ok: false,
+      reason: `索引里查不到任何文件（nodes 为空）⇒ ${mustBeIndexed.slice(0, 3).join(', ')} 的依赖方不可知`,
+    };
+  }
+  if (indexed.set.size > 0 && mustBeIndexed.length > 0) {
     const exists = opts.exists ?? ((rel: string) => fs.existsSync(path.join(root, rel)));
-    const missing = mustBeIndexed.filter((f) => !indexed.has(f) && exists(f));
+    const missing = mustBeIndexed.filter((f) => !indexed.set.has(f) && exists(f));
     if (missing.length > 0) {
       return {
         ok: false,
@@ -140,7 +164,7 @@ export function impactOfChanged(root: string, changed: readonly string[], opts: 
   //   用**索引自己的 nodes 表**一次查完（一条 SQL，不随证据数增长）。
   if (outSymbols.size > 0) {
     try {
-      const db = getProjectCacheDb(root) as unknown as {
+      const db = connOf(root, opts.db) as unknown as {
         prepare: (s: string) => { all: (...a: unknown[]) => Array<{ qualified_name?: string; file_path?: string }> };
       };
       const rows = db.prepare('SELECT qualified_name, file_path FROM nodes WHERE file_path IS NOT NULL').all();
@@ -154,8 +178,12 @@ export function impactOfChanged(root: string, changed: readonly string[], opts: 
         const f = norm(String(r.file_path ?? ''));
         if (q && want.has(q) && f.includes('/')) outFiles.add(f);
       }
-    } catch {
-      /* 查询失败不致命：files 里仍有 impacted_files 带出的部分 */
+    } catch (e) {
+      // ★ T-04：兜底查询失败 ⇒ 波及文件可能**少了一批** ⇒ 不许继续 ok:true（少报比不报更坏）
+      return {
+        ok: false,
+        reason: `符号→文件的兜底查询失败（${(e as Error).message}）⇒ 波及文件可能漏报，影响关系不可判`,
+      };
     }
   }
 

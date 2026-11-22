@@ -60,6 +60,11 @@
     }
   },
   "declarations": {
+    "schedule-shadow.mjs": {
+      "status": "informational",
+      "reason": "DS-1 的只读诊断入口：它输出「证据帧 + 建议」，不判红、不改 state、不写盘（无 scratch 缓存）。进总门会把「建议了哪条」变成门的红绿，而按 DS-1 的非目标，影子模式不证明实际收益 ⇒ 只能按需手动跑。",
+      "evidence": "scripts/schedule-shadow.mjs 头注「它不是判据 / 零写入（DS-1 死线）」与退出码三态"
+    },
     "audit-script-tiers.mjs": {
       "status": "manual-only",
       "reason": "分层读数本身：按需跑（`npm run audit:script-tiers`），不塞进总门 —— 它判的是「谁在跑它」，而它自己就该**被门跑**：真正守住那条判据的是 lint 的规则 G（同一个实现，见 scripts/lib/script_tiers.mjs），本脚本只是同一份读数的**人读出口**。"

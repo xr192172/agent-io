@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **868** / 职责 **11,911** 当前守恒（批 16 历史为 854 / 10,366；后续合法册增量逐笔注明） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **900** / 职责 **12,522** 当前守恒（批 16 历史为 854 / 10,366；890 → 900 的出处：P1 五节点各 2 条判据共 +10，见 `.agent-io/design/agent-io.dsl.json`；12,355 → 12,522 = P1 两新文件职责字数 93 + 74） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -187,7 +187,9 @@ const CARD_TABLE: ReadonlyArray<{
   { id: 'file_src_domain_geometry_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/domain/geometry.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '6ae80e6234ea5ba8e776358ac5c57d784d9b83321e46ad2d2124f37f03be486c', cardSha: '7e628e6994b72a4134df9eaf1b2cb9bec0f280ef44221b201acd763acdfecc83' },
   { id: 'file_src_infrastructure_index_schema_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/infrastructure/index/schema.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '2cbb8db03834efded9c493d7223fbde606058064701411ffeef771d143e189e3', cardSha: '5e74ccac1302887936ef5c2f247c3b938b267c560d22bd7eeb3aff79c906ff18' },
   { id: 'file_src_infrastructure_parse_kernel_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/infrastructure/parse/kernel.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '1a905c567f6341611ab943f4269d1d665bd2b0cea74cdf377b33684ef380ced9', cardSha: 'f8c2919d75724d5d04e11d65227836890db3160b6ed572fa71c6b454aa52d3f0' },
-  { id: 'file_src_presentation_http_serve_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/presentation/http/serve.ts', nodeTask: 'done', steps: ['retire@tsp', 'history@tsp'], reasonSha: '1f3ec2fbbf8962775597197c327de427cf3f776b86721b88d7f0650bcfc54ce7', cardSha: '6c120ea2042869dd879d2d5f6eaef54e6fb1757827efe36ee79d6970bd5b78ef' },
+  // nodeTask=done 是批 16 迁移事实，永不改写；P1 收口窗口册上合法重开为 claimed（owner=agent:action-effect-boundary，reopened_from=subagent:p0-injection）。
+  // 用户禁止 complete/judge：不能回 done 绕闸；currentNodeTask 只如实登记册上当前态 claimed。
+  { id: 'file_src_presentation_http_serve_ts', action: 'SUPERSEDED', from_state: 'candidate', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/presentation/http/serve.ts', nodeTask: 'done', currentNodeTask: 'claimed', steps: ['retire@tsp', 'history@tsp'], reasonSha: '1f3ec2fbbf8962775597197c327de427cf3f776b86721b88d7f0650bcfc54ce7', cardSha: '6c120ea2042869dd879d2d5f6eaef54e6fb1757827efe36ee79d6970bd5b78ef' },
   { id: 'file_src_application_design_dsl_ops_file_ops_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/design/dsl_ops/file_ops.ts', nodeTask: 'void', steps: ['history'], reasonSha: 'acc9c53727c54da1224b8f940822386ae5e04645ccb7ef2fc12791f5d2cd613b', cardSha: '67d29a8e5b755db0c43efbb34cfeaafa417c50d58b1efd916896651b31d998d1' },
   { id: 'file_src_application_refactor_diff_views_diff_views_ts', action: 'HISTORY', from_state: 'done', feature: 'task-system-plan', home: 'agent-io', nodePath: 'src/application/refactor/diff_views/diff_views.ts', nodeTask: null, steps: ['history'], reasonSha: 'c8a296bf4dd3889e0418aa096dd426c3c0c162e9668ce99d4bfcc2240ba32ade', cardSha: '72c3a7b46fabbdac296ca2144f8f9ea68055cc08db8c2db7b57941e88839a4b6' },
   // nodeTask=void 是批 16 迁移事实，永不改写；C1 核销后当前态前进为 done。
@@ -242,9 +244,9 @@ const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
-const CRITERIA_TOTAL = 868; // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；文档基线 857 的出处保留在历史注释。
-const RESP_TOTAL = 11911; // ★ 2026-11-20（C1 当前执行资格）：11756 + execution_eligibility.ts 79 字 + execution_intents.ts 76 字 = 11911；10,366 仍是批 16 历史值。
-const PATHS_TOTAL = 599; // ★ 2026-11-20（C1 当前执行资格）：597 + execution_eligibility.ts + execution_intents.ts 两个新语义文件 = 599；不是放宽判定。
+const CRITERIA_TOTAL = 900; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：890 → 900 = P1 五节点各 2 条判据（presentation/daemon/server.ts、application/tool_annotations.ts、application/meta/ledger/tool_schema.ts、application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；各 file-exists + run）共 10 条，出处 .agent-io/design/agent-io.dsl.json。 // ★ 2026-11-22（36-S1 判据守恒读数同步）：上一当前值 879 → 当前 890 = mutate 新增 7 条真实 call-exists + diff_impact 新增 4 条语义判据（7 + 4 = 11）；出处 = 当前设计册 .agent-io/design/agent-io.dsl.json（883）+ agent-io-toolface.dsl.json（7），归档册 task-system-plan 计 0。★ 旧读数 879 的出处保留在下面三段历史注释里，不回改。 // ★ 2026-11-20（DS-1R2 收尾）：877 → 879 = scheduling_policy 新增 planStanding（no_op 六条件）+ scopeDecision（scope 硬约束）两条行为判据；出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（DS-1 证据帧 / 只读影子调度）：868 → 877 = scheduling_evidence 3 + scheduling_policy 2 + evidence_frame 2 + shadow_scheduler 1 + schedule-shadow 1；每条都挂在新增文件节点上，出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；文档基线 857 的出处保留在历史注释。
+const RESP_TOTAL = 12522; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：12355 → 12522 = +167 字 = src/application/action_effect.ts 93 字 + tests/p1_action_effect_boundary.test.ts 74 字（实测；出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）。 // ★ 2026-11-20（DS-1）：11911 + 5 个新文件的 responsibility 字数 = 12355（实测；逐文件出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）
+const PATHS_TOTAL = 606; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：604 → 606 = +2 去重 path = src/application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；不是放宽判定。 // ★ 2026-11-20（DS-1）：599 + 5 个新语义文件（scheduling_evidence / scheduling_policy / evidence_frame / shadow_scheduler / scripts.schedule-shadow） = 604；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
@@ -548,7 +550,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **868** · 职责 **11,911**（批 16 历史 854 / 10,366；当前增量有出处）', () => {
+test('16.12 守恒：判据 **900** · 职责 **12,522**（批 16 历史 854 / 10,366；890 → 900 = P1 五节点 +10；12,355 → 12,522 = 两新文件 +167，当前增量有出处）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });

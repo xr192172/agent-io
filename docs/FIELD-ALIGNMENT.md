@@ -8,7 +8,10 @@
 |---|---|---|---|
 | 实际事实 | 源码 + 索引（`cache.db` / live） | import / sync | 可编辑设计事实 |
 | 设计意图 | `.agent-io/design/*.dsl.json` | `edit_dsl` | 工具描述 / 手写清单 |
+| 任务卡（todo 卡） | `tasks.db#live_cards` | `task_ops`（经册落盘出口 `syncTasksFromDsl` 投影） | 节点卡副本 / 第二份卡表 |
 | 执行事件 | tasks.db ledger / task_history | ledger 工具 / 写端 | 当前事实字段 |
+
+节点卡（`geometry.nodes[].task`）属于设计意图层，不住 `tasks.db`；`live_cards` 只反射 todo 卡。两类的载体与读端见 `docs/ROOTS.md` §3。
 
 ## 2. 设计侧字段
 
@@ -17,7 +20,8 @@
 | `geometry.nodes[]` | 设计册 JSON | `get_dsl` / `design_line` / gen-db |
 | `decision.summary` | 节点 decision | `get_dsl query=decisions`、设计读视图 |
 | `decision.expectations[]` | 节点 decision | `judgeExpectations`、`design_line judge`、claim/complete |
-| `task.state/owner/evidence` | 节点 task（经 TaskSpec） | `task_ops` 状态机、写闸 |
+| `task.state/owner/evidence` | 节点卡的权威住处 = 节点 `task`（经 TaskSpec） | `task_ops` 状态机、写闸、`listPool`（source=`node`） |
+| `todos[].state/owner/evidence` | todo 卡的权威住处 = `tasks.db#live_cards`；读册时由 `hydrateTodosFromTasks` 补回内存 `todos[]` | `task_ops` 状态机、写闸、`listPool`（source=`todo`） |
 | `semantic.files[].path` | 设计册语义层 | 写闸路径定位、`design_line`、结构检查 |
 | `expected_apis` | 设计册，但派生条目由源码事实重算 | 派生门、签名对拍；人改后要有签名/行为判据支撑 |
 | `excluded[]` | 设计册 / 归属域表 | structure-gate；必须带 reason，且不能与节点声明并存 |
@@ -45,7 +49,11 @@
 | `ledger_events` | tasks.db | append-only；禁止 UPDATE/DELETE |
 | `ledger_review_queue` | tasks.db | 机器判不了的未消项；resolve 只记人已裁，不自动消矛盾 |
 
-当前任务 = `state='active' ∧ superseded_by IS NULL ∧ record_kind='task'`；是否纳入某视图由该视图显式声明，不能多处口径漂移。
+`ledger_rows` 与 `live_cards` **同库不同对象**：前者是账（任务债、裁定、销账），后者是 todo 卡的当前载体。`ledger_rows.state` 的 `active/done/void` 与卡的 `candidate/claimed/done/void` 不是一套状态，不许互算，也不许用 `live_cards` 的行数当"未销账数"。
+
+当前任务 = `state='active' ∧ superseded_by IS NULL ∧ record_kind='task'`（台账口径，不是卡口径）；是否纳入某视图由该视图显式声明，不能多处口径漂移。
+
+**全部卡的下落**只问 `cardLivesOf`（`live_cards ∪ task_history ∪ 设计册 geometry.nodes[].task`，三态 `live`/`closed`/`gone`）；池与待办视图走 `listPool`。单查 `live_cards` 只能回答"todo 卡有哪些"，回答不了"这个项目有哪些卡"。
 
 ## 5. 事实新鲜度
 

@@ -19,8 +19,10 @@ AgentIO 是由目标驱动的程序开发引擎。一个真实开发任务应走
 | 工具能做什么、何时用 | `ToolDef.description`；导航用 `capability_map` |
 | 当前门与判据行为 | `scripts/verify.mjs#GATES`；`src/domain/expectation_kinds.ts#KIND_SPECS`；`docs/GUIDE-GATE.md` |
 | 当前文件/符号/调用事实 | 源码 + 项目索引；`index_integrity` 判新鲜度 |
-| 设计意图、决策、判据、卡、计划 | `.agent-io/design/*.dsl.json`；`get_dsl` / `edit_dsl` / `design_line` |
-| 当前任务、事件、裁定、销账 | `.agent-io/tasks.db` 的 ledger 表；`ledger` 工具 |
+| 设计意图、决策、判据、**节点卡**、计划 | `.agent-io/design/*.dsl.json`；`get_dsl` / `edit_dsl` / `design_line` |
+| **todo 卡**（在册任务卡的当前载体） | `.agent-io/tasks.db` 的 `live_cards`；读册时补回 `todos[]`；写走 `task_ops` |
+| 一张卡活没活 / 全部卡的下落 | `cardLivesOf`（`live_cards ∪ task_history ∪ 设计册 nodes[].task`）；池与待办视图走 `listPool` |
+| 当前任务、事件、裁定、销账 | `.agent-io/tasks.db` 的 `ledger_*` 表（**不是** `live_cards`）；`ledger` 工具 |
 | 人读任务视图 | `docs/todo.md`，由 `npm run ledger:render` 生成；`npm run ledger:check` 验新鲜度 |
 | 当前支持语言与能力档位 | `capability_audit` 现算；不写死语言数 |
 | 路径身份 | `scripts/lib/path_identity.mjs#samePath` |
@@ -66,3 +68,4 @@ AgentIO 是由目标驱动的程序开发引擎。一个真实开发任务应走
 3. 读不到 ≠ 没有；判不了 ≠ 通过。
 4. 写文档先改既有入口，不新开平行说明。
 5. 历史由 git 与 ledger 保存；当前树只放可执行的现在。
+6. 任务卡分载体：节点卡在册、todo 卡在库；清点全部卡只用 `cardLivesOf`，不用 `live_cards` 单表（口径见 `docs/ROOTS.md` §3）。

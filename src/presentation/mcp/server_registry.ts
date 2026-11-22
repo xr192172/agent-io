@@ -28,6 +28,14 @@ import { recordReadFromInvocation } from '../../application/read_set.js';
 //     而且读集的分桶键取的就是这层解析出来的 `actor`（`read_set` 从这儿拿）⇒ **校验与使用同源**。
 //   ★ 规范本身住在 `domain/actor_spec.ts`（唯一处），本文件只调它，不判第二遍。
 import { admitActor, normalizedActorNote } from '../../domain/actor_spec.js';
+// P1-ACTION-EFFECT-BOUNDARY-01：动作效果边界唯一纯裁决（类型/事实在 application/action_effect.ts）。
+import {
+  adjudicateActionEffect,
+  extractActionKey,
+  type Adjudication,
+  type Channel,
+  type TransportFacts,
+} from '../../application/action_effect.js';
 import { scheduleBackfill, backfillState, isBackfillRunning } from '../../infrastructure/index/index_backfill.js';
 import { unknownArgHints, renderArgHints } from '../../infrastructure/text/arg_suggest.js';
 import { collectPendingAlertText, dispatchDslEdit } from '../../application/dispatch.js';
@@ -941,10 +949,50 @@ export async function invokeTool(
   def: ToolDef,
   args: Record<string, unknown> | undefined,
   via: DogfoodVia = 'mcp',
-): Promise<{ text: string; isError?: boolean }> {
+  transport?: TransportFacts,
+): Promise<{ text: string; isError?: boolean; boundary?: Adjudication }> {
   // ★ 2026-10-21：**浅拷贝** —— 下面会把 `actor` 换成规范化后的值，不许改调用方手里那个对象
   //   （`atomic_call` / 证脚本会把同一份 args 复用；副作用留在本函数内）。
   const a = { ...(args ?? {}) } as Record<string, unknown>;
+
+  // ★★★ P1-ACTION-EFFECT-BOUNDARY-01：**边界裁决前置** —— 在 schema 校验 / 保鲜 / 首触建索引 /
+  //   handler 之前消费一次。判据唯一在 `application/action_effect.ts`；本层只把信封事实递过去，
+  //   不读 actor / via / session / User-Agent / X-Forwarded-* 做放行。
+  const boundaryChannel: Channel = via === 'cli' ? 'cli' : via === 'http' ? 'http-serve' : 'stdio-mcp';
+  // ★ 动作键在 schema 校验前从原始 args 提取（action/op/mode/analyze/子动作）；未登记子动作由裁决显式 deny。
+  const boundaryActionKey = extractActionKey(a);
+  const boundaryAdj = adjudicateActionEffect({
+    toolName: def.name,
+    actionKey: boundaryActionKey,
+    transport: transport ?? { channel: boundaryChannel, now: new Date().toISOString() },
+  });
+  // 本地进程通道（stdio/CLI）：未登记动作不在这里硬拒 —— 交既有写闸/注册表口径抛错，
+  //   保留 MCP/CLI 既有回执形态（企划 §9）。HTTP 面的未登记动作由裁决 404 显式 deny。
+  const boundaryLocalPassthrough =
+    (boundaryChannel === 'stdio-mcp' || boundaryChannel === 'cli') &&
+    boundaryAdj.reason === 'unsupported-action';
+  if (!boundaryAdj.allowed && !boundaryLocalPassthrough) {
+    recordDogfoodUsage({
+      ts: new Date().toISOString(),
+      tool: def.name,
+      via,
+      ok: false,
+      ms: 0,
+      err: boundaryAdj.message.slice(0, 200),
+    });
+    recordRejection({
+      ts: new Date().toISOString(),
+      tool: def.name,
+      via,
+      threw: false,
+      errorName: 'ActionEffectBoundary',
+      gateCodes: ['action-effect-boundary'],
+      gateRejection: true,
+      message: boundaryAdj.message.slice(0, 300),
+      source: 'returned',
+    });
+    return { text: boundaryAdj.message, isError: true, boundary: boundaryAdj };
+  }
 
   // ★★★ 2026-10-10：**先**判"调用失败" —— 入参不过 schema 就到此为止（不再建索引 / 保鲜 / 注入告警）。
   //   为什么最前置：一次**用错了**的调用不该有任何副作用（不该起后台建索引、不该读旧索引算告警）。

@@ -135,7 +135,8 @@ export type VerifiedSnapshot = {
 
 export type SnapshotLoad =
   | { status: 'ok'; snapshot: VerifiedSnapshot }
-  | { status: 'missing'; reason: string }
+  /** ★ DS-1R：`code` 区分"真的没有"（ENOENT）与"读不到"（EACCES/EISDIR/…）。缺省不填 = 旧行为。 */
+  | { status: 'missing'; reason: string; code?: string; unreadable?: boolean }
   | { status: 'corrupt'; reason: string };
 
 /**
@@ -223,14 +224,24 @@ export const JAVA_TEST_OBJECT_RE = /(^|\/)src\/test\/java\/.+\/(\w+(Test|Tests|T
  * 扫出项目里的**测试对象**（仓库相对路径，正斜杠）。
  * 跳过 `node_modules` / `dist` / `.git` / 点目录（生成物与依赖不算"应验证对象"）。
  */
-export function scanTestObjects(root: string): string[] {
+/** 一次读取被跳过的对象（DS-1R：读端必须能报告部分失败，**不许静默消失**） */
+export interface ScanSkip {
+  path: string;
+  why: string;
+}
+
+export function scanTestObjects(root: string, skipped?: ScanSkip[]): string[] {
   const out: string[] = [];
   const SKIP = new Set(['node_modules', 'dist', 'build', '.git', 'coverage']);
   const walk = (rel: string): void => {
     let ents: fs.Dirent[];
     try {
       ents = fs.readdirSync(path.join(root, rel), { withFileTypes: true });
-    } catch {
+    } catch (e) {
+      // ★ 只报**真失败**（ENOENT = 这个目录本来就不存在）
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+        skipped?.push({ path: rel || '.', why: `readdir 失败：${(e as Error).message}` });
+      }
       return;
     }
     for (const e of ents) {
@@ -287,7 +298,7 @@ export function testObjectVisibility(
   };
 }
 
-export function hashProjectFiles(root: string): Record<string, string> {
+export function hashProjectFiles(root: string, skipped?: ScanSkip[]): Record<string, string> {
   const DIRS = ['src', 'tests', 'scripts', 'certs', '.agent-io/design'];
   const ROOT_FILES = ['package.json', 'tsconfig.json', 'tsconfig.contract.json'];
   const out: Record<string, string> = {};
@@ -295,7 +306,11 @@ export function hashProjectFiles(root: string): Record<string, string> {
     let ents: fs.Dirent[];
     try {
       ents = fs.readdirSync(path.join(root, dir), { withFileTypes: true });
-    } catch {
+    } catch (e) {
+      // ★ 只报**真失败**：目录不存在（ENOENT）是常态（不是每个项目都有 certs/），不算部分读数。
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT') {
+        skipped?.push({ path: dir, why: `readdir 失败：${(e as Error).message}` });
+      }
       return;
     }
     for (const e of ents) {
@@ -306,8 +321,8 @@ export function hashProjectFiles(root: string): Record<string, string> {
       } else if (/\.(ts|mjs|js|json)$/.test(e.name)) {
         try {
           out[rel] = sha256(fs.readFileSync(path.join(root, rel)));
-        } catch {
-          /* 读不到不记 —— 不猜 */
+        } catch (err) {
+          skipped?.push({ path: rel, why: `读取失败：${(err as Error).message}` });
         }
       }
     }
@@ -316,8 +331,9 @@ export function hashProjectFiles(root: string): Record<string, string> {
   for (const f of ROOT_FILES) {
     try {
       out[f] = sha256(fs.readFileSync(path.join(root, f)));
-    } catch {
-      /* 不存在就不记 */
+    } catch (err) {
+      // 根文件"不存在"是常态（不是每个项目都有 tsconfig.contract.json）⇒ 只有非 ENOENT 才记
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') skipped?.push({ path: f, why: `读取失败：${(err as Error).message}` });
     }
   }
   return out;
@@ -341,8 +357,16 @@ export function loadVerifiedSnapshot(root: string, rel: string = SNAPSHOT_REL): 
   let raw: string;
   try {
     raw = fs.readFileSync(p, 'utf8');
-  } catch {
-    return { status: 'missing', reason: `没有基线文件 ${rel}（首次运行；本次结果将成为基线）` };
+  } catch (e) {
+    // ★ DS-1R：**读不到 ≠ 没有**。EACCES/EISDIR/EPERM 若被说成"首次运行"，是最容易被读轻的一句话。
+    const code = (e as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return { status: 'missing', reason: `没有基线文件 ${rel}（首次运行；本次结果将成为基线）`, code };
+    return {
+      status: 'missing',
+      reason: `基线文件 ${rel} **读不到**（${code ?? '未知错误'}：${(e as Error).message}）—— 这不是"首次运行"，不得当作"没有基线"`,
+      code: code ?? 'unknown',
+      unreadable: true,
+    };
   }
   let j: unknown;
   try {
@@ -602,8 +626,10 @@ export function planInheritance(input: {
         continue;
       }
       // ★ 先试**事实推导**：只补"它观察到什么"，不改 verdict（verdict 仍是上次真跑的结果）
-      const derived = (e.observes?.length ?? 0) === 0 ? (input.deriveObserves?.(e) ?? []) : [];
-      const observes = (e.observes?.length ?? 0) > 0 ? (e.observes ?? []) : derived;
+      // ★ DS-1R：`observes` 记坏（字符串）时旧写法会**逐字符**参与交集 ⇒ 永不命中 ⇒ 假继承。
+      const declaredObserves = Array.isArray(e.observes) ? e.observes : [];
+      const derived = declaredObserves.length === 0 ? (input.deriveObserves?.(e) ?? []) : [];
+      const observes = declaredObserves.length > 0 ? declaredObserves : derived;
       if (observes.length === 0 && (e.symbols?.length ?? 0) === 0) {
         undetermined.push({
           id: e.id,

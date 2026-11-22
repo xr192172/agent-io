@@ -37,6 +37,7 @@ import { bindToolDefsForWiring } from '../infrastructure/analysis/health/wiring_
 import { TOOL_ANNOTATIONS } from './tool_annotations.js';
 import { bindWritesOf } from '../infrastructure/dsl_write_scope.js';
 import type { ToolDef } from './types.js';
+import { bindActionEffects, type ActionToolDef } from './action_effect.js';
 
 /**
  * ★ 能力线来源（P1c）：**归属由文件所在表达** —— 本数组是"lane 文件 → 线 id"的**唯一**映射。
@@ -68,7 +69,10 @@ export const TOOL_DEFS: ToolDef[] = (() => {
         `★ 注解是 MCP 面的对外声明（2025-06-18 规范 ToolAnnotations），缺键即报（防漂移，与 FILE_DATA_KEYS 同纪律）。`,
     );
   }
-  return defs.map((d) => ({ ...d, annotations: TOOL_ANNOTATIONS[d.name] }));
+  const out = defs.map((d) => ({ ...d, annotations: TOOL_ANNOTATIONS[d.name] }));
+  // P1-ACTION-EFFECT-BOUNDARY-01：效果事实随 ToolDef 同处登记，这里派生注入纯裁决表。
+  bindActionEffects(out as unknown as readonly ActionToolDef[]);
+  return out;
 })();
 
 /**

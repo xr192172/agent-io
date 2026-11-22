@@ -5,7 +5,7 @@
  * | # | 判据 | 绿的真身（本文件断的东西） |
  * |---|---|---|
  * | 4.1 | 50 个 path **各恰一册**持有，且是 `agent-io`；计划册侧节点 / 语义 / 边全没了 | 半删（幽灵节点、悬空边）在这里红 |
- * | 4.2 | 判据**总数守恒**（A 类零负载 ⇒ 822 一条不动） | 删错一侧（删到有判据的那侧）立刻少几条 |
+ * | 4.2 | 判据**总数守恒** + 逐 path **精确值**（A 类零负载 ⇒ 本批删 50 个节点时 822 一条不动；今天 49 个 path 恒 0 · `diff_impact.ts` 精确 4 = DS-1 合法补入，出处见 4.2 注释） | 删错一侧（删到有判据的那侧）立刻少几条；任何 path 悄悄加/删一条也红 |
  * | 4.3 | 清单就是**批 4 的清单**（字典序接批 3 的第三段 · 全部落在 `src/infrastructure/analysis/**`） | 手抄错一条 / 顺序漂了都在这里红 |
  * | 4.3b | 三条**界外**没被偷偷收进本批：2 条带卡（`discussion_log.ts` / `cli.ts`）+ 1 条**非属主侧带 decision 散文**（`go_instrument.ts`，本批新发现） | 把 `go_instrument.ts` 混进来 ⇒ 前置 exit 3（消融 §2.4），这里红 |
  * | 4.4 | ② 档：这 50 个 path 的 klass = `owned`；把它们塞回计划册 ⇒ 立刻 `multi_owned`（鉴别力） | 纯核两世界对照，不碰真册 |
@@ -127,7 +127,7 @@ const DEFERRED_WITH_CARDS = BOUNDARY.cards;
 //   迁回属主册 tsp（一 path 一册断言不变量，batch1 1.3 实测冲突修复），总数不变分册变。
 // ★ 2026-11-18（EEP 真修复链）：826 → 854 —— 19 个被吞 gap 的 triage 给 13 个活源码文件补了 13 条 file-exists 出处判据（T-#EXCLUDED-EMPTY-PATH 真修复），合法新增。
 // ★ 2026-11-19（集成席 · merge feat/api-edges 后）：854 → 854 —— agent-io 册 +15 条**合法新增**（semantic_facts +6 / verify-changed +3 / kernel 判据并集 +3 / run-tests +2 / 新节点 vue_sfc.ts +1），工具面 7 不变；不是漂，是显式改。
-const CRITERIA_TOTAL = 868; // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；历史断言语义不变。
+const CRITERIA_TOTAL = 900; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：890 → 900 = P1 五节点各 2 条判据（presentation/daemon/server.ts、application/tool_annotations.ts、application/meta/ledger/tool_schema.ts、application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；各 file-exists + run）共 10 条，出处 .agent-io/design/agent-io.dsl.json。 // ★ 2026-11-22（36-S1 判据守恒读数同步）：上一当前值 879 → 当前 890 = mutate 新增 7 条真实 call-exists + diff_impact 新增 4 条语义判据（7 + 4 = 11）；出处 = 当前设计册 .agent-io/design/agent-io.dsl.json（883）+ agent-io-toolface.dsl.json（7），归档册 task-system-plan 计 0。★ 旧读数 879 的出处保留在下面三段历史注释里，不回改。 // ★ 2026-11-20（DS-1R2 收尾）：877 → 879 = scheduling_policy 新增 planStanding（no_op 六条件）+ scopeDecision（scope 硬约束）两条行为判据；出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（DS-1 证据帧 / 只读影子调度）：868 → 877 = scheduling_evidence 3 + scheduling_policy 2 + evidence_frame 2 + shadow_scheduler 1 + schedule-shadow 1；每条都挂在新增文件节点上，出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；历史断言语义不变。
 /**
  * path 分母的**棘轮下限**（只许不降；不是“精确值”）。
  * ★ 2026-11-18（T-#EXCLUDED-EMPTY-PATH 链，出处）：555 → **568** —— 13 个活源码**合法入仓**。`excluded`
@@ -216,7 +216,34 @@ test('4.1b 计划册里这 50 个 path 的节点 / 语义文件 / 边都不在�
 // ════════════════════════════════════════════════════════════════════
 // 4.2 判据总数守恒
 // ════════════════════════════════════════════════════════════════════
-test('4.2 判据总数守恒：三册合计 868 条（A 类零负载 ⇒ 删 50 个节点一条判据不动）', () => {
+
+/**
+ * 批 4 的 50 个 path **今天**各应有多少判据 —— **精确值**（不是上限，也不是"允许列表"）。
+ *
+ * ★ 为什么原来那句"每条 path 的判据必须 0"今天不成立：批 4 自己的动作确实是"删空壳、0 搬运"，
+ *   但**之后** DS-1 收口合法地给其中一个 path 补过判据 ⇒ 那个 0 已被一次有出处的册变更作废。
+ *   把它改成"≤ 4"或"非零也放行"就是**改弱判据**；这里的做法是钉**当前精确值 + 出处**，
+ *   其余 49 个仍然精确 0。
+ *
+ * 唯一的非零项出处 —— DS-1 给 `diff_impact` 补入 4 条语义判据（册侧：
+ * `.agent-io/design/agent-io.dsl.json` 的节点 `file_src_infrastructure_analysis_impact_diff_impact_ts`）：
+ *   ① 3 条**真实生产 call-exists**：`impact_analyzer#analyzeImpact → diffImpact`（L25）·
+ *      `serve#handleApiDiffImpact → diffImpact`（L1133）· `semantic_digest#semanticDigest → diffImpact`（L196）；
+ *   ② 1 条**注入语义 run**：`db?: Database;` / `if (input.db)` 先于池分支 / catch 只在池分支之后 /
+ *      注入路径无 emptyResult 降级。
+ *
+ * ★ 反向反例（这条断言必须**两边都红**，任何改法都不许把它变成恒真或宽松白名单）：
+ *   · `diff_impact.ts` **少一条**（判据被删）⇒ 3 ≠ 4 红；**多一条**（又有人悄悄加）⇒ 5 ≠ 4 红；
+ *   · 其余 49 个 path 任何一个从 0 变 1 ⇒ 1 ≠ 0 红；
+ *   · 要合法改这个数 ⇒ 像本条一样**显式改这里并写出处**，不是让它漂。
+ */
+const EXPECTED_CRITERIA_BY_PATH: Readonly<Record<string, number>> = {
+  'src/infrastructure/analysis/impact/diff_impact.ts': 4,
+};
+/** 未列出的 path 一律精确 0（不是"随便多少都行"） */
+const expectedCriteriaOf = (p: string): number => EXPECTED_CRITERIA_BY_PATH[p] ?? 0;
+
+test('4.2 判据总数守恒：三册合计 900 条；50 个 path 里 49 个恒 0 · diff_impact.ts 精确 4（DS-1 补入，见下表注释）', () => {
   const sheets = repoSheets();
   const per = sheets.map((s) => `${s.feature}=${criteriaTotal([s])}`).join(' · ');
   assert.equal(
@@ -226,8 +253,15 @@ test('4.2 判据总数守恒：三册合计 868 条（A 类零负载 ⇒ 删 50 
   );
   const holdings = bookHoldings(sheets);
   for (const p of PATHS) {
+    const want = expectedCriteriaOf(p);
     for (const h of holdings.get(p) ?? []) {
-      assert.equal(h.expectations, 0, `\`${p}\` 在 ${h.feature} 册上不该有判据（实测 ${h.expectations} 条）`);
+      assert.equal(
+        h.expectations,
+        want,
+        `\`${p}\` 在 ${h.feature} 册上今天的判据数必须**精确 ${want}**（实测 ${h.expectations} 条）——` +
+          ` 少一条（判据被删）/ 多一条（悄悄加）都红；非零项只有 ${Object.keys(EXPECTED_CRITERIA_BY_PATH).join(', ')}，` +
+          ` 出处见本文件 EXPECTED_CRITERIA_BY_PATH 的注释（DS-1 diff_impact +4）`,
+      );
     }
   }
 });

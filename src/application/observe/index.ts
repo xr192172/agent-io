@@ -37,14 +37,19 @@ import type { ReconcileEffectsInput } from './reconcile/reconcile_effects.js';
 // ★ 2026-10-28：observe_proposals 的执行核（从 meta/index.ts 抽出一份实现，注册已并进本入口）
 import { fileURLToPath } from "node:url";
 import type { ToolDef } from '../types.js';
+import { declareActionEffects, declareEffect, type ActionToolDef } from '../action_effect.js';
 
-export const OBSERVE_TOOLS: ToolDef[] = [
+export const OBSERVE_TOOLS: ActionToolDef[] = [
   // ★★ 第⑬项第三刀（2026-11-10）：memory_observe **退役出 MCP 面** —— 基建运维（开发期内存诊断），
   //   模型面没有消费场景；CLI/内部保留（`infrastructure/analysis/observe/memory_observe.js` 执行核不动）。
 
   {
     name: 'reconcile_effects',
     writes: true,
+    effect: declareEffect('may-write', ['design'], {
+      conditionalWrite: true,
+      note: '候选转正/补新观察写 .agent/observe 运行状态与 DSL 契约；judge 可选 LLM 未证明。',
+    }),
     title: 'Reconcile effect candidates with observe runtime observation',
     description:
       '积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中' +
@@ -72,6 +77,23 @@ export const OBSERVE_TOOLS: ToolDef[] = [
   {
     name: 'observe',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'design', 'derived-state'], {
+      note: '动作级拆分见 actions（§2.6.1）；instrument 插桩改源；缓存/运行状态写派生态；proposals#approve 落 DSL 契约。',
+      actions: declareActionEffects({
+        log: declareEffect('safe-read', ['derived-state']),
+        trace: declareEffect('safe-read', ['derived-state']),
+        judge: declareEffect('may-write', ['external', 'derived-state'], { conditionalWrite: true, note: 'use_llm=true 走 callChat；缺省 false 纯规则；判定缓存落派生态。' }),
+        line: declareEffect('safe-read', ['source', 'design', 'derived-state']),
+        ledger: declareEffect('safe-read', ['derived-state']),
+        instrument: declareEffect('may-write', ['source', 'derived-state'], { conditionalWrite: true, note: 'dry_run=false 落盘插桩；dry_run=true 不开闸。' }),
+        uninstrument: declareEffect('may-write', ['source', 'derived-state'], { note: '恒执行还原源码 + 台账删除。' }),
+        restore: declareEffect('may-write', ['source', 'derived-state'], { note: '同 uninstrument 通道，恒执行还原。' }),
+        'proposals#list': declareEffect('safe-read', ['derived-state']),
+        'proposals#show': declareEffect('safe-read', ['derived-state']),
+        'proposals#reject': declareEffect('may-write', ['derived-state']),
+        'proposals#approve': declareEffect('may-write', ['design', 'derived-state', 'external'], { conditionalWrite: true, note: 'use_llm 可选 LLM 复核；frozen 拒写；dsl.save 落册。' }),
+      }),
+    }),
     title: 'Observe 单入口（action=log | trace | judge）',
     description:
       '★ 观察线只读三合一入口：**没有独立工具**（`observe_log` / `observe_trace` / `observe_judge` 都不存在）——' +
@@ -263,6 +285,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
   {
     name: 'reconcile_chain',
     writes: false,
+    effect: declareEffect('may-write', ['design'], { conditionalWrite: true, note: '仅确认/补链时写 DSL 链。' }),
     title: 'Reconcile a host chain with its real-run observe events (meso tier)',
     description:
       '中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，' +
@@ -288,6 +311,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
   {
     name: 'recommend_observe_points',
     writes: false,
+    effect: declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: '仅写 observe 提案/运行派生态。' }),
     title: 'Recommend where to instrument (observe points)',
     description:
       '★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。' +
@@ -346,6 +370,7 @@ export const OBSERVE_TOOLS: ToolDef[] = [
   {
     name: 'run_tests',
     writes: false,
+    effect: declareEffect('may-write', ['external'], { note: '外部测试进程；运行报告落派生缓存。' }),
     title: 'Run tests and return exit code plus output tail',
     description:
       '跑目标项目的测试（走 package.json 的 scripts.test，以退出码判成败，退出码 0 ⇒ 成功）。' +

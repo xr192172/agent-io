@@ -302,6 +302,8 @@ export interface StaleIndexProbe {
   scopeFallback: boolean;
   /** 抽样到的文件名（限量，供定位） */
   sample: string[];
+  /** ★ DS-1R：stat 失败（EACCES/EISDIR…）的文件 —— 它们**不进任何一栏**，必须显式交出去 */
+  unreadable: string[];
   /** 待消费的自写登记文件数（同步写工具登记过、还没被读路径消费） */
   selfWritesPending: number;
 }
@@ -357,6 +359,7 @@ export function detectStaleIndex(
   const stride = Math.max(1, Math.ceil(total / maxScan));
   const sampled = stride > 1;
   const sample: string[] = [];
+  const unreadable: string[] = [];
   let stale = 0;
   let scanned = 0;
   for (let i = 0; i < total; i += stride) {
@@ -365,8 +368,10 @@ export function detectStaleIndex(
     let st: fs.Stats;
     try {
       st = fs.statSync(path.join(root, rel));
-    } catch {
-      continue; // 磁盘上已没有 → 归"幽灵行"，不算"落后"
+    } catch (e) {
+      // ★ 磁盘上真的没了（ENOENT）⇒ 归"幽灵行"；读不到（EACCES/EISDIR…）⇒ 必须说出来
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT' && unreadable.length < sampleLimit) unreadable.push(rel);
+      continue;
     }
     const row = db.prepare('SELECT size, modified_at FROM files WHERE path = $p').get({ p: rel }) as
       | { size: number; modified_at: number }
@@ -389,6 +394,7 @@ export function detectStaleIndex(
     sampled,
     scopeFallback: !fs0.ok,
     sample,
+    unreadable,
     selfWritesPending: pendingSelfWrites(root).length,
   };
 }
@@ -704,6 +710,20 @@ export function indexCovers(coveredRel: ReadonlySet<string>, diskRel: readonly s
  * ★★ 别改成"读一个持久化的上次走查结果"：那个会**过期**，且过期方向是**不安全**的
  *   （磁盘涨了新文件而持久值没涨 ⇒ 会误判"覆盖了" ⇒ 又回到"把还没索引到判死"）。
  */
+/**
+ * ★ DS-1R：`indexCoversDisk` 的**双出口**版本 —— 走查范围算不出来时不许静默返回 `true`
+ * （`[].every()` 恒真 ⇒ "算不出来"会被读成"覆盖了磁盘"）。
+ * 原函数保持签名与行为（既有 `!indexCoversDisk(...)` 消费者零改动），本函数给只读消费者用。
+ */
+export function indexCoversDiskEx(
+  db: Database,
+  root: string,
+): { ok: boolean; covers: boolean; error: string | null } {
+  const scope = freshnessScope(root);
+  if (!scope.ok) return { ok: false, covers: false, error: scope.error ?? '走查范围算不出来' };
+  return { ok: true, covers: indexCovers(indexedRelativeSet(db), [...scope.scope]), error: null };
+}
+
 export function indexCoversDisk(db: Database, root: string): boolean {
   const r = path.resolve(root);
   // 「磁盘上有哪些文件」= 保鲜重解析范围本身（唯一权威 {@link freshnessScope}）——

@@ -98,7 +98,8 @@ import { LEDGER_INPUT_SCHEMA, LEDGER_TOOL_DESCRIPTION } from "./ledger/tool_sche
 //   `npm run dogfood`（`dogfood_stats.ts`）此前是**唯一**读得到那份日志的入口，而它**不在工具面**里
 //   ⇒ agent 拿不到。本工具**复用**它的统计（一行都不重造），只补「注册表 − 用过的 / 用过的 − 注册表」两维。
 import type { DocTargetSet } from './docs/project_docs.js';
-import type { ToolDef } from '../types.js';
+import { declareActionEffects, declareEffect, type ActionToolDef } from '../action_effect.js';
+import { LEDGER_READ_ACTIONS, LEDGER_WRITE_ACTIONS } from './ledger/tool_schema.js';
 // ★ T54：接续段的三件套 —— **规则住在 domain，这里只渲染**（别在本文件重推一遍）
 import { nextHopsOf, universalHopsOf, applyChainEdge, SCOPE_PATHS } from "../../domain/chain_wiring.js";
 
@@ -210,10 +211,33 @@ async function runDiagnoseEntry(a: Record<string, unknown>): Promise<{
   return { message: formatDiagnoseText(out), data: out };
 }
 
-export const META_TOOLS: ToolDef[] = [
+export const META_TOOLS: ActionToolDef[] = [
   {
     name: 'explore_code',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'design', 'derived-state', 'external'], {
+      note: '动作级拆分见 actions（§2.6.4）；索引/索引图/共享 engineCache 归派生状态；embedding/LLM 为外部。',
+      actions: declareActionEffects({
+        search: declareEffect('may-write', ['derived-state', 'external'], { conditionalWrite: true, note: '索引冷启/重同步；embedding API 可选，未配置降级 FTS。' }),
+        read: declareEffect('may-write', ['source', 'derived-state'], { note: '种子局部索引 + 后台续建；readCode 读源。' }),
+        facts: declareEffect('safe-read', ['source', 'derived-state'], { note: '只读索引事实，显式不建索引。' }),
+        arch_layer: declareEffect('may-write', ['design', 'derived-state'], { conditionalWrite: true, note: 'persist=true 写回 feature；健康缓存缺省写。' }),
+        guided_tour: declareEffect('safe-read', ['source', 'derived-state']),
+        check_monolith: declareEffect('may-write', ['design', 'derived-state'], { conditionalWrite: true, note: 'save_preview=true 写预览册；健康缓存缺省写。' }),
+        derive_mind_map: declareEffect('may-write', ['derived-state', 'external'], { conditionalWrite: true, note: '导图 json 落盘；gen_descriptions=true 走 callChat。' }),
+        run_simulation: declareEffect('may-write', ['derived-state'], { note: '共享 engineCache 注册/引擎状态变异；无 fs 写。' }),
+        reset_simulation: declareEffect('may-write', ['derived-state'], { note: 'getEngine 冷 miss 入缓存；engine.reset 重置共享引擎状态（共享内存派生态，不得仅因内存态标 safe-read）。' }),
+        'watch#start': declareEffect('may-write', ['derived-state']),
+        'watch#status': declareEffect('safe-read', ['derived-state']),
+        'watch#stop': declareEffect('may-write', ['derived-state']),
+        'watch#impact': declareEffect('safe-read', ['derived-state']),
+        'watch#declare': declareEffect('may-write', ['derived-state']),
+        'watch#ledger': declareEffect('safe-read', ['derived-state']),
+        'watch#resolve_id': declareEffect('may-write', ['derived-state']),
+        docs: declareEffect('safe-read', ['source', 'design']),
+        impact: declareEffect('safe-read', ['source', 'derived-state']),
+      }),
+    }),
     title: 'Explore, analyze and understand code',
     description:
       '代码理解统一入口：通过 action 参数化执行各类分析（动作清单见 `action` 字段的 describe）。' +
@@ -276,6 +300,9 @@ export const META_TOOLS: ToolDef[] = [
   {
     name: 'diagnose',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state', 'external'], {
+      note: '读源/缓存；LLM 诊断为外部；诊断报告落派生缓存。',
+    }),
     title: 'Diagnose a symptom (read-only), or diagnose-and-fix when apply:true',
     description:
       '★ **诊断统一入口**（2026-11-09 收敛试点）：`apply` 缺省/false ⇒ **只读诊断**（不写盘）：症状解析 → ' +
@@ -305,6 +332,9 @@ export const META_TOOLS: ToolDef[] = [
   {
     name: 'diagnose_loop',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state', 'external'], {
+      note: '循环诊断；日志/循环状态落派生缓存，LLM 为外部。',
+    }),
     title: 'Alias of diagnose (version compatibility: same handler, same behaviour)',
     description:
       '★ **兼容别名**：与 `diagnose` **共用同一个 handler**，行为逐字相同 —— 只为不断旧调用方与旧链' +
@@ -335,6 +365,7 @@ export const META_TOOLS: ToolDef[] = [
   {
     name: 'capability_map',
     writes: false,
+    effect: declareEffect('safe-read', ['source']),
     title: '能力线导航：agent-io 工具分层地图',
     description:
       '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
@@ -472,6 +503,7 @@ export const META_TOOLS: ToolDef[] = [
     //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
     name: 'capability_audit',
     writes: false,
+    effect: declareEffect('safe-read', ['source']),
     title: '能力矩阵自检：语言 × 功能的 AST 覆盖缺口',
     description:
       '**能力矩阵自检**（缺口清单；只读、纯计算、不改任何代码）：对语言名单（或只对**已安装**的 tree-sitter ' +
@@ -565,6 +597,7 @@ export const META_TOOLS: ToolDef[] = [
     //   ★ 搬动同时消灭 5 条已知 `no-circular`（见 tool_registry.ts 的文件头说明）。
     name: 'sync_contracts',
     writes: true,
+    effect: declareEffect('may-write', ['design'], { note: '把实测契约同步进 DSL 契约槽。' }),
     title: 'Sync tool contracts from registry schema into DSL expected_apis',
     description:
       '契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。' +
@@ -582,6 +615,7 @@ export const META_TOOLS: ToolDef[] = [
   {
     name: 'index_integrity',
     writes: false,
+    effect: declareEffect('may-write', ['derived-state'], { conditionalWrite: true, note: '仅重建/修复分支写派生索引。' }),
     title: '索引可信度自检：现在的索引能不能当真',
     description:
       '只读自检：回答"我眼下读到的索引能不能当真"。给出规模（索引文件/磁盘源码/未索引/幽灵行/节点/边）、' +
@@ -633,6 +667,14 @@ export const META_TOOLS: ToolDef[] = [
     //   ★ 收成**一个入口**的依据见 `meta/upgrade/upgrade.ts` 头注（同一操作对象 + 动作互补）。
     name: 'upgrade',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'vcs-history', 'external'], {
+      destructive: true,
+      note: '动作级拆分见 actions（§2.6.9）；apply 落源 + git 基线/回退；scan 闸为外部进程。',
+      actions: declareActionEffects({
+        scan: declareEffect('may-write', ['external'], { conditionalWrite: true, note: 'gate=true 静态闸 spawn 编译；dynamic=true 动态闸 spawn 运行；缺省双关纯只读。' }),
+        apply: declareEffect('may-write', ['source', 'vcs-history', 'external'], { destructive: true, note: '基线 commit → 源码写 → 外部验证 → 通过 commit / 失败 git 回退。' }),
+      }),
+    }),
     title: '版本升级契约差：工具链/语言特性/废弃 API 检测 + 局部重写闭环（git 验证回退）',
     description:
       '**版本升级契约差**（一个入口两个动作）。`action=scan`（缺省，**只读**）：' +
@@ -670,6 +712,7 @@ export const META_TOOLS: ToolDef[] = [
     //   才拼得出答案。本工具**一次给全**，把散在四处的信息**端上来**（不新算 —— 见模块头注的数据源表）。
     name: 'contract_page',
     writes: false,
+    effect: declareEffect('may-write', ['source', 'derived-state'], { conditionalWrite: true, note: '页面/派生缓存为条件写。' }),
     title: 'Contract page: everything about one symbol in one call (definition / members / producers / consumers / chain edges / glossary)',
     description:
       '**契约页 / 类型页**（只读）：给一个**符号名或类型名**，**一次给全**六块 —— 调用方**不用再调别的工具**：' +
@@ -711,6 +754,7 @@ export const META_TOOLS: ToolDef[] = [
     //     只把**真正只能由人给的"意图位"**（如新名 `to`）**显式留空并标注**。
     name: 'chain_hop_args',
     writes: false,
+    effect: declareEffect('safe-read', ['derived-state']),
     title: "Prepare runnable args for a chain hop: direction='first' (chain/tool -> first-step JSON) | 'next' (upstream touched -> next-tool JSON)",
     description:
       '**生成链上某一跳的可跑入参**（只读）：按 `direction` 分两档——' +
@@ -795,6 +839,13 @@ export const META_TOOLS: ToolDef[] = [
     //     与设计册的 `todos[]` 是两件事（`ledger.ts` 头注①-⑥）。
     name: 'ledger',
     writes: false,
+    effect: declareEffect('may-write', ['derived-state'], {
+      note: '动作级闭集由 tool_schema.ts 的 LEDGER_READ/WRITE_ACTIONS 派生（§2.6.5）；台账 .agent-io/tasks.db 归派生状态。',
+      actions: declareActionEffects({
+        ...Object.fromEntries(LEDGER_READ_ACTIONS.map((a) => [a, declareEffect('safe-read', ['derived-state'])])),
+        ...Object.fromEntries(LEDGER_WRITE_ACTIONS.map((a) => [a, declareEffect('may-write', ['derived-state'])])),
+      }),
+    }),
     title: 'Ledger: 台账唯一入口（挂账 / 批注 / 销账 / 重开 / 取代 / 裁定 / 列 / 取 / 待人工队列 / 消项）',
     description: LEDGER_TOOL_DESCRIPTION,
     inputSchema: LEDGER_INPUT_SCHEMA,

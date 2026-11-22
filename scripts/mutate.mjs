@@ -60,7 +60,276 @@ const sha = (b) => crypto.createHash('sha256').update(b).digest('hex');
 /** abs -> {buf, sha} */
 const ACTIVE = new Map();
 let hooksInstalled = false;
+/** 崩溃日志的根（`runMutate` 开始时置位；hooks 里也要能销账） */
+let JOURNAL_ROOT = null;
 
+// ─────────────────────────────────────────────────────────────────────────
+// ★★★ DS-1R3 T-07：**崩溃安全日志**（hooks 覆盖不到的那条路）
+//
+// 病史（复核席实测）：`p1_mutate_strength_quota` 首次经 runner 跑出 UNKNOWN 之后，
+// `src/domain/behavior_compare.ts` 被**遗留成 `ret !== expect`** —— 说明那条退出路径上
+// `finally` / `process.on(...)` **一次都没跑**。原因不是还原逻辑写错，而是**信号到不了**：
+// runner 超时/收尾时对子进程做的是"硬杀"（Windows `TerminateProcess`、类 Unix `SIGKILL`），
+// 这两种都不给进程任何回调机会 ⇒ `restoreAll()` 是**不可达代码**。
+//
+// ⇒ 唯一能覆盖它的机制是**落盘的日志**：改之前先把原文 + atime/mtime 写进
+//   `.agent-io/mutate-journal/`（gitignored），正常还原后删掉；下次启动 mutate 时
+//   先 `journalRecover()` —— 有残留就说明"上一轮没正常收尾"，**先恢复再测量**。
+//   ★ 为什么不用内存兜底：内存随进程一起消失，正是本病的形态。
+// ─────────────────────────────────────────────────────────────────────────
+export function journalDir(root) {
+  // ★ 落在 `.agent-io/scratch/` 下：它是一次性中间产物（`manifest:check` 实测会拦"没人认领的条目"），
+  //   scratch 本身已被 gitignore 且不进卷表 ⇒ 不撞门，也不许被登记成合法载体。
+  return path.join(root, '.agent-io', 'scratch', 'mutate-journal');
+}
+
+/**
+ * 项目内相对路径（日志身份的一部分）。★ U-04：日志**只**接受规范化项目相对路径，
+ * 绝对路径 / `..` 逃逸一律拒绝 —— 日志不许成为"往根外写文件"的入口。
+ */
+export function journalRelOf(root, abs) {
+  const rel = path
+    .relative(path.resolve(root), path.resolve(abs))
+    .replace(/\\/g, '/');
+  if (!rel || path.isAbsolute(rel) || rel.split('/').includes('..') || /^[A-Za-z]:/.test(rel)) {
+    throw new Error(`恢复日志只接受项目内相对路径：${rel || '(空)'}`);
+  }
+  return rel;
+}
+
+/**
+ * 改文件**之前**登记：原文 + 元数据。
+ * ★ U-01：id = `sha(rel \0 sha(原文字节))` —— **路径参与身份**，同内容不同文件各有独立日志。
+ * ★ U-04：先写原文（tmp→rename），**最后**写元数据（tmp→rename）⇒ 元数据出现 = "本次变异已登记"的提交点。
+ */
+export function journalBegin(root, abs, buf, st) {
+  const dir = journalDir(root);
+  fs.mkdirSync(dir, { recursive: true });
+  const rel = journalRelOf(root, abs);
+  // ★ U-01/U-02：同路径已有未销账日志 ⇒ 拒绝（否则会把**真正的原文**覆盖成"上一轮改坏后的内容"）
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+    let j = null;
+    try {
+      j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    } catch {
+      continue; // 坏元数据由 recover 报 failure，这里不替它判
+    }
+    if (j && j.file === rel) {
+      throw new Error(
+        `同路径已有**未销账**的恢复日志（${rel}）⇒ 上一轮没有正常收尾且未恢复；先 journalRecover 再变异`,
+      );
+    }
+  }
+  const id = sha(`${rel}\u0000${sha(buf)}`).slice(0, 16);
+  const origTmp = path.join(dir, `${id}.orig.tmp`);
+  const orig = path.join(dir, `${id}.orig`);
+  fs.writeFileSync(origTmp, buf);
+  fs.renameSync(origTmp, orig);
+  const metaTmp = path.join(dir, `${id}.json.tmp`);
+  const meta = path.join(dir, `${id}.json`);
+  fs.writeFileSync(
+    metaTmp,
+    JSON.stringify(
+      // ★ DS-1C V-01：`expect_sha` 先留空；写入变异后由 `journalExpect()` 原子补上。
+      //   为什么必须有它：只凭"原文 sha"恢复，会把**崩溃后别人基于现场做的新工作**当成自己的变异覆盖掉。
+      { file: rel, sha: sha(buf), expect_sha: null, atimeMs: st.atimeMs, mtimeMs: st.mtimeMs },
+      null,
+      1,
+    ),
+    'utf8',
+  );
+  fs.renameSync(metaTmp, meta); // ★ 提交点：这一步之前崩 ⇒ 只有孤儿 .orig，不会有人按它写回
+  return id;
+}
+
+/**
+ * 写入变异**之后**登记"预期变异态"的指纹（DS-1C V-01）。
+ *
+ * ★ 恢复矩阵（唯一判据，住 `journalRecover`）：当前盘面 == 原文 ⇒ 已恢复态；== 预期变异态 ⇒ 允许还原；
+ *   两者都不等 ⇒ **conflict，不写**；缺 expect_sha 且当前不是原文 ⇒ **不可判，不写**。
+ */
+export function journalExpect(root, abs, mutatedSha) {
+  const dir = journalDir(root);
+  if (!fs.existsSync(dir)) throw new Error(`journalExpect：日志目录不存在（${dir}）⇒ 登记顺序错`);
+  const rel = journalRelOf(root, abs);
+  let hit = null;
+  for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+    let j = null;
+    try {
+      j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    } catch {
+      continue;
+    }
+    if (j && j.file === rel) {
+      hit = { f, j };
+      break;
+    }
+  }
+  if (!hit) throw new Error(`journalExpect：找不到 ${rel} 的登记（先 journalBegin）`);
+  const meta = path.join(dir, hit.f);
+  const tmp = `${meta}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ ...hit.j, expect_sha: mutatedSha }, null, 1), 'utf8');
+  fs.renameSync(tmp, meta); // 原子更新：崩在这一步前后，元数据要么旧（null）要么新，不会半截
+  return mutatedSha;
+}
+
+/** 正常还原**之后**销账（按路径，不按内容 —— 内容相同不等于同一个对象） */
+export function journalCommit(root, abs) {
+  try {
+    const dir = journalDir(root);
+    if (!fs.existsSync(dir)) return;
+    const rel = journalRelOf(root, abs);
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.json'))) {
+      let j = null;
+      try {
+        j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      } catch {
+        continue;
+      }
+      if (!j || j.file !== rel) continue;
+      const id = f.slice(0, -'.json'.length);
+      try {
+        fs.unlinkSync(path.join(dir, `${id}.orig`));
+      } catch {
+        /* 已删 */
+      }
+      fs.unlinkSync(path.join(dir, f));
+    }
+    // ★ 目录本身也要收干净：空目录留在 `.agent-io/` 下会被 `manifest:check` 判成"没人认领的条目"（实测撞红）。
+    try {
+      if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+    } catch {
+      /* 非空 / 已删 */
+    }
+  } catch (e) {
+    console.error(`  ✗ 日志销账失败：${e.message}`);
+  }
+}
+
+/**
+ * 启动时的**恢复**（U-02/U-04）：返回 `{restored, failures, orphans}` ——
+ * **任何失败都进 failures**（调用方据此拒绝开始新测量），失败日志**保留**供诊断。
+ * ★ 顺序：先验证（路径安全 → orig 存在 → orig 的 sha == 元数据 sha）**再**写盘；
+ *   任一不满足就一条也不写（宁可不写，也不拿可疑原文覆盖现场）。
+ */
+/** 销掉一条登记（原文 + 元数据）—— "已恢复态"与"恢复写入后"共用 */
+function commitEntry(dir, id, metaFile) {
+  try {
+    fs.unlinkSync(path.join(dir, `${id}.orig`));
+  } catch {
+    /* 已删 */
+  }
+  try {
+    fs.unlinkSync(path.join(dir, metaFile));
+  } catch {
+    /* 已删 */
+  }
+}
+
+/**
+ * 启动时的**恢复**（U-02/U-04 + DS-1C V-01）：返回
+ * `{restored, conflicts, indeterminate, failures, orphans}` —— **任何一项非空都不算"无残留"**。
+ * ★ 顺序：先验证（路径安全 → orig 存在 → orig 的 sha == 元数据 sha）→ 再比对**当前盘面** → 最后才写盘；
+ *   冲突/不可判一律不写、保留日志（现场证据），由调用方拒绝开始新测量。
+ */
+export function journalRecover(root, log = (m) => console.error(m)) {
+  const dir = journalDir(root);
+  /** ★ DS-1C V-01：`conflicts`（盘面被改过）与 `indeterminate`（缺预期指纹、判不了）单列 —— 都是 fail-closed。 */
+  const out = { restored: [], conflicts: [], indeterminate: [], failures: [], orphans: [] };
+  if (!fs.existsSync(dir)) return out;
+  const list = fs.readdirSync(dir);
+  for (const f of list.filter((x) => x.endsWith('.json')).sort()) {
+    const id = f.slice(0, -'.json'.length);
+    let rel = '';
+    try {
+      const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      rel = String(j?.file ?? '');
+      // ① 路径安全（绝对路径 / 盘符 / .. 逃逸 / 空）
+      if (!rel || path.isAbsolute(rel) || rel.split('/').includes('..') || /^[A-Za-z]:/.test(rel)) {
+        throw new Error(`路径越界（${rel || '(空)'}）⇒ 拒绝恢复`);
+      }
+      // ② 原文必须在
+      const origPath = path.join(dir, `${id}.orig`);
+      if (!fs.existsSync(origPath)) throw new Error('缺 .orig（原文不在）⇒ 拒绝写回');
+      // ③ 原文必须与元数据自洽（防篡改/防张冠李戴）
+      const orig = fs.readFileSync(origPath);
+      const got = sha(orig);
+      if (got !== j.sha) throw new Error(`.orig 的 sha 与元数据不符（${got} ≠ ${j.sha}）⇒ 拒绝写回`);
+
+      // ★ V-01：**先看当前盘面**，再决定能不能写
+      const abs = path.join(root, rel);
+      const current = fs.existsSync(abs) ? sha(fs.readFileSync(abs)) : null;
+      if (current === j.sha) {
+        // 已经是恢复态（可能别人手工恢复过）⇒ 只销账，一个字节都不写
+        out.restored.push(rel);
+        commitEntry(dir, id, f);
+        continue;
+      }
+      if (!j.expect_sha) {
+        // 不可判：登记了原文，但没记下"本 Attempt 写到什么状态"⇒ 不许猜
+        out.indeterminate.push({
+          file: rel,
+          why: '日志缺 expect_sha（崩在"登记原文"与"记录变异态"之间）且当前既非原文也非已知变异态 ⇒ 不猜、不写',
+        });
+        log(`  ? 不可判：${rel}（缺 expect_sha，当前 ${String(current).slice(0, 12)}）`);
+        continue;
+      }
+      if (current !== j.expect_sha) {
+        // ★ 冲突：当前盘面既不是原文、也不是本 Attempt 的变异 ⇒ 有人基于现场做了新工作，绝不覆盖
+        out.conflicts.push({
+          file: rel,
+          why: `当前盘面 ${String(current).slice(0, 12)} 既非原文（${String(j.sha).slice(0, 12)}）也非本 Attempt 的变异态（${String(j.expect_sha).slice(0, 12)}）⇒ 保留现场，不覆盖`,
+        });
+        log(`  ✗ 冲突：${rel} —— 当前内容不是本次变异的结果，拒绝覆盖`);
+        continue;
+      }
+      // ④ 校验全过才写盘
+      fs.writeFileSync(abs, orig);
+      if (j.atimeMs) fs.utimesSync(abs, j.atimeMs / 1000, j.mtimeMs / 1000);
+      const now = sha(fs.readFileSync(abs));
+      if (now !== j.sha) throw new Error(`恢复后 sha256 不一致（${now} ≠ ${j.sha}）`);
+      out.restored.push(rel);
+      commitEntry(dir, id, f);
+    } catch (e) {
+      log(`  ✗ 恢复失败：${f} —— ${e.message}`);
+      out.failures.push({ file: rel || f, why: e.message });
+    }
+  }
+  // ★ U-04：孤儿（.orig/.tmp 没有对应元数据）必须显式报出，不许静默留着
+  const left = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
+  const metaIds = new Set(left.filter((x) => x.endsWith('.json')).map((x) => x.slice(0, -'.json'.length)));
+  for (const o of left.filter((x) => x.endsWith('.orig') || x.endsWith('.tmp'))) {
+    const id = o.replace(/\.(orig|json)(\.tmp)?$/, '').replace(/\.tmp$/, '');
+    if (o.endsWith('.tmp') || !metaIds.has(id)) out.orphans.push(o);
+  }
+  if (out.failures.length === 0 && out.orphans.length === 0 && out.conflicts.length === 0 && out.indeterminate.length === 0) {
+    try {
+      if (fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+    } catch {
+      /* 非空 / 已删 */
+    }
+  }
+  if (out.restored.length > 0) {
+    log(
+      `⚠ 上一轮 mutate **没有正常收尾**：已按崩溃日志恢复 ${out.restored.length} 个文件（字节 + atime/mtime）：\n` +
+        out.restored.map((r) => `    · ${r}`).join('\n') +
+        '\n  ★ 为什么会有这一条：硬杀（SIGKILL / TerminateProcess）不给进程任何回调机会 ⇒ finally 与 process hooks 都跑不到。',
+    );
+  }
+  if (out.failures.length > 0) {
+    log(
+      `✗ **恢复未完成**：${out.failures.length} 条失败（日志已保留，供诊断/人工恢复）：\n` +
+        out.failures.map((f) => `    · ${f.file} —— ${f.why}`).join('\n'),
+    );
+  }
+  if (out.orphans.length > 0) log(`⚠ 孤儿日志文件（无元数据/临时残留）：${out.orphans.join(', ')}`);
+  return out;
+}
+
+/**
+ * 启动时的**恢复**：把日志里登记的原文写回，并还原 atime/mtime。
+ * ★ DS-1R4：旧版（内容 sha 当身份、失败只 log 然后继续）已被上面的 U-01/U-02/U-04 版本取代。
+ */
 function restoreAll(reason) {
   for (const [abs, rec] of ACTIVE) {
     try {
@@ -68,6 +337,7 @@ function restoreAll(reason) {
       if (rec.atimeMs) fs.utimesSync(abs, rec.atimeMs / 1000, rec.mtimeMs / 1000);
       const now = sha(fs.readFileSync(abs));
       if (now !== rec.sha) console.error(`  ✗ 还原后 sha256 不一致：${abs}（${reason}）`);
+      else if (JOURNAL_ROOT) journalCommit(JOURNAL_ROOT, abs);
     } catch (e) {
       console.error(`  ✗ 还原失败：${abs} —— ${e.message}（${reason}）`);
     }
@@ -862,7 +1132,26 @@ export async function runMutate(feature, root = process.cwd(), opts = {}) {
   // 也就不需要重试。★ 重试只会把假红藏起来，不会消掉竞态。
   const unlock = acquireLock(ROOT);
   installHooks();
+  JOURNAL_ROOT = ROOT;
   try {
+    // ★ U-02：**先恢复再看树**，且恢复失败一律不许开始测量（锁仍由本层的 finally 释放）。
+    const rec = journalRecover(ROOT);
+    if (rec.failures.length > 0 || rec.orphans.length > 0 || rec.conflicts.length > 0 || rec.indeterminate.length > 0) {
+      throw new Error(
+        `崩溃日志**恢复未完成**（conflicts ${rec.conflicts.length} / indeterminate ${rec.indeterminate.length} / ` +
+          `failures ${rec.failures.length} / orphans ${rec.orphans.length}）` +
+          ` ⇒ 拒绝开始新的变异测量：现在这棵树的状态不可知。\n` +
+          `  · 已恢复：${rec.restored.join(', ') || '(无)'}\n` +
+          `  · 冲突（盘面被别人改过，**未覆盖**）：${rec.conflicts.map((c) => `${c.file}（${c.why}）`).join('; ') || '(无)'}\n` +
+          `  · 不可判：${rec.indeterminate.map((c) => `${c.file}（${c.why}）`).join('; ') || '(无)'}\n` +
+          `  · 未恢复：${rec.failures.map((f) => `${f.file}（${f.why}）`).join('; ') || '(无)'}\n` +
+          `  · 孤儿：${rec.orphans.join(', ') || '(无)'}\n` +
+          `★ 处置：按日志人工核对/还原（日志**不会被自动删**），确认树干净后再重跑。`,
+      );
+    }
+    if (rec.restored.length > 0) {
+      console.error(`★ 上一轮遗留 ${rec.restored.length} 个变异已恢复，继续本轮测量。`);
+    }
     return await runMutateLocked(ROOT, features, distEntry, opts);
   } finally {
     restoreAll('finally');
@@ -890,8 +1179,7 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
       ACTIVE.set(abs, { buf, sha: sha(buf), atimeMs: st.atimeMs, mtimeMs: st.mtimeMs });
     }
     const rec = ACTIVE.get(abs);
-    if (rec.buf.toString('utf8') !== p.before) {
-      // ★ 2026-11-02：这条**不再是"另一次 mutate 的重叠"**（本进程先取锁再读输入，重叠的那个在取锁时就被拒）。
+    if (rec.buf.toString('utf8') !== p.before) {      // ★ 2026-11-02：这条**不再是"另一次 mutate 的重叠"**（本进程先取锁再读输入，重叠的那个在取锁时就被拒）。
       //   能走到这里只剩一种解释：**有人在测量窗口里改了源码**（编辑器 / 另一个 agent 的 write）。
       //   ⇒ 文案要指出两边的 sha256（可复核，不猜），处置是"先查它在改什么"，**不是"重跑一次"**。
       throw new Error(
@@ -904,7 +1192,11 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
           `★ 怎么办：先看它改了什么（\`git diff -- ${plan_.file}\`），确认后再重跑；**别把这条当成偶发**。`,
       );
     }
+    // ★ T-07：**落盘登记**（在写文件之前）—— 硬杀之后靠它恢复
+    journalBegin(ROOT, abs, rec.buf, { atimeMs: rec.atimeMs, mtimeMs: rec.mtimeMs });
     fs.writeFileSync(abs, p.after, 'utf8');
+    // ★ DS-1C V-01：**写完立刻登记"预期变异态"** —— 恢复时靠它区分"我的变异"与"别人后来的新工作"。
+    journalExpect(ROOT, abs, sha(Buffer.from(p.after, 'utf8')));
     if (fs.readFileSync(abs, 'utf8') !== p.after) {
       throw new Error(`写入未生效：${plan_.file}（变异没落盘 ⇒ 本次读数无效）`);
     }
@@ -923,6 +1215,7 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
         throw new Error(`★ 还原失败：${plan_.file} 的 sha256 与原文不一致（${now} ≠ ${rec.sha}）—— 已停机，别再跑`);
       }
       ACTIVE.delete(abs);
+      journalCommit(ROOT, abs); // ★ T-07：正常还原后销账
       if (!restored.includes(plan_.file)) restored.push(plan_.file);
     }
   };

@@ -19,15 +19,32 @@
 
 | 路径 | 内容 | 权威/派生 |
 |---|---|---|
-| `.agent-io/design/*.dsl.json` | 设计意图、决策、判据、节点和计划 | 设计侧权威；经 `edit_dsl` / `design_line` 写 |
+| `.agent-io/design/*.dsl.json` | 设计意图、决策、判据、节点（含**节点卡** `geometry.nodes[].task`）和计划 | 设计侧权威；经 `edit_dsl` / `design_line` 写 |
 | `.agent-io/cache.db` | 当前源码的符号、导入、调用与事实索引 | 可重建派生物；过期必须显式标记 |
-| `.agent-io/tasks.db` | 任务卡、台账当前行、事件、证据和审阅队列 | 不可随意重建的审计数据；经既有写端变更 |
+| `.agent-io/tasks.db` | `live_cards`（**只有 todo 卡**）、`task_history`（已了结卡）、`plans`（重写计划）、`ledger_*`（台账行、事件、证据、审阅队列） | 不可随意重建的意图与审计数据；经既有写端变更 |
 | `.agent-io/tasks.jsonl` | 跨机器移交卡与事件的文本载体 | 从任务存储投影；不手写成第二权威 |
 | `design-db/` | 设计要求的逐文件投影 | 由 `design:gen-db` 重建；不作手写输入 |
 | `docs/todo.md` | 当前任务的人读视图 | 由 `ledger:render` 生成；不手改 |
 | `docs/FACTS.json` | 对外展示用的事实摘要 | 由 `gen-facts` 生成；不写死当前读数 |
 
-## 3. 写入边界
+## 3. 任务卡的载体边界
+
+任务数据不是单一形状地全部落 `tasks.db`。当前口径（每一句都对应现有读端/写端）：
+
+| 对象 | 当前载体 | 读端 |
+|---|---|---|
+| **节点卡**（`geometry.nodes[].task`） | 设计册，**唯一载体**；`done` / `void` 也留在册里，从不迁出 | `getDSL` / `listPool` / `cardLivesOf` |
+| **todo 卡**（在册任务卡） | `tasks.db#live_cards`，**唯一载体**；册上不再存 `todos` | 读册时由 `hydrateTodosFromTasks` 补回内存 `todos[]`（以库为准） |
+| **已了结的 todo 卡** | `tasks.db#task_history`（`todo.move_to_history` 单向门） | `cardLivesOf` / 历史查询 |
+
+1. **`live_cards` 只反射 todo 卡**：`syncTasksFromDsl` 只消费 `dsl.todos`，从不收纳 `geometry.nodes[].task` ⇒ 节点卡在 `live_cards` 里查不到是**构造如此**，不是"过期投影"，也不构成漂移。
+2. **落册不写卡**：`saveDSL` / `saveDesignSheet` 落盘前过 `withoutTodos`；内存里的 `todos` 由读册端从 `live_cards` 补回。所以讨论"册上有、库里没有"时必须先说清是哪一类卡。
+3. **全部卡的下落只问 `cardLivesOf`**（`rewrite_plan.ts`）：口径 `live_cards ∪ task_history ∪ 设计册 geometry.nodes[].task`（`PLAN_CARD_BASIS`），三态 `live` / `closed` / `gone`；`sheets_ok=false` 时 `gone` 这一档不可信。不要自己拼这两张表的 SQL —— 那会把"只活在册上的节点卡"判成找不到。
+4. **池 / 待办 / 总览走 `listPool`**（内部 `getDSL`）：节点卡与 todo 卡**同一次枚举**，按 `todosForNode` 去重，已归档卡单列 `archived`。
+5. **不要用 `live_cards` 单表清点全部卡或判断卡是否 alive**。`listLiveCards` 的消费者只有两处：`tasks.jsonl` 镜像导出、读册补 `todos`。
+6. `live_cards` 的 `updated_at` 旧不单独构成过期证据：todo 卡没变就不该有新写入。
+
+## 4. 写入边界
 
 1. 同一事实只有一个可写权威；其他位置只能是可重建投影或不可变历史。
 2. 源码写工具走任务卡、计划、冲突与证据闸；普通 shell/编辑器不在该拦截面内。
@@ -35,7 +52,7 @@
 4. 任务卡、设计册和台账事件不是同一对象；不得因为名字相近就互相覆盖。
 5. 新目录或新存储先说明真实消费者、可重建性和迁移路径；没有消费者不进入主干。
 
-## 4. 多机与路径
+## 5. 多机与路径
 
 - 不把某台机器的用户目录、工作树或 Tailscale 地址写成共享设计事实。
 - 新机器先运行 `npm run env:check`，再登记当前项目根。
