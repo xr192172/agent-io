@@ -591,6 +591,57 @@ const GATES = [
       '★ 三态与其余门一致：0 无未登记违规 / 1 红（逐条点名 窗口·文件·符号·改前→改后·情形·修法）/ 2 判不了（dist·cache.db·git 缺）—— 不折成 0。',
   },
 
+  // ★★★ 2026-11-23（批 3 · G4 · M6 最高优先级）：**索引可信度进门**。
+  //   ★ 此前 `index_integrity` 只是 MCP 工具 / 手动读数，不在总门里：陈旧断言（resolved 引用已不在索引）、
+  //     保鲜范围内未同步、幽灵行、schema 过期、变更集读不了，都不会让总门响。本门把三态 verdict 接进来。
+  //   ★ 判定核只在 `src/application/meta/integrity/index_integrity.ts#indexIntegrity`，本脚本不重写；
+  //     只读 `refresh:false`，不顺手保鲜。三态：trusted=0 / untrusted=1（blocker 逐条点名）/ unknown=2（判不了不折绿）。
+  {
+    name: '索引可信度',
+    kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
+    cmd: 'node',
+    args: ['scripts/index-integrity-gate.mjs'],
+    why:
+      '★ 判据 = `index_integrity` 三态 verdict：trusted 才过门；untrusted（陈旧断言 / 范围内未同步 / 幽灵行 / schema 过期 / 变更集不可读）红并逐条点名；unknown（无索引 / 读不到）判不了退出 2，不折成 0。' +
+      '★ 它挡的事故：索引陈旧时 find_references / impact 静默漏报，而总门此前看不到这件事。' +
+      '★ 只读：不触发 refresh 保鲜；dist 缺失退出 2。',
+  },
+
+  // ★★★ 2026-11-23（批 3 · G3）：**tasks.db ↔ tasks.jsonl 镜像对账**。
+  //   ★ 此前镜像导出失败只告警不影响主写，镜像静默落后 / 缺行 / 多行 / 字段漂移时没有机器发现。
+  //     本门逐行对账库两侧（live_cards ∪ task_history）与 `.agent-io/tasks.jsonl` 投影，分叉即红。
+  //   ★ 判定核只在 `src/application/meta/reconcile/tasks_mirror.ts#reconcileTasksMirror`；只读，不建库不导出。
+  {
+    name: '任务镜像对账',
+    kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
+    cmd: 'node',
+    args: ['scripts/tasks-mirror-gate.mjs'],
+    why:
+      '★ 键：活卡 feature⟂id；历史 feature⟂id⟂moved_at。缺行 / 多行 / 字段不符 / 坏行 / 未知 kind 逐条点名；库读端 unreachable ⇒ 判不了退出 2。' +
+      '★ 它挡的事故：镜像导出静默失败或落后，移交载体（jsonl）与权威库（db）分叉而无人发现。' +
+      '★ 边界：只对账一致，不判卡该不该在；card_json 不进镜像，历史行不比卡体。',
+  },
+
+  // ★★★ 2026-11-23（批 3 · C6 · M6 一期：点名优先于强制）：**卡 ↔ 册结案投影点名**（报告区）。
+  //   ★ 列出册上自报 done/void、但库两侧（live_cards ∪ task_history）都查不到下落的册单侧结案投影。
+  //   ★ 一期只做只读点名可见化，不挂强制红门、不建基线棘轮；按设计 done/void 的 task 卡留在册里从不迁出，
+  //     册单侧投影在存量里是一大类，是否收窄子集 / 二期转强制门留 Main 裁。判下落的唯一权威仍是 cardLivesOf。
+  {
+    name: '结案投影点名',
+    kind: 'report',
+    consumer: 'npm run verify',
+    tier: 'A',
+    cmd: 'node',
+    args: ['scripts/card-sheet-projection-gate.mjs'],
+    why:
+      '★ 点名 `cardLivesOf` 三来源中仅册单侧凭据的结案投影；读册失败退出 2（报告不可信），存量不判红。' +
+      '★ 它挡的事故：册上结案投影对应的卡早已从库两侧消失，而没有任何读数把这个落差摆出来。',
+  },
+
 ];
 
 const has = (b) => { try { return spawnSync(b, ['version'], { encoding: 'utf8', shell: process.platform === 'win32' }).status === 0; } catch { return false; } };

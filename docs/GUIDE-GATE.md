@@ -65,6 +65,9 @@
 | 12 | 结构意图 | 文件与目录的结构归属 |
 | 13 | 无卡写账 | 写盘是否有责任卡或明确例外 |
 | 14 | 派生条目要求权 | 派生事实是否越过设计意图 |
+| 15 | 索引可信度 | 索引 verdict 是否 trusted（陈旧断言 / 未同步 / 幽灵行） |
+| 16 | 任务镜像对账 | tasks.db 权威行与 tasks.jsonl 投影是否一致 |
+| 17 | 结案投影点名 | 册单侧结案投影点名（报告区，一期不判红） |
 
 - `npm run verify:changed` 是日常入口，只验本次改动及影响闭包。
 - `npm run verify` 是发布前/公共底座变更/用户明确要求时的总门；一次跑完全部门，语义不变。
@@ -114,7 +117,7 @@ edit_dsl 写判据 → design:gen-db → design_line plan → edit_code
 
 码数合计 73。★ 本表与源码逐族相等是**判据**（漂了就红），不是读数誊抄。
 
-<!-- DOC:GEN:guide.gates:BEGIN source=guide.gates@0fbed213f3744fec cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=a4f69603d93b80e2 -->
+<!-- DOC:GEN:guide.gates:BEGIN source=guide.gates@9a17faf7171da909 cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=bf4a075236a2ac52 -->
 | 门名 | 来源 |
 |---|---|
 | ts 类型 | `scripts/verify.mjs#GATES` |
@@ -131,4 +134,7 @@ edit_dsl 写判据 → design:gen-db → design_line plan → edit_code
 | 结构意图 | `scripts/verify.mjs#GATES` |
 | 无卡写账 | `scripts/verify.mjs#GATES` |
 | 派生条目要求权 | `scripts/verify.mjs#GATES` |
-<!-- DOC:GEN:guide.gates:END body_sha256=a4f69603d93b80e2 -->
+| 索引可信度 | `scripts/verify.mjs#GATES` |
+| 任务镜像对账 | `scripts/verify.mjs#GATES` |
+| 结案投影点名 | `scripts/verify.mjs#GATES` |
+<!-- DOC:GEN:guide.gates:END body_sha256=bf4a075236a2ac52 -->

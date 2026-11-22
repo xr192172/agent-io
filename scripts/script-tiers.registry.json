@@ -57,6 +57,18 @@
     "派生条目要求权": {
       "verifies": "被改动的派生条目（notes: from:cache.db@*）有没有借「把册改回源码当前值」行使要求权。",
       "false_green": "分母 0（这次没有派生条目被改）时退出 0 —— 那是「没东西可判」，不是「判过且通过」；读数里已不印 0/0（最会骗人的那个数）。"
+    },
+    "索引可信度": {
+      "verifies": "index_integrity 三态 verdict 现算（refresh:false 只读）：trusted 才过门；untrusted 带 blocker/幽灵行逐条点名；unknown 判不了。",
+      "false_green": "warn/info（范围外未同步、测试未索引、杂散目录、绝对路径字面量）不计 verdict；unknown（无索引/读不到）退出 2 不折绿；本门不触发保鲜，索引陈旧到 blocker 档才红。"
+    },
+    "任务镜像对账": {
+      "verifies": "tasks.db 权威行（live_cards ∪ task_history）逐行对账 .agent-io/tasks.jsonl 投影：缺行/多行/字段不符/坏行/未知 kind 逐条点名。",
+      "false_green": "库读端 unreachable 退出 2 不折绿；no-db/no-table 按真无行处理（镜像非空才算多行分叉）；card_json 不进镜像，历史行不比卡体；本门只读不触发导出。"
+    },
+    "结案投影点名": {
+      "verifies": "cardLivesOf 三来源合一后，列出仅册单侧凭据的结案（done/void）投影（库两侧 live_cards/task_history 均无下落）。",
+      "false_green": "一期仅点名可见化、不判红：按设计 done/void 的 task 卡留在册里从不迁出，册单侧投影是合法存量大类 ⇒ 本门通过 ≠ 没有落差；是否收窄子集/二期转强制门留 Main 裁。读册失败退出 2。"
     }
   },
   "declarations": {
