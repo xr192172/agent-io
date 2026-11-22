@@ -96,6 +96,10 @@ import { recordWriteLog, readWriteLog, writeLogRowOf, type WriteLogKind } from '
 // ★ 回滚通道也要入账，而它只拿得到绝对路径 ⇒ 项目根问**唯一那把尺**（不在这里自己往上找目录）
 import { resolveProjectRoot } from '../infrastructure/analysis/project_root/index.js';
 import { emitTelemetry, TELEMETRY_STAGES } from './telemetry.js';
+// ★★★ P2 执行事件流：写闸放行后的真实落盘边界记 `source_written` / `git_observed`（审计旁路；追加失败只进回执 warnings，非持久；持久对账以 write_log 为准）。
+import { ensureRunStarted, appendRunEvent } from './observe/runtime/run_events.js';
+import { gitSnapshot } from '../infrastructure/git.js';
+import { resolveSessionId } from '../domain/actor_spec.js';
 
 /**
  * 一次写入的**上下文**（身份 + 授权 + 标签）。
@@ -383,6 +387,65 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
   };
 
   /**
+   * ★★★ P2：写边界执行事件。按卡分组记 `source_written`（引用既有 write_log / 落盘后指纹，不复制写账），
+   *   并在收尾边界附 HEAD / 脏树快照。无卡写（unmapped）只进 write_log，不伪造任务上下文。
+   *   记不上 ⇒ 推进 `gate.warnings`（非持久回执），不阻断已完成的写；「执行发生但事件缺失」由恢复侧从 write_log 反查，不把这条警告当持久账。
+   */
+  const recordSourceWrittenEvents = (): void => {
+    const actor = resolveActor(ctx.actor);
+    const leaseGeneration = typeof ctx.leaseGeneration === 'number' ? ctx.leaseGeneration : null;
+    const session = resolveSessionId();
+    const groups = new Map<
+      string,
+      { feature: string; nodeId: string; files: Array<{ rel: string; post_write_sha: string | null; gate_branch: string | null }> }
+    >();
+    for (const rel of written) {
+      const card = gate.card_of?.[rel] ?? null;
+      if (!card) continue;
+      const key = `${card.feature}/${card.nodeId}`;
+      const g = groups.get(key) ?? { feature: card.feature, nodeId: card.nodeId, files: [] };
+      const sha = knownSha.get(rel);
+      g.files.push({
+        rel,
+        post_write_sha: sha && 'sha' in sha ? sha.sha : null,
+        gate_branch: gate.branch_of?.[rel] ?? null,
+      });
+      groups.set(key, g);
+    }
+    const snapshot = gitSnapshot(root);
+    for (const g of groups.values()) {
+      const task = { feature: g.feature, node_id: g.nodeId };
+      const base = { task, owner: actor, leaseGeneration, actor, via: 'source_writer', session };
+      const started = ensureRunStarted(root, base);
+      if (!started.ok) {
+        gate.warnings.push(`⚠️ 执行事件未记（run_events · run_started · ${g.nodeId}）：${started.error}`);
+      }
+      // ★ F7：幂等键纳入「文件清单 + 写后内容指纹」：同次重放（同文件同 sha）幂等；
+      //   同任务后续合法写（新文件 / 新 sha）⇒ 新事实可追加，不被旧事件吞掉。
+      const fileFingerprint = [...g.files]
+        .sort((a, b) => a.rel.localeCompare(b.rel))
+        .map((f) => `${f.rel}:${f.post_write_sha ?? 'absent'}`)
+        .join(',');
+      const ev = appendRunEvent(root, {
+        ...base,
+        kind: 'source_written',
+        dedupeKey: `source:${g.nodeId}:${fileFingerprint}`,
+        body: {
+          files: g.files,
+          write_log_ref: {
+            table: 'write_log',
+            card_feature: g.feature,
+            card_id: g.nodeId,
+            note: '逐文件写账见 write_log 同 at/行；本事件不复制写账内容',
+          },
+          git_observed: { stage: 'source_written', snapshot },
+        },
+      });
+      if (!ev.ok) gate.warnings.push(`⚠️ 执行事件未记（run_events · source_written · ${g.nodeId}）：${ev.error}`);
+    }
+  };
+
+  /**
    * ★★★ P0-A2：**落盘前的 pre-hash 比对**（5 个动词 + `copy`/`move` 的两端全走 `assertDeclared` ⇒ 全走它）。
    *
    * 判据只有一条：`盘上此刻的 sha === 打开时（或本批上一次写完时）的 sha`。
@@ -613,6 +676,10 @@ export function openSourceWrite(rootArg: string, files: readonly string[], ctx: 
       for (const line of ownWriteRefreshLines(refreshAfterOwnWrite(root, resolveActor(ctx.actor), written))) {
         if (!gate.warnings.includes(line)) gate.warnings.push(line);
       }
+      // ★★★ P2（执行事件流 · 写边界）：成功落盘后按卡分组记 `source_written`，引用既有 write_log / 文件指纹，
+      //   **不复制写账内容**；收尾边界附一份当时 HEAD / 脏树快照（`git_observed` 合进同一条事件体）。
+      //   审计旁路：记不上 ⇒ 推进 gate.warnings（非持久回执）；持久缺口由恢复侧对 write_log 反查，不阻断已完成的写。
+      recordSourceWrittenEvents();
       // ★★ 开发遥测（第⑬项队列）：落盘是故事线的执行帧——文件清单进 data（GUI 用）
       emitTelemetry(root, TELEMETRY_STAGES.write, {
         text: `正在落盘 ${written.length} 个文件：${written.slice(0, 3).join(', ')}${written.length > 3 ? ' 等' : ''}`,

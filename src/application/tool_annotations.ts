@@ -27,6 +27,7 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   observe: { readOnlyHint: false, openWorldHint: true }, // action=instrument 会改用户源码（插桩）
   recommend_observe_points: { readOnlyHint: true }, // 写 observe-points.json（工具自有状态，非用户环境）
   run_tests: { readOnlyHint: false, openWorldHint: true }, // 跑测试会执行用户代码（副作用不可控）
+  recover_run: { readOnlyHint: true, openWorldHint: true }, // ★ P2 只读恢复：读任务/事件/证据/Git 现场，不写权、不 claim
   translate: { readOnlyHint: false }, // 单文件模式可写 out 文件
   go_originals: { readOnlyHint: true },
   cross_repo_symbol_index: { readOnlyHint: true },

@@ -149,11 +149,11 @@ function spyDef(name: string, spy: () => Promise<{ text: string }>) {
 // ────────────────────────────────────────────────────────────────────────
 // R7 · 登记完整性：41 个工具效果派生自 TOOL_DEFS；动作级拆分与校准表一致
 // ────────────────────────────────────────────────────────────────────────
-test('R7 登记完整性：41 工具全有效果；7 safe-read / 34 may-write；动作级只读/写拆分在位', () => {
-  assert.equal(TOOL_DEFS.length, 41, '工具总数必须仍是 41');
+test('R7 登记完整性：42 工具全有效果；8 safe-read / 34 may-write；动作级只读/写拆分在位', () => {
+  assert.equal(TOOL_DEFS.length, 42, '工具总数必须仍是 42（P2 +1 只读恢复工具 recover_run）');
   const safe = TOOL_DEFS.filter((d) => actionEffectOf(d.name)?.effect === 'safe-read');
   const may = TOOL_DEFS.filter((d) => actionEffectOf(d.name)?.effect === 'may-write');
-  assert.equal(safe.length, 7, `safe-read 实得 ${safe.length}`);
+  assert.equal(safe.length, 8, `safe-read 实得 ${safe.length}`);
   assert.equal(may.length, 34, `may-write 实得 ${may.length}`);
 
   const safeNames = safe.map((d) => d.name).sort();
@@ -164,6 +164,7 @@ test('R7 登记完整性：41 工具全有效果；7 safe-read / 34 may-write；
     'cross_repo_symbol_index',
     'diff_views',
     'go_originals',
+    'recover_run',
     'structure_gap',
   ]);
 

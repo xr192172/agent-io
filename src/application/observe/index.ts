@@ -380,6 +380,10 @@ export const OBSERVE_TOOLS: ActionToolDef[] = [
       project_dir: z.string().optional().describe('目标项目根（默认 cwd）'),
       filter: z.string().optional().describe('测试文件/名称过滤（如 tests/tools/find_references.test.ts），经 npm test -- 透传'),
       timeout_ms: z.number().optional().describe('超时毫秒（默认 120000）'),
+      // ★ P2 执行上下文（可选；只做审计分桶与事件挂接，授权仍由既有写闸/租约判）。
+      feature: z.string().optional().describe('[P2] 本次验证挂的任务 feature（给了才记 Attempt 事件；缺省 = 通用 runner）'),
+      node_id: z.string().optional().describe('[P2] 本次验证挂的任务节点 id（与 feature 成对）'),
+      lease_generation: z.number().int().optional().describe('[P2] 调用方持有的租约代际（审计分桶；不据此授写权）'),
     },
     handler: wrapData(async (a) => {
       const { resolveProjectRoot } = await import('../../infrastructure/analysis/project_root/index.js');
@@ -403,6 +407,16 @@ export const OBSERVE_TOOLS: ActionToolDef[] = [
         project_dir: typeof a.project_dir === 'string' && a.project_dir ? a.project_dir : undefined,
         filter: typeof a.filter === 'string' && a.filter ? a.filter : undefined,
         timeoutMs: typeof a.timeout_ms === 'number' ? a.timeout_ms : undefined,
+        execution:
+          typeof a.feature === 'string' && a.feature && typeof a.node_id === 'string' && a.node_id
+            ? {
+                feature: a.feature,
+                node_id: a.node_id,
+                actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+                lease_generation: typeof a.lease_generation === 'number' ? a.lease_generation : undefined,
+                via: 'run_tests',
+              }
+            : undefined,
       });
       if (!r.ok) {
         return { message: `无法运行测试：${r.error || '未知错误'}`, data: r };
@@ -417,6 +431,50 @@ export const OBSERVE_TOOLS: ActionToolDef[] = [
       if (r.stderrTail.trim()) parts.push('—— stderr（仅尾部）——', r.stderrTail.trimEnd());
       if (r.outputTruncated) parts.push('（输出过长，已截断，仅保留尾部）');
       return { message: parts.join('\n'), data: r };
+    }),
+  },
+
+  {
+    name: 'recover_run',
+    writes: false,
+    effect: declareEffect('safe-read', ['source', 'design', 'derived-state'], {
+      note: 'P2 只读恢复：组合 Task/Run/Attempt 事件流、既有证据新鲜度与实时 Git 快照；不 claim/takeover/renew，grants=none，建议不持久化。',
+    }),
+    title: 'Recover task run state from events, evidence and live git facts (read-only)',
+    description:
+      '★ P2 引擎原生可恢复执行的**只读**恢复入口：不依赖聊天上下文，现场组合任务（目标/owner/代际/租约）、' +
+      'Run/Attempt 事件流 fold 出的 checkpoint、既有证据与新鲜度、实时 HEAD/脏树、最近 runner 验证与缺口。' +
+      '输出当前目标、活动任务/Run、写盘 actor 与租约、实时 HEAD/脏树、最近验证、已中断 Attempt/未对账外部写、' +
+      '可重建 checkpoint 与唯一下一步（next_action，grants=none，不自动写权）。' +
+      '· 进程无可靠探针或 pid 不可证明 ⇒ 活性=unknown，不凭 pid/TTL 伪造 alive/dead；' +
+      '· done/void 只展示历史，不建议自动重启；当前代际已有活跃 Attempt 不重复派工；旧代际标 stale 不重新附着；' +
+      '· 引擎外写标 unreconciled_external_write，不归因 actor；Git 不可读/无基线显式 unknown/gap，不把空集当干净。',
+    inputSchema: {
+      project_dir: z.string().describe('项目根目录（解析到唯一项目根）'),
+      feature: z.string().optional().describe('DSL feature 名（可选；给了 node_id 才精确定位一张卡）'),
+      node_id: z.string().optional().describe('任务节点 id（可选；与 feature 成对）'),
+    },
+    handler: wrapData(async (a) => {
+      const { requireStr } = await import('../plumbing.js');
+      const { recoverRun } = await import('./runtime/recover.js');
+      const project_dir = requireStr(a, 'project_dir');
+      const r = recoverRun({
+        project_dir,
+        feature: typeof a.feature === 'string' && a.feature ? a.feature : undefined,
+        node_id: typeof a.node_id === 'string' && a.node_id ? a.node_id : undefined,
+        actor: typeof a.actor === 'string' && a.actor ? a.actor : undefined,
+      });
+      const lines = [
+        `目标：${r.target.feature ?? '（未指定）'}${r.target.node_id ? ` / ${r.target.node_id}` : ''}${r.target.summary ? ` — ${r.target.summary}` : ''}`,
+        r.task
+          ? `任务：state=${r.task.state} owner=${r.task.owner ?? '—'} 代际=${r.task.lease_generation} 证据=${r.task.evidence_count}（${r.task.evidence_bucket}）`
+          : '任务：权威源取不到（见 gaps）',
+        `下一步：${r.next_action.action} — ${r.next_action.reason}`,
+        `漂移：${r.drift.status}（HEAD=${r.drift.live.head ?? 'unknown'}，dirty=${r.drift.live.dirty}）`,
+      ];
+      if (r.gaps.length) lines.push('缺口/限制：' + r.gaps.join('；'));
+      if (r.next_action.suggestions.length) lines.push('建议：' + r.next_action.suggestions.join('；'));
+      return { message: lines.join('\n'), data: r };
     }),
   },
 
