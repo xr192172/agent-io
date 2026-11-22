@@ -76,6 +76,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectTestFiles } from './lib/test_files.mjs';
@@ -153,7 +154,21 @@ const NO_RUN = argv.includes('--no-run');
 // ★ 2026-10-23：`--no-reuse` = 不用已有效证据（旧行为：命中就判）—— 复核“复用是不是藏了红”时用
 const NO_REUSE = argv.includes('--no-reuse');
 const JSON_OUT = argv.includes('--json');
-const named = argv.filter((a) => !a.startsWith('--'));
+// ★★★ Slice 1：批调用并发度决议：`--jobs N` 旗标 > 环境变量 AGENT_IO_VERIFY_JOBS > 默认 max(1, min(cpus-1, 8))；
+//   非法值响亮判红（判不了 ≠ 没写，不静默回落 1）。
+const JOBS_ARG_IDX = argv.indexOf('--jobs');
+const jobs = (() => {
+  const raw = JOBS_ARG_IDX >= 0 ? argv[JOBS_ARG_IDX + 1] : process.env.AGENT_IO_VERIFY_JOBS;
+  if (raw === undefined || String(raw).trim() === '') return Math.max(1, Math.min((os.cpus()?.length ?? 2) - 1, 8));
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1) {
+    process.stderr.write(`✗ --jobs / AGENT_IO_VERIFY_JOBS 必须是 ≥1 的整数（实际收到 ${JSON.stringify(raw)}）⇒ 拒绝跑（不猜你的意思）\n`);
+    process.exit(1);
+  }
+  return n;
+})();
+const JOBS_FLAG_VAL = JOBS_ARG_IDX >= 0 ? argv[JOBS_ARG_IDX + 1] : undefined;
+const named = argv.filter((a) => !a.startsWith('--') && a !== JOBS_FLAG_VAL);
 
 /** ★ 路径口径只有一处：正斜杠 + 去 `./` + 去根前缀（与 `domain/expectation.ts` 的 `normPath` 同义） */
 const norm = (p) => p.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -982,50 +997,130 @@ if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {
     }
   }
 }
-// ★ 独立 if（**不是** else-if）：见上面「三个执行器是独立 if」那段论证。
-if (!NO_RUN && !isJavaProject) {
-  for (const h of testHits) {
-    // ★★ 第⑬项 Java ②（沙箱实测抓的双跑）：**.java 条目已由上面的委托块处理**（子项目 runner.run
-    //   或 crash 条目）⇒ node 兜底（run-tests.mjs 对 .java 恒失败）**不许再碰它们**——
-    //   修复前双跑：委托块一条 + node 兜底一条（unsupported 假绿）。
-    if (h.file.endsWith('.java')) continue;
-    const t0 = Date.now();
-    let out = '';
-    let rc = 0;
-    try {
-      out = execFileSync(process.execPath, [`${ROOT}/scripts/run-tests.mjs`, '--filter', h.file], {
-        cwd: ROOT,
-        encoding: 'utf8',
-        shell: false,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        maxBuffer: 32 * 1024 * 1024,
-      });
-    } catch (e) {
-      rc = typeof e.status === 'number' ? e.status : -1;
-      out = String(e.stdout ?? '') + String(e.stderr ?? '');
-    }
-    // ★ 计数口径**只有一处**：runner 自己的机读行（不自解析源码、不数 `test(` 的个数）
-    // ★★ 2026-11-05 修：原正则 `/…用例 (\d+) \/ 通过…/` **永远匹配不上** —— `run-tests.mjs` 实际打印的是
-    //   `用例 8（源码声明 8）/ 通过 8`（**全角括号，且 `）` 与 `/` 之间没有空格**）。于是
-    //   `hasSummary` 恒 false ⇒ `fail` 恒 null ⇒ 所有测试落进 `nosummary`，
-    //   红还能靠 `rc!==0` 兜住，但"跑了几条、过了几条"**这个能力整个丢了**（违反本文件自己引的 0.12 带分母）。
-    //   ⇒ `（源码声明 N）` 做成**可选组**，两种形态都认；间隙用 `\s*` 而不是写死一个空格。
-    //   ★ 守它的是 `tests/p0_summary_format_alignment.test.ts`：把 `run-tests.mjs` 的**真格式串**渲染出来喂给本正则。
-    const m = out.match(/测试门：文件 (\d+) \/ 用例 (\d+)(?:（源码声明 \d+）)?\s*\/ 通过 (\d+) \/ 失败 (\d+) \/ 跳过 (\d+)/);
-    const hasSummary = !!m;
-    const fail = hasSummary ? Number(m[4]) : null;
-    testRuns.push({
-      file: h.file,
-      rc,
-      tests: hasSummary ? Number(m[2]) : null,
-      pass: hasSummary ? Number(m[3]) : null,
-      fail,
-      hasSummary,
-      ms: Date.now() - t0,
-      // ★ 没有汇总行 = 文件根本没跑起来 ⇒ `crash`（不许当"跑了没红"）
-      kind: !hasSummary ? (rc !== 0 ? 'crash' : 'nosummary') : fail > 0 || rc !== 0 ? 'red' : 'green',
-      out,
+// ★★★ Slice 1（批调用）：node 测试段 = **一次 runner 批调用**（显式清单 + --jobs + --json），
+//   取代旧的"逐文件 spawn runner（--filter）"循环。Java 两支执行器在上面的独立 if，一字节不动。
+//   jobs 决议：`--jobs N` 旗标 > 环境变量 AGENT_IO_VERIFY_JOBS > 默认 max(1, min(cpus-1, 8))（非法值响亮红，见文件头解析）。
+const nodeHits = testHits.filter((h) => !h.file.endsWith('.java'));
+let batchMs = null;
+let batchReceipt = null;
+const reruns = [];
+
+/** 一次 runner 批调用：显式清单 + 指定 jobs + --json；回执解析失败/缺条目/汇总不一致由调用方 fail-closed 判红 */
+function runNodeBatch(files, jobsN) {
+  const t0 = Date.now();
+  let out = '';
+  let rc = 0;
+  // §4.2 契约：JSON 单一文档只在 stdout；人读文本走 stderr。回执解析只取 stdout，
+  // stderr 仅并入红尾巴 `out` 供归因（避免文本首行与无尾换行的 JSON 文档粘连致解析断裂）。
+  let stdoutText = '';
+  let stderrText = '';
+  const args = [`${ROOT}/scripts/run-tests.mjs`, ...files, '--jobs', String(jobsN), '--json'];
+  try {
+    stdoutText = execFileSync(process.execPath, args, {
+      cwd: ROOT, encoding: 'utf8', shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 * 1024,
     });
+  } catch (e) {
+    rc = typeof e.status === 'number' ? e.status : -1;
+    stdoutText = String(e.stdout ?? '');
+    stderrText = String(e.stderr ?? '');
+  }
+  out = stdoutText + stderrText;
+  let receipt = null;
+  let parseErr = '';
+  const lastLine = stdoutText.trim().split(/\r?\n/).filter((l) => l.trim().startsWith('{')).pop() ?? '';
+  if (lastLine) { try { receipt = JSON.parse(lastLine); } catch (e) { parseErr = String(e?.message ?? e); } }
+  return { rc, batchMs: Date.now() - t0, receipt, out, parseErr };
+}
+
+/** runner 回执条目 → testRuns kind（fail-closed：static-fail→red；crash→crash；ok=false→red；否则 green） */
+function kindFromEntry(ent) {
+  if (!ent) return 'crash';
+  if (ent.kind === 'crash') return 'crash';
+  if (ent.kind === 'static-fail') return 'red';
+  return ent.ok === false ? 'red' : 'green';
+}
+
+if (!NO_RUN && !isJavaProject && nodeHits.length > 0) {
+  const nodeFiles = nodeHits.map((h) => h.file);
+  const first = runNodeBatch(nodeFiles, jobs);
+  batchMs = first.batchMs;
+  batchReceipt = first.receipt;
+
+  const byFile = new Map();
+  let batchParseFail = false;
+  if (first.receipt && Array.isArray(first.receipt.files)) {
+    for (const ent of first.receipt.files) byFile.set(String(ent.rel ?? '').replace(/^tests\//, ''), ent);
+  } else {
+    batchParseFail = true;
+  }
+  // 汇总不一致：summary.files 与选中集条数对不上 ⇒ 判不了，fail-closed 红（新路径不留 nosummary 洞）
+  const summaryMismatch = !!first.receipt && (
+    !first.receipt.summary || typeof first.receipt.summary.files !== 'number' ||
+    first.receipt.summary.files !== nodeFiles.length
+  );
+
+  for (const h of nodeHits) {
+    const rel = h.file;
+    const ent = byFile.get(rel);
+    if (batchParseFail || summaryMismatch || !ent) {
+      testRuns.push({
+        file: rel, rc: first.rc, tests: null, pass: null, fail: null, hasSummary: false,
+        ms: null, batchMs: first.batchMs, kind: 'crash', out: first.out,
+        missingEntry: !ent, summaryMismatch, parseError: batchParseFail ? first.parseErr : undefined,
+      });
+      continue;
+    }
+    testRuns.push({
+      file: rel,
+      rc: ent.status ?? first.rc,
+      tests: ent.tests ?? null,
+      pass: ent.pass ?? null,
+      fail: ent.fail ?? null,
+      hasSummary: ent.tests !== null,
+      ms: typeof ent.ms === 'number' ? ent.ms : null,
+      batchMs: first.batchMs,
+      kind: kindFromEntry(ent),
+      out: ent.out ?? first.out,
+    });
+  }
+
+  // ── 红时串行复跑归因（§4.4；每类至多一次）──────────────────────────────
+  //   A 类：红/崩子集 ⇒ jobs=1 复跑；并行红串行绿 ⇒ 判"干扰"红，不洗绿。
+  //   B 类：注册表污染红（registry.clean=false）⇒ 全集 jobs=1 复跑点名。
+  const firstBad = testRuns.filter((r) => nodeFiles.includes(r.file) && (r.kind === 'red' || r.kind === 'crash'));
+  const polluted = !!(batchReceipt && batchReceipt.registry && batchReceipt.registry.clean === false);
+
+  if (firstBad.length > 0) {
+    const rerun = runNodeBatch(firstBad.map((r) => r.file), 1);
+    reruns.push({ kind: 'red-subset', files: firstBad.map((r) => r.file), batchMs: rerun.batchMs });
+    const rBy = new Map((rerun.receipt?.files ?? []).map((e) => [String(e.rel ?? '').replace(/^tests\//, ''), e]));
+    for (const r of firstBad) {
+      const ent = rBy.get(r.file);
+      const rerunKind = kindFromEntry(ent);
+      const interference = rerunKind === 'green' && (r.kind === 'red' || r.kind === 'crash');
+      r.rerun = {
+        rc: ent?.status ?? rerun.rc, tests: ent?.tests ?? null, pass: ent?.pass ?? null, fail: ent?.fail ?? null,
+        kind: rerunKind, ms: typeof ent?.ms === 'number' ? ent.ms : null, interference,
+      };
+      // 并行红串行绿 ⇒ 干扰/隔离缺陷，保持红，不洗绿
+      if (interference) { r.kind = 'red'; r.interference = true; }
+    }
+  }
+
+  if (polluted) {
+    const rerun = runNodeBatch(nodeFiles, 1);
+    reruns.push({ kind: 'pollution-full', files: nodeFiles.slice(), batchMs: rerun.batchMs });
+    const rBy = new Map((rerun.receipt?.files ?? []).map((e) => [String(e.rel ?? '').replace(/^tests\//, ''), e]));
+    for (const r of testRuns) {
+      if (!nodeFiles.includes(r.file)) continue;
+      const ent = rBy.get(r.file);
+      if (!ent) continue;
+      r.rerun = {
+        ...(r.rerun ?? {}), rc: ent.status, tests: ent.tests, pass: ent.pass, fail: ent.fail,
+        kind: kindFromEntry(ent), ms: typeof ent.ms === 'number' ? ent.ms : null, pollutionRerun: true,
+      };
+    }
   }
 }
 
@@ -1046,6 +1141,11 @@ function javaTestClassOfForBaseline(rel) {
 // ⑤ 输出 / 退出码
 // ════════════════════════════════════════════════════════════════════
 const badTests = testRuns.filter((r) => r.kind === 'red' || r.kind === 'crash');
+/** top-slow：内层逐文件 ms 排序派生（无阈值判定）；Java 委托条目 ms 口径不同，不混入 */
+const verifyTopSlow = testRuns
+  .filter((r) => typeof r.ms === 'number' && !r.file.endsWith('.java'))
+  .slice().sort((a, b) => b.ms - a.ms).slice(0, 5)
+  .map((r) => ({ file: r.file, ms: r.ms }));
 const redExps = (expReport?.items ?? []).filter((i) => i.verdict === 'fail');
 // ★★ 2026-10-22（A3）：项目级检查也是判据之一 —— 它 FAIL 就是这次真的有红（不是附录）。
 // ★ 2026-10-31：`gitBroken` 的**唯一定义**已上移到改动集那段（见上），这里不再重算。
@@ -1205,8 +1305,16 @@ if (JSON_OUT) {
     // ★ 与 `expectations`（第②步的**命中集**）刻意分开：命中 ≠ 要判，差值就是上面 `skip` 那些
     judged: hitsToJudge.map((h) => h.node_id),
     ran: {
-      tests: testRuns.map((r) => ({ file: r.file, rc: r.rc, tests: r.tests, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms })),
+      tests: testRuns.map((r) => ({
+        file: r.file, rc: r.rc, tests: r.tests, pass: r.pass, fail: r.fail, kind: r.kind, ms: r.ms,
+        ...(r.batchMs != null ? { batchMs: r.batchMs } : {}),
+        ...(r.rerun ? { rerun: r.rerun } : {}),
+        ...(r.interference ? { interference: true } : {}),
+      })),
       expectations: expReport ? { checked: expReport.checked, passed: expReport.passed, failed: expReport.failed, unsupported: expReport.unsupported } : null,
+      ...(batchMs != null ? { batchMs } : {}),
+      topSlow: verifyTopSlow,
+      ...(reruns.length ? { reruns } : {}),
     },
     nothingHit,
     // ★★ 2026-10-22（A3）：`null` = **这次不该跑它**（不是"跑了没红"）—— 两者必须能分开读。
@@ -1330,9 +1438,21 @@ if (designCheckRun) {
 }
 
 console.log(`\n★ 实际跑了：${NO_RUN ? 0 : testRuns.length} 支测试 / ${NO_RUN ? 0 : hitsToJudge.length} 条期望`);
+if (batchMs != null) console.log(`   批调用墙钟 ${(batchMs / 1000).toFixed(1)}s（逐文件为内层真实耗时；串行复跑另计）`);
+if (reruns.length > 0) {
+  for (const rn of reruns) {
+    console.log(`   串行复跑（${rn.kind}，jobs=1）：${rn.files.length} 支 · ${(rn.batchMs / 1000).toFixed(1)}s`);
+  }
+}
 for (const r of testRuns) {
   const tag = r.kind === 'red' ? `★ 有红（FAIL=${r.fail}）` : r.kind === 'crash' ? `★ 崩（exit=${r.rc}）` : r.kind === 'nosummary' ? '○ 无汇总' : '✓';
-  console.log(`   ${tag}  ${r.file}  用例 ${r.pass ?? '?'}/${r.tests ?? '?'} · fail ${r.fail ?? '?'}  ${(r.ms / 1000).toFixed(1)}s`);
+  const msText = typeof r.ms === 'number' ? `${(r.ms / 1000).toFixed(1)}s` : '?';
+  const rerunTag = r.rerun ? ` · 串行复跑=${r.rerun.kind}${r.rerun.interference ? '（并行干扰，不洗绿）' : ''}` : '';
+  console.log(`   ${tag}  ${r.file}  用例 ${r.pass ?? '?'}/${r.tests ?? '?'} · fail ${r.fail ?? '?'}  ${msText}${rerunTag}`);
+}
+if (verifyTopSlow.length > 0) {
+  console.log('   最慢 5 文件：');
+  for (const s of verifyTopSlow) console.log(`     · ${s.file}  ${s.ms}ms`);
 }
 if (expReport) {
   console.log(
@@ -1368,6 +1488,10 @@ if (nothingHit) {
 // ★ 崩/红的原文（★ 与「测试」门同一条纪律：只打这些）
 for (const r of badTests) {
   console.log(`\n──── ${r.file}（exit=${r.rc}）────`);
+  if (r.rerun) {
+    console.log(`   串行复跑（jobs=1）：kind=${r.rerun.kind} · 用例 ${r.rerun.pass ?? '?'}/${r.rerun.tests ?? '?'}` +
+      `${r.rerun.interference ? ' · 并行红串行绿 ⇒ 干扰/隔离缺陷，保持红（不洗绿）' : ''}`);
+  }
   console.log(r.out.split('\n').slice(-20).join('\n'));
 }
   // ════════════════════════════════════════════════════════════════════

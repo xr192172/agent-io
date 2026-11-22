@@ -32,7 +32,9 @@
  * ## 跑法
  * ```
  * node scripts/run-tests.mjs                  # 全跑（默认；总门就是这么调的）
- * node scripts/run-tests.mjs --filter i1_     # 定向（内环用；★ 不进总门，**不判规模棘轮**，只打印覆盖缺口）
+ * node scripts/run-tests.mjs --filter i1_     # 定向（子串；★ 不进总门，**不判规模棘轮**，只打印覆盖缺口）
+ * node scripts/run-tests.mjs tests/a.test.ts tests/b.test.ts  # 显式清单（精确路径匹配；fail-closed；子集不判棘轮）
+ * node scripts/run-tests.mjs --json           # 机器回执：stdout 单一 JSON 文档（人读文本走 stderr），退出码与文本档一致
  * node scripts/run-tests.mjs --update-baseline             # 重建规模基线（只许全量、零失败；**只许升**）
  * node scripts/run-tests.mjs --update-baseline --allow-lower  # 显式放宽基线（降幅会大字打印；要有证据）
  * node scripts/run-tests.mjs --jobs 4            # 并行跑（★ 输出仍按**文件原顺序**；产者护栏降级，见下）
@@ -70,6 +72,34 @@ const args = process.argv.slice(2);
 const fi = args.indexOf('--filter');
 const filter = fi >= 0 ? (args[fi + 1] ?? '') : '';
 
+// ★★★ Slice 1（批调用 + 机器回执）：位置参数 = **显式测试文件清单**（精确路径匹配）。
+//   选择代数：最终集 = （显式清单若给定，否则全量收集）∩（--changed 选量集若给定）∩（--filter 子串若给定）。
+//   ★ fail-closed：清单含不存在/非测试文件 ⇒ 响亮判红、零文件跑；重复项去重保首现序；子集不判规模棘轮。
+const FLAG_VALUE_KEYS = ['--filter', '--jobs', '--changed'];
+const flagValues = new Set();
+for (const f of FLAG_VALUE_KEYS) { const i = args.indexOf(f); if (i >= 0) flagValues.add(args[i + 1]); }
+const explicitRaw = args.filter((a) => !a.startsWith('--') && !flagValues.has(a));
+const normRel = (p) => String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/^tests\//, '');
+const explicitList = [];
+const explicitSeen = new Set();
+for (const a of explicitRaw) {
+  const n = normRel(a);
+  if (!explicitSeen.has(n)) { explicitSeen.add(n); explicitList.push(n); }
+}
+/** ★ `--json`：stdout 为单一 JSON 文档（横幅/人读文本走 stderr）；退出码语义与文本档完全一致 */
+const JSON_OUT = args.includes('--json');
+/** JSON 模式下人读文本走 stderr；文本档不变（console.log 直出 stdout） */
+const say = (...a) => { if (JSON_OUT) console.error(...a); else console.log(...a); };
+/** 结构化回执条目累积（--json 契约 §4.2；文本档同口径累积，供 top-slow 派生） */
+const fileRecords = [];
+/** 晚于早期校验才填充的汇总状态（顶部给默认值，保证早期 fail-closed 也能落最小 JSON 回执） */
+let tot = { tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0 };
+let totStatic = 0;
+let registryClean = null;
+const registryPolluters = [];
+/** 真册探针结果（顶部默认；早期 fail-closed 回执不踩 TDZ） */
+let REAL = { ok: false, file: '', why: '' };
+
 // ★★★ 2026-11-17（增量化第一批 · 项 1）：`--jobs N` 并发度。**缺省 = 1 = 原串行路径**（零变化）。
 //   ★ 非法值**响亮判红**（不是"看不懂就当 1"）：判不了 ≠ 没写 —— 静默回落会让 `--jobs 0` 与没写同形。
 const ji = args.indexOf('--jobs');
@@ -78,8 +108,8 @@ const jobs = (() => {
   if (ji < 0) return 1;
   const n = Number(jobsArg);
   if (!Number.isInteger(n) || n < 1) {
-    console.log(`${C.r}✗ --jobs 后面必须跟 ≥1 的整数（实际收到 ${JSON.stringify(jobsArg ?? null)}）⇒ 拒绝跑（不猜你的意思）${C.x}`);
-    process.exit(1);
+    say(`${C.r}✗ --jobs 后面必须跟 ≥1 的整数（实际收到 ${JSON.stringify(jobsArg ?? null)}）⇒ 拒绝跑（不猜你的意思）${C.x}`);
+    finish(1);
   }
   return n;
 })();
@@ -511,6 +541,24 @@ function fingerprint(file) {
 
 const filesAll = testFiles();
 let files = filesAll;
+
+// ★★★ Slice 1：显式文件清单（位置参数）——精确路径匹配全量收集清单；fail-closed；去重保首现序；
+//   与 --changed/--filter 取交集；子集跑不判规模棘轮（同 --filter 口径）。
+if (explicitList.length > 0) {
+  const allCollected = new Set(testFiles(false));
+  const missing = explicitList.filter((f) => !allCollected.has(f));
+  if (missing.length > 0) {
+    say(`${C.r}✗ 显式清单含不存在/非测试文件（按 tests/ 清单精确匹配）⇒ 拒绝跑（fail-closed，零文件跑）：${C.x}`);
+    for (const m of missing) say(`   · ${m}`);
+    files = [];
+    finish(1);
+  }
+  if (explicitRaw.length !== explicitList.length) {
+    say(`${C.d}★ 显式清单去重：${explicitRaw.length} → ${explicitList.length}（保首现序）${C.x}`);
+  }
+  files = explicitList.filter((f) => filesAll.includes(f));
+}
+
 if (changedArgs.length > 0) {
   // ★ 调真实现算选量（独立进程 + --import tsx）；失败 ⇒ 响亮判红（判不了 ≠ 没选）
   const selArgs = [];
@@ -522,60 +570,60 @@ if (changedArgs.length > 0) {
   let parsed = null;
   try { parsed = JSON.parse(String(r.stdout ?? '').trim().split('\n').pop() ?? ''); } catch { /* 判不了 */ }
   if (r.status !== 0 || !parsed || parsed.ok !== true) {
-    console.log(`${C.r}✗ --changed 选量失败（判不了 ≠ 没选 ⇒ 拒绝静默全跑）：${C.x}`);
-    console.log(`   rc=${r.status}  stderr=${String(r.stderr ?? '').trim().split('\n').slice(-3).join(' | ')}`);
-    console.log(`   stdout=${String(r.stdout ?? '').trim().slice(0, 300)}`);
-    process.exit(1);
+    say(`${C.r}✗ --changed 选量失败（判不了 ≠ 没选 ⇒ 拒绝静默全跑）：${C.x}`);
+    say(`   rc=${r.status}  stderr=${String(r.stderr ?? '').trim().split('\n').slice(-3).join(' | ')}`);
+    say(`   stdout=${String(r.stdout ?? '').trim().slice(0, 300)}`);
+    finish(1);
   }
   SEL = parsed;
   const selSet = new Set((SEL.selected ?? []).map((t) => String(t).replace(/^tests\//, '')));
-  files = filesAll.filter((f) => selSet.has(f));
+  files = files.filter((f) => selSet.has(f));
   const d = SEL.denominator ?? {};
-  console.log(`${C.y}★ --changed ${JSON.stringify(changedArgs)}：选量 ${files.length} / ${filesAll.length} 个测试文件` +
+  say(`${C.y}★ --changed ${JSON.stringify(changedArgs)}：选量 ${files.length} / ${filesAll.length} 个测试文件` +
     `（覆盖映射可信=${SEL.coverage?.trusted} · 影响面 ${SEL.impact?.files?.length ?? 0} 文件 / ${SEL.impact?.calls ?? 0} 次波及计算）${C.x}`);
-  console.log(`${C.d}  分母：全量 ${d.total} · 选中 ${d.selected} · 覆盖未知保守纳入 ${d.conservative} · 指纹缓存跳过 ${d.skippedByCache}` +
+  say(`${C.d}  分母：全量 ${d.total} · 选中 ${d.selected} · 覆盖未知保守纳入 ${d.conservative} · 指纹缓存跳过 ${d.skippedByCache}` +
     ` · 影响关系不可用=${d.impactUnavailable}${C.x}`);
   if (files.length === 0) {
     // ★ 非代码改动 ⇒ 零测试跑（秒回）：不进规模棘轮、不判空跑（0.12：0 是被选出的真值，不是没跑）
-    console.log(`${C.g}⇒ 增量选量为空：本轮改动没有任何测试覆盖（无代码波及面）⇒ 零测试跑（不进规模/空跑判据）${C.x}`);
-    process.exit(0);
+    say(`${C.g}⇒ 增量选量为空：本轮改动没有任何测试覆盖（无代码波及面）⇒ 零测试跑（不进规模/空跑判据）${C.x}`);
+    finish(0);
   }
 }
-console.log(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
-if (filter) console.log(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
-console.log(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<w槽位>/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
+/** 子集档：--filter / --changed / 显式清单任一给定 ⇒ 不判规模棘轮，只打印覆盖缺口 */
+const SUBSET = filter !== '' || SEL !== null || explicitList.length > 0;
+say(`${C.b}测试门 —— tests/*.test.ts 真跑${C.x}  ${C.d}（node:test + tsx；逐文件取 TAP 计数）${C.x}`);
+if (filter) say(`${C.y}★ --filter ${JSON.stringify(filter)}：这是**定向**跑，不进总门口径${C.x}`);
+if (explicitList.length > 0) say(`${C.y}★ 显式清单 ${explicitList.length} 个文件（精确匹配）：子集跑，不判规模棘轮${C.x}`);
+say(`${C.d}★ 数据隔离：每文件注入 ${INJECT_VAR}=${RUN_HOME_ROOT}/<w槽位>/<文件>（跑完整棵删掉 ⇒ 真数据仓不碰）${C.x}`);
 if (PARALLEL) {
   // ★ 三条"并行改了什么"的颜色说明放在**开跑前**：不写清，读者会以为并行档与默认档读数是同一件事（0.12）。
-  console.log(
+  say(
     `${C.y}★ 并行 --jobs ${jobs}：结果按 index 缓冲、**按文件原顺序**打印（完成序会让逐文件行与 TAP 汇总对不上号）${C.x}`,
   );
-  console.log(
+  say(
     `${C.d}  隔离不变：数据根 = RUN_HOME_ROOT/w<槽位>/<文件>（槽位由池建池时固定，串行档恒 w0）⇒ 槽下面**仍每文件一个**子目录${C.x}`,
   );
-  console.log(
+  say(
     `${C.y}  ★ 产者护栏降级：并行时**判不了是谁改的** —— 只能"跑前/跑后各拍一次 sha"；变了就用 --jobs 1 复跑点名${C.x}`,
   );
 }
 
 // ★ T-#REG ⑦：真册的跑前指纹（跑完必须一字节未变；见上面「产者护栏」那段论证）
-const REAL = probeRealRegistryFile();
+REAL = probeRealRegistryFile();
 const realBefore = REAL.ok ? fingerprint(REAL.file) : { sha: '<probe-failed>', mtime: -1 };
 /** 哪一次测试把它改了（逐步比对：第一次变的那一刻点名，再以新值为下一段的基线） */
-const registryPolluters = [];
 let realCursor = realBefore;
-console.log(
+say(
   REAL.ok
     ? `${C.d}★ 产者护栏：真册 ${REAL.file} sha=${realBefore.sha.slice(0, 12)}（跑完必须不变）${C.x}`
     : `${C.r}★ 产者护栏：**问不到**真册路径（${REAL.why}）⇒ 跑完会判红（判不了 ≠ 没污染）${C.x}`,
 );
-console.log('');
+say('');
 
 let bad = 0;
-let tot = { tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0 };
 /** ★ 柱 3：`--changed` 模式里判 PASS 的测试文件（跑完批量落"源码指纹"缓存） */
 const passedForCache = new Set();
 /** ★ 源码声明的用例条数（下限守卫的分子/分母都从这里来；见文件头"两条口径"） */
-let totStatic = 0;
 /**
  * **静态守卫**的红行（**唯一实现**：串行与并行两条路径都调它 —— 0.9.1）。
  *
@@ -584,9 +632,91 @@ let totStatic = 0;
  */
 function reportStaticFail(f, stat) {
   bad++;
-  console.log(`  ${C.r}FAIL${C.x}  ${f.padEnd(34)} ${C.d}      ${stat.err ? '源码读不到' : '源码 0 条用例'}${C.x}`);
-  console.log(`        ${C.r}★ 该文件没有任何 test()/it() 调用（文件在、用例没了）⇒ 这不是通过，是没验${C.x}`);
-  if (stat.err) console.log(`        ${C.r}读不到源码：${stat.err}（读不到 ≠ 0 条）${C.x}`);
+  fileRecords.push({
+    rel: f, ms: null, status: null, tests: null, pass: null, fail: null, skipped: null, todo: null,
+    staticDeclared: stat.n, ok: false, kind: 'static-fail',
+    out: stat.err ? String(stat.err) : '源码 0 条用例',
+  });
+  say(`  ${C.r}FAIL${C.x}  ${f.padEnd(34)} ${C.d}      ${stat.err ? '源码读不到' : '源码 0 条用例'}${C.x}`);
+  say(`        ${C.r}★ 该文件没有任何 test()/it() 调用（文件在、用例没了）⇒ 这不是通过，是没验${C.x}`);
+  if (stat.err) say(`        ${C.r}读不到源码：${stat.err}（读不到 ≠ 0 条）${C.x}`);
+}
+
+/** 回执条目尾部截尾（--json 契约：out 仅非 green 文件携带，末段截尾供归因） */
+function tailOut(out) {
+  const lines = String(out ?? '').split(/\r?\n/).filter((l) => l.trim());
+  return lines.slice(-40).join('\n');
+}
+
+/** 最慢 5 文件榜单（per-file ms 排序派生；无阈值判定；文本档与 JSON 同榜单） */
+function topSlow() {
+  return fileRecords
+    .filter((r) => typeof r.ms === 'number')
+    .slice()
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 5)
+    .map((r) => ({ rel: r.rel, ms: r.ms }));
+}
+
+/** --json 回执文档（§4.2 形状冻结）；退出码与文本档判定一致 */
+function buildJson(exitCode) {
+  const registry = { clean: typeof registryClean === 'boolean' ? registryClean : null };
+  if (PARALLEL) registry.degraded = true;
+  if (Array.isArray(registryPolluters) && registryPolluters.length) registry.polluters = registryPolluters;
+  if (REAL && !REAL.ok && REAL.why) registry.note = REAL.why;
+  return {
+    files: fileRecords,
+    summary: {
+      files: typeof files === 'object' ? files.length : 0,
+      tests: tot.tests, pass: tot.pass, fail: tot.fail,
+      skipped: tot.skipped, todo: tot.todo, staticDeclared: totStatic,
+    },
+    registry,
+    jobs,
+    mode: explicitList.length > 0 || filter !== '' || SEL !== null ? 'subset' : 'full',
+    topSlow: topSlow(),
+    exitCode,
+  };
+}
+
+/** 收口：JSON 模式先落单一文档到 stdout，再按文本档同语义退出（早期校验失败给最小回执） */
+function finish(exitCode) {
+  if (JSON_OUT) {
+    try {
+      process.stdout.write(JSON.stringify(buildJson(exitCode)) + '\n');
+    } catch (e) {
+      process.stdout.write(JSON.stringify({
+        files: [], summary: { files: 0, tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0, staticDeclared: 0 },
+        registry: { clean: null }, jobs, mode: 'full', topSlow: [], exitCode,
+        error: String(e?.message ?? e),
+      }) + '\n');
+    }
+  }
+  process.exit(exitCode);
+}
+
+/**
+ * ok 判定唯一实现（R2：串行路径 / 并行路径 / 结构化回执共用同一份口径，两份拷贝已收敛，未来不可漂开）。
+ *
+ * ★ 判红四条原样：退出码非 0 / `# fail`>0 / 0 个用例 / skip·todo>0 / TAP 少于源码声明（underRun）。
+ * 只消费 `runOne` 的读数（不读盘、不 spawn）⇒ 串并行判定口径不可能不一致。
+ */
+function judgeRecord(stat, r) {
+  const underRun = r.tests !== null && r.tests < stat.n;
+  const ok = r.status === 0 && r.fail === 0 && (r.tests ?? 0) > 0 && (r.skipped ?? 0) === 0 && (r.todo ?? 0) === 0 && !underRun;
+  return { underRun, ok };
+}
+
+/** 结构化判定（与文本档同口径；kind: green / red / crash / static-fail） */
+function classifyRecord(f, stat, r) {
+  const { ok } = judgeRecord(stat, r);
+  const kind = r.status === null || r.tests === null ? 'crash' : ok ? 'green' : 'red';
+  const rec = {
+    rel: f, ms: r.ms, status: r.status, tests: r.tests, pass: r.pass ?? null, fail: r.fail ?? null,
+    skipped: r.skipped ?? null, todo: r.todo ?? null, staticDeclared: stat.n, ok, kind,
+  };
+  if (!ok) rec.out = tailOut(r.out);
+  return rec;
 }
 
 /**
@@ -598,17 +728,18 @@ function reportStaticFail(f, stat) {
 function reportRun(f, stat, r) {
   // ★★ 静态守卫之二：TAP 报的用例数**少于**源码声明的条数 ⇒ 有声明的用例没跑出来
   //   （只判这个方向：TAP 更多 = 循环里动态生成用例，合法）
-  const underRun = r.tests !== null && r.tests < stat.n;
-  const ok = r.status === 0 && r.fail === 0 && (r.tests ?? 0) > 0 && (r.skipped ?? 0) === 0 && (r.todo ?? 0) === 0 && !underRun;
+  const { underRun, ok } = judgeRecord(stat, r);
+  const rec = classifyRecord(f, stat, r);
+  fileRecords.push(rec);
   const tag = ok ? `${C.g}PASS${C.x}` : `${C.r}FAIL${C.x}`;
   const cnt = r.tests === null ? '计数缺失' : `用例 ${r.pass}/${r.tests}${stat.n > 0 ? `（源码 ${stat.n}）` : ''}`;
   const extra = r.skipped || r.todo ? `  ${C.y}skip ${r.skipped} / todo ${r.todo}${C.x}` : '';
-  console.log(`  ${tag}  ${f.padEnd(34)} ${C.d}${String(r.ms).padStart(5)}ms  ${cnt}${C.x}${extra}`);
+  say(`  ${tag}  ${f.padEnd(34)} ${C.d}${String(r.ms).padStart(5)}ms  ${cnt}${C.x}${extra}`);
   if (ok && SEL) passedForCache.add(`tests/${f}`); // ★ 柱 3：只给真 PASS 的测试落指纹（失败/跳过的绝不落）
   if (r.tests === null) {
     // ★ 汇总行都没有 = 文件根本没跑起来（导入失败 / 语法错 / 进程崩）⇒ 不许当 0 处理
-    console.log(`        ${C.r}没有 TAP 汇总行（文件没跑起来）⇒ 前 3 行：${C.x}`);
-    for (const line of r.out.split(/\r?\n/).filter((l) => l.trim()).slice(0, 3)) console.log(`        ${line.slice(0, 200)}`);
+    say(`        ${C.r}没有 TAP 汇总行（文件没跑起来）⇒ 前 3 行：${C.x}`);
+    for (const line of r.out.split(/\r?\n/).filter((l) => l.trim()).slice(0, 3)) say(`        ${line.slice(0, 200)}`);
     bad++;
     return;
   }
@@ -620,18 +751,18 @@ function reportRun(f, stat, r) {
   totStatic += stat.n;
   if (!ok) {
     bad++;
-    if (r.tests === 0) console.log(`        ${C.r}0 个用例被执行 ⇒ 红（空跑等于没跑）${C.x}`);
+    if (r.tests === 0) say(`        ${C.r}0 个用例被执行 ⇒ 红（空跑等于没跑）${C.x}`);
     if (underRun) {
-      console.log(
+      say(
         `        ${C.r}★ TAP 只报了 ${r.tests} 条，而源码里声明了 ${stat.n} 条 ⇒ 有声明的用例没跑出来（这不是通过）${C.x}`,
       );
     }
-    for (const x of r.failures) console.log(`        ${C.r}✗ ${x.name}${C.x}\n          ${x.err.slice(0, 300)}`);
+    for (const x of r.failures) say(`        ${C.r}✗ ${x.name}${C.x}\n          ${x.err.slice(0, 300)}`);
     if (!r.failures.length && r.fail) {
       const first = r.out.split(/\r?\n/).filter((l) => /error|Error/.test(l))[0] ?? '';
-      console.log(`        ${C.r}${first.trim().slice(0, 300)}${C.x}`);
+      say(`        ${C.r}${first.trim().slice(0, 300)}${C.x}`);
     }
-    if (r.skipped || r.todo) console.log(`        ${C.r}有 skip/todo ⇒ 这些用例没跑；本仓不许用它关掉门（要退役就按 docs/RETIRED.md 删断言）${C.x}`);
+    if (r.skipped || r.todo) say(`        ${C.r}有 skip/todo ⇒ 这些用例没跑；本仓不许用它关掉门（要退役就按 docs/RETIRED.md 删断言）${C.x}`);
   }
 }
 
@@ -682,20 +813,26 @@ try {
   /* 删不掉不影响判定 */
 }
 
-console.log('');
+say('');
 // ★ 机器读的唯一一行（判据锚它）：文件数 / 用例数 / 通过 / 失败 / 跳过 / **源码声明条数（分母的另一半）**
 //   ★ 0.12 ③：TAP 分子与"源码声明了几条"同时给 —— 只给分子时，"空文件"与"真跑过"读起来一样。
-console.log(
+say(
   `测试门：文件 ${files.length} / 用例 ${tot.tests}（源码声明 ${totStatic}）/ 通过 ${tot.pass} / 失败 ${tot.fail} / 跳过 ${tot.skipped + tot.todo}`,
 );
+// ★ Slice 1：最慢 5 文件榜单（per-file ms 排序派生；无阈值判定；JSON 携带同榜单）
+const slowNow = topSlow();
+if (slowNow.length > 0) {
+  say('最慢 5 文件：');
+  for (const s of slowNow) say(`  ${s.rel.padEnd(34)} ${String(s.ms).padStart(5)}ms`);
+}
 // ════════════════════════════════════════════════════════════════════════
 // ★ T-#REG ⑦ 产者护栏的判定（**进红判**，不是提示）：真册被测试写过 ⇒ 门红。
 //   判据三条：问得到路径（否则红）· sha256 前后相同 · 逐文件点名（谁写的）。
 // ════════════════════════════════════════════════════════════════════════
 const realAfter = REAL.ok ? fingerprint(REAL.file) : { sha: '<probe-failed>', mtime: -1 };
-const registryClean = REAL.ok && realAfter.sha === realBefore.sha;
+registryClean = REAL.ok && realAfter.sha === realBefore.sha;
 if (!REAL.ok) {
-  console.log(
+  say(
     `${C.r}✗ 产者护栏：问不到真册路径（${REAL.why}）⇒ 这轮**判不了**有没有污染真数据仓（判不了 ≠ 没污染）${C.x}`,
   );
 } else if (!registryClean) {
@@ -708,7 +845,7 @@ if (!REAL.ok) {
       `      这不是"没人写"，是**判不了是谁**（0.12）⇒ 请用 \`node scripts/run-tests.mjs --jobs 1\` 复跑点名（同一条路径，逐文件归因）。`
     : `    ★ 是哪一次测试写的（逐步比对，第一次变的那一刻）：\n` +
       registryPolluters.map((p) => `      · ${p.rel}：${p.before.slice(0, 12)} → ${p.after.slice(0, 12)}`).join('\n');
-  console.log(
+  say(
     `${C.r}✗ 产者护栏红：真数据仓的 projects.json 被测试改过 —— 注册表是总账与设计册位置的钥匙，幽灵条目就是从这来的${C.x}\n` +
       `    ${REAL.file}\n` +
       `    sha 前=${realBefore.sha}\n    sha 后=${realAfter.sha}\n    mtime 后=${new Date(realAfter.mtime).toISOString()}\n` +
@@ -716,19 +853,19 @@ if (!REAL.ok) {
       `\n    ★ 怎么办：让该用例自己钉 \`AGENT_IO_HOME\`（别落真数据仓），再用 node scripts/registry_repair.mjs 清掉多余登记。`,
   );
 } else {
-  console.log(
+  say(
     `${C.g}✓ 产者护栏：真册 sha256 前后一致（${realBefore.sha.slice(0, 12)}）⇒ 这轮测试一条登记都没写进真数据仓${C.x}`,
   );
 }
 if (files.length === 0) {
-  console.log(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
-  process.exit(1);
+  say(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
+  finish(1);
 }
 if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryClean) {
-  console.log(
+  say(
     `${C.r}⇒ 测试门红：${bad} 个文件没通过${registryClean ? '' : ' · 真注册表被写（产者护栏）'}（详见上面的 ✗ 行）${C.x}`,
   );
-  process.exit(1);
+  finish(1);
 }
 // ════════════════════════════════════════════════════════════════════════
 // ★ 柱 3：`--changed` 全绿 ⇒ 给判 PASS 的测试批量落"源码指纹"缓存。
@@ -743,8 +880,8 @@ if (SEL && passedForCache.size > 0) {
     const rr = spawnSync(process.execPath, ['--import', 'tsx', path.join(ROOT, 'scripts/incsel-record.mjs'), '--root', ROOT, '--mode', 'changed', ...recArgs], {
       cwd: ROOT, encoding: 'utf8', shell: false, maxBuffer: 8 * 1024 * 1024,
     });
-    if (rr.status === 0) console.log(`${C.g}✓ 源码指纹缓存已更新：${passedForCache.size} 个测试（.agent-io/scratch/test-sel-cache.json，derived 不进 git）${C.x}`);
-    else console.log(`${C.y}★ 源码指纹缓存写入失败（不影响本轮判定；下次会 fail-closed 不跳过）：${String(rr.stderr ?? '').trim().split('\n').slice(-1)[0]}${C.x}`);
+    if (rr.status === 0) say(`${C.g}✓ 源码指纹缓存已更新：${passedForCache.size} 个测试（.agent-io/scratch/test-sel-cache.json，derived 不进 git）${C.x}`);
+    else say(`${C.y}★ 源码指纹缓存写入失败（不影响本轮判定；下次会 fail-closed 不跳过）：${String(rr.stderr ?? '').trim().split('\n').slice(-1)[0]}${C.x}`);
   } catch { /* derived 缓存：写失败不判红 */ }
 }
 // ════════════════════════════════════════════════════════════════════
@@ -786,11 +923,12 @@ function nameDelta(list) {
 }
 
 if (wantUpdate) {
-  if (filter || SEL) {
-    console.log(
-      `${C.r}✗ --update-baseline 不许与 ${SEL ? '--changed' : '--filter'} 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
+  if (filter || SEL || explicitList.length > 0) {
+    const combo = SEL ? '--changed' : filter ? '--filter' : '显式清单';
+    say(
+      `${C.r}✗ --update-baseline 不许与 ${combo} 联用${C.x}（基线只能来自**全量**跑；否则棘轮会被按局部读数静默放宽）`,
     );
-    process.exit(1);
+    finish(1);
   }
   // ── b) 基线只许升：先算"要不要降"，降就必须显式 --allow-lower ──
   //   判据 = 新值低于旧值 ⇒ 拒绝且**文件一字节不动**（写盘在下面，拒绝分支到不了写盘）。
@@ -798,23 +936,23 @@ if (wantUpdate) {
   const dCases = base.ok ? tot.tests - base.data.cases : 0;
   const lower = base.ok && (dFiles < 0 || dCases < 0);
   if (lower && !allowLower) {
-    console.log(
+    say(
       `${C.r}✗ 拒绝更新基线：本次读数比基线**低** ⇒ 不许用 --update-baseline 把棘轮放松${C.x}\n` +
         `     基线 文件 ${base.data.files} / 用例 ${base.data.cases} → 本次 文件 ${files.length} / 用例 ${tot.tests}` +
         `（差 ${dFiles} 文件 / ${dCases} 用例）\n` +
         `     ★ scripts/test-baseline.json **一字节未改**（sha 不变）。\n` +
         `     ★ 若这次减少确实是有证据的有意动作，显式给 --allow-lower（会大字打印降幅）。`,
     );
-    process.exit(1);
+    finish(1);
   }
   // ── d) 更新必须打印 diff：计数变化 + 新增/消失的文件点名 ──
   const fmt = (n) => (n >= 0 ? `+${n}` : `${n}`);
-  console.log(
+  say(
     `${C.b}★ 测试基线更新：文件 ${base.ok ? base.data.files : '(无基线)'} → ${files.length}（${fmt(dFiles)}）` +
       ` · 用例 ${base.ok ? base.data.cases : '(无基线)'} → ${tot.tests}（${fmt(dCases)}）${C.x}`,
   );
   if (lower) {
-    console.log(
+    say(
       `${C.r}${C.b}★★★ 放宽基线（显式 --allow-lower）：降 ${-dFiles} 个文件 / ${-dCases} 个用例 ★★★${C.x}\n` +
         `${C.r}     这等于允许"静默删掉 ${-dFiles} 个文件 / ${-dCases} 个用例"而门不响 ⇒ 要有证据（docs/todo.md 挂账 + 评审）${C.x}`,
     );
@@ -826,14 +964,14 @@ if (wantUpdate) {
     const oldSet = new Set(oldList);
     const added = newList.filter((f) => !oldSet.has(f));
     const gone = oldList.filter((f) => !nowSet.has(f));
-    console.log(`  新增文件 ${added.length} 个${added.length ? '：' : '（无）'}`);
-    if (added.length) console.log(nameDelta(added));
+    say(`  新增文件 ${added.length} 个${added.length ? '：' : '（无）'}`);
+    if (added.length) say(nameDelta(added));
     if (gone.length) {
-      console.log(`${C.y}  消失文件 ${gone.length} 个（★ 里面有守卫测试 ⇒ 这就是"棘轮被放松"的证据）：${C.x}`);
-      console.log(nameDelta(gone));
+      say(`${C.y}  消失文件 ${gone.length} 个（★ 里面有守卫测试 ⇒ 这就是"棘轮被放松"的证据）：${C.x}`);
+      say(nameDelta(gone));
     }
   } else {
-    console.log(
+    say(
       `  ${C.d}旧基线只记了计数（没有 fileList）⇒ 本轮点不出"具体哪几个文件变了"；` +
         `本次写盘会带上 fileList，下一次更新就能点名（不静默：这一行本身就是那条诊断）。${C.x}`,
     );
@@ -857,39 +995,39 @@ if (wantUpdate) {
     ) + '\n',
     'utf8',
   );
-  console.log(`${C.g}★ 已更新测试基线 → scripts/test-baseline.json（文件 ${files.length} / 用例 ${tot.tests}）${C.x}`);
-  process.exit(0);
+  say(`${C.g}★ 已更新测试基线 → scripts/test-baseline.json（文件 ${files.length} / 用例 ${tot.tests}）${C.x}`);
+  finish(0);
 }
 
-// ── a) 定向跑（--filter）/ 增量跑（--changed）：**不判规模**，但覆盖缺口必须打印，退出码只看用例通过/失败 ──
+// ── a) 定向跑（--filter）/ 增量跑（--changed）/ 显式清单：**不判规模**，但覆盖缺口必须打印，退出码只看用例通过/失败 ──
 //   判据：子集天然小于全量 ⇒ 拿全量基线判规模会**恒红**（实测：被测文件 9/9 全 PASS 仍 exit 1）
 //   ⇒ 那不是"发现回归的嘴"，是"永远张着的嘴"（0.16）⇒ 把它缩小到只在全量跑上生效，
 //   并把"本轮只验了 N / M"这条分母留下（否则定向跑会静默读成"全绿"）。
-if (filter || SEL) {
-  const modeLabel = SEL ? `--changed ${JSON.stringify(changedArgs)}` : `--filter ${JSON.stringify(filter)}`;
+if (SUBSET) {
+  const modeLabel = SEL ? `--changed ${JSON.stringify(changedArgs)}` : filter ? `--filter ${JSON.stringify(filter)}` : `显式清单 ${explicitList.length} 个`;
   const all = testFiles(false);
   const uncovered = all.length - files.length;
-  console.log(
-    `${C.y}★ ${SEL ? '增量' : '定向'}跑（${modeLabel}）：本次 ${files.length} 个文件 / 用例 ${tot.tests}；` +
+  say(
+    `${C.y}★ ${SEL ? '增量' : filter ? '定向' : '清单'}跑（${modeLabel}）：本次 ${files.length} 个文件 / 用例 ${tot.tests}；` +
       `全量 ${all.length} 个文件 ⇒ 未覆盖 ${uncovered} 个（全量 ${all.length} − 本次 ${files.length}）${C.x}`,
   );
-  console.log(
+  say(
     `${C.d}  规模棘轮本轮不判（子集天然小于全量，判了就恒红）⇒ 退出码只看用例通过/失败` +
       `；基线（全量口径）${base.ok ? `文件 ${base.data.files} / 用例 ${base.data.cases}` : `**读不到**（${base.why}）`}${C.x}`,
   );
   const tail = SEL ? `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验；` +
       `增量选择的判据见 scripts/incsel-audit.mjs 的消融对照）${C.x}` : `${C.x}${C.y}（★ 只覆盖这 ${files.length} 个，其余 ${uncovered} 个本轮未验）${C.x}`;
-  console.log(
-    `${C.g}⇒ ${SEL ? '增量' : '定向'}跑绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过` + tail,
+  say(
+    `${C.g}⇒ ${SEL ? '增量' : filter ? '定向' : '清单'}跑绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过` + tail,
   );
-  process.exit(0);
+  finish(0);
 }
 
 if (!base.ok) {
-  console.log(
+  say(
     `${C.r}✗ 测试基线缺失/损坏（scripts/test-baseline.json：${base.why}）⇒ 只许显式建立：node scripts/run-tests.mjs --update-baseline${C.x}`,
   );
-  process.exit(1);
+  finish(1);
 }
 const baseline = base.data;
 /** 落后差额（正 = 实测更高） */
@@ -899,21 +1037,22 @@ const lagCases = tot.tests - baseline.cases;
 //   为什么必须打印：滞后 = 棘轮此刻允许"静默删掉 lagFiles 个文件 / lagCases 个用例"。
 //   实测（2026-11-03）：滞后 8 文件 / 48 用例时，全量跑完**一个字都没有** ⇒ 棘轮在松，而读数是绿的。
 if (lagFiles > 0 || lagCases > 0) {
-  console.log(
+  say(
     `${C.y}★ 基线落后：实测 ${files.length} 文件 / ${tot.tests} 用例 vs 基线 ${baseline.files} 文件 / ${baseline.cases} 用例 ` +
       `⇒ 差 ${lagFiles} 文件 / ${lagCases} 用例 ⇒ 建议 node scripts/run-tests.mjs --update-baseline${C.x}`,
   );
-  console.log(
+  say(
     `${C.d}  （落后不是失败 ⇒ 本轮不红；但棘轮现在允许"静默删掉 ${Math.max(0, lagFiles)} 个文件 / ${Math.max(0, lagCases)} 个用例"，所以要看得见）` +
       `　基线 capturedAt=${baseline.capturedAt ?? '(未记)'}${C.x}`,
   );
 }
 if (files.length < baseline.files || tot.tests < baseline.cases) {
-  console.log(
+  say(
     `${C.r}✗ 测试规模低于基线：文件 ${files.length}（基线 ${baseline.files}）· 用例 ${tot.tests}（基线 ${baseline.cases}）${C.x}\n` +
       `     ★ 少了什么？删掉守卫测试 = 删掉"能发现回归的那张嘴"。` +
       `若确实要减 ⇒ 先挂账到 docs/todo.md，再 node scripts/run-tests.mjs --update-baseline --allow-lower（有意识动作）。`,
   );
-  process.exit(1);
+  finish(1);
 }
-console.log(`${C.g}⇒ 测试门绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过${C.x}`);
+say(`${C.g}⇒ 测试门绿：${files.length} 个文件、${tot.tests} 个用例全部真跑过并通过${C.x}`);
+finish(0);

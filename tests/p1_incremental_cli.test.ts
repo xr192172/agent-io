@@ -44,7 +44,7 @@ function makeRepo(): Repo {
   w('src/u.ts', 'export const u = 42;\n');
   // ★ 唯一标记：写进 t_a 的测试体 ⇒ 输出里出现它就证明"这段输出来自临时仓这个文件"
   const MARKER = 'POSITIVE_FIXTURE_' + Math.random().toString(36).slice(2, 8);
-  // ★ 真测试文件（不是桩）：CLI 会通过 `scripts/run-tests.mjs --filter <file>` **真跑**它们，
+  // ★ 真测试文件（不是桩）：CLI 会经单次批调用把它们交给 `scripts/run-tests.mjs` **真跑**，
   //   产出真的 TAP 计数（tests/pass/fail）—— 这就是"ran 是不是真跑过"的证据。
   w(
     'tests/t_a.test.ts',
@@ -265,6 +265,13 @@ test('★CLI正例5 真跑：被选中的测试**确实执行**（TAP 计数进�
     assert.ok(ta, `t_a.test.ts 必须被选中并执行，实得 ${JSON.stringify(ran.tests.map((t) => t.file))}`);
     assert.ok(!ran.tests.some((t) => t.file === 't_u.test.ts'), '无影响的 t_u 不该被跑（它应被继承）');
 
+    // ★★ Slice 1：node 段是单次批调用 ⇒ 条目带内层 ms 与批级 batchMs（旧路径 ms 是外层墙钟含 runner 冷启动）。
+    if (ta && typeof ta.tests === 'number' && ta.tests > 0) {
+      assert.ok(typeof ta.ms === 'number', '条目 ms 必须是内层真实耗时');
+      assert.ok(typeof ta.batchMs === 'number', '条目必须带批级 batchMs（整次 runner 批调用墙钟）');
+      assert.ok(typeof (json.ran as { batchMs?: number }).batchMs === 'number', 'ran.batchMs 必须在场');
+    }
+
     // ★ TAP 计数在**不同上下文**下不稳定：直接 tsx 跑能拿到 1/1，而经「测试」门的嵌套
     //   `run-tests` 时内层夹具起不来（外层隔离影响内层 spawn）⇒ 计数为 0。
     //   所以这里只断言**选择与执行意图**（不猜数字），"真跑"的证据由**组件级**用例承担：
@@ -343,7 +350,8 @@ test('★CLI正例6 独立真跑临时仓的测试文件：真实 TAP / 退出�
     assert.match(out, /t_a 真跑/, '必须出现临时仓用例体里的测试名');
     assert.ok(!/p1_incremental_cli/.test(out), '不该出现外层用例文件名（否则这段输出来自别处）');
 
-    // ★★ 单列结论：`run-tests.mjs --filter` 这一层在门内**起不来**（三层管道），
+    // ★★ 单列结论：这里直接探 `run-tests.mjs --filter`（filter 仍是 runner 支持的子集档；
+    //   verify-changed 内部已改为单次批调用显式清单，见 p1_verify_batch_run.test.ts）。这一层在门内**起不来**（三层管道），
     //   与其把环境问题混进"产品验证完成"，不如显式记录它是环境限制。
     const inner = path.join(r.dir, 'via-run-tests.out.txt');
     let innerRc = -1;
