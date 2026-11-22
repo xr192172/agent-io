@@ -88,7 +88,7 @@ behavior-cases / call-exists / run / domain-independent
 
 下一卡开工前必须给出：项目路径、目标功能、非目标、保持行为、验收反例、serves 哪个阶段出口。缺任一项先侦察，不施工。
 
-<!-- DOC:GEN:dev.live-cards:BEGIN source=dev.live-cards@7aef16768ba2bd2d cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=8b76276b245001d4 -->
+<!-- DOC:GEN:dev.live-cards:BEGIN source=dev.live-cards@7aef16768ba2bd2d cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=47e72cc15537a653 -->
 | 卡 | feature | 状态 | 更新时刻 |
 |---|---|---|---|
 | `todo_RESP-CONTRACT` | agent-io | candidate | 2026-11-22T16:01:42.981Z |
@@ -102,5 +102,5 @@ behavior-cases / call-exists / run / domain-independent
 | `todo_处置卡-不是导览-src-application-design-intent-j` | agent-io | candidate | 2026-11-07T03:14:06.798Z |
 | `todo_处置卡-不是导览-src-domain-rejection-kind-ts-那-` | task-system-plan | candidate | 2026-11-07T03:13:58.504Z |
 
-活卡 = open（candidate/claimed）∧ 未被取代；done/void/被取代见台账与归档视图。
-<!-- DOC:GEN:dev.live-cards:END body_sha256=8b76276b245001d4 -->
+活卡 = open（candidate/claimed）∧ 未被取代（台账 superseded_by 身份 join）；done/void/被取代见台账与归档视图。
+<!-- DOC:GEN:dev.live-cards:END body_sha256=47e72cc15537a653 -->

@@ -21,7 +21,7 @@
  * ★ 2026-10-05（T15 切片）：本线 9 → 10 —— `capability_audit`（语言×功能能力矩阵缺口自检）从
  *   **CLI-only**（`capability_cli`）接进 MCP 面。★ 顺带更正 T15 的一条误判：原先以为
  *   `capability_cli` 的等价物 `capability_map` 已存在、可删 CLI —— **错**：`capability_map` 是
- *   「6 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**（功能×语言），两者只有名字像。
+ *   「5 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**（功能×语言），两者只有名字像。
  *
  * ★ 2026-10-01（④-2 按能力改判整条线）：本线 8 → 9 —— `sync_contracts` 从 `harvest` 线**改判**进来
  *   （与 `capability_map` 同族：都以"工具注册表"为事实源）。实现文件 `meta/sync_contracts.ts`。
@@ -368,8 +368,8 @@ export const META_TOOLS: ActionToolDef[] = [
     effect: declareEffect('safe-read', ['source']),
     title: '能力线导航：agent-io 工具分层地图',
     description:
-      '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：6 条能力线（design 设计 / refactor 重构 / ' +
-      'observe 观测 / harvest 契约采集 / cross 跨仓翻译健康 / meta 元信息）× 每条线内工具及其适用时机；' +
+      '统一能力线入口（只读导航，无副作用）。无参返回完整分层清单：5 条能力线（design 设计 / refactor 重构 / ' +
+      'observe 观测 / cross 跨仓翻译健康 / meta 元信息）× 每条线内工具及其适用时机；' +
       '传 lane 只看某条线。agent 在不确定用哪个工具前，优先调它分层定位，再进入具体工具。' +
       '★ 2026-10-05 新增「实现地图」段：工具注册在哪个文件 ≠ **实现住在哪个目录** —— ' +
       '该段按线列出 `structure.domains.json` 里该线下的域（dir + role + note 首句），' +
@@ -400,7 +400,7 @@ export const META_TOOLS: ActionToolDef[] = [
       lane: z
         .enum([...LANE_IDS] as [LaneId, ...LaneId[]])
         .optional()
-        .describe(`只看指定能力线（${LANE_IDS.join(' / ')}）；省略返回全部 6 线`),
+        .describe(`只看指定能力线（${LANE_IDS.join(' / ')}）；省略返回全部 5 线`),
       project_dir: z
         .string()
         .optional()
@@ -499,7 +499,7 @@ export const META_TOOLS: ActionToolDef[] = [
 
   {
     // ★ T15 切片（2026-10-05）：原先只存在于 `capability_cli`（CLI-only）⇒ 能力被藏在 MCP 面之外。    //   ★ 顺带更正一条误判：T15 原写"`capability_cli` 的 MCP 等价物已存在（`capability_map`）⇒ 只需删 CLI"。
-    //     **错** —— 两者只有名字像：`capability_map` 是「6 条能力线 × 工具」的**工具导航**（零语言），
+    //     **错** —— 两者只有名字像：`capability_map` 是「5 条能力线 × 工具」的**工具导航**（零语言），
     //     本工具审的是「功能 × 语言」的**支持度矩阵**（`diagnoseCapabilities`）。删 CLI 会丢一个能力。
     name: 'capability_audit',
     writes: false,
@@ -508,7 +508,7 @@ export const META_TOOLS: ActionToolDef[] = [
     description:
       '**能力矩阵自检**（缺口清单；只读、纯计算、不改任何代码）：对语言名单（或只对**已安装**的 tree-sitter ' +
       '语言包）逐功能审计 AST 覆盖度，汇总「功能 × 语言」缺口 ⇒ 可直接给 LLM 做"补哪个功能、补哪门语言"的决策输入。' +
-      '★ 与 `capability_map` **不是一回事**：那个是「6 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**。' +
+      '★ 与 `capability_map` **不是一回事**：那个是「5 条能力线 × 工具」的**工具导航**，本工具审的是**语言支持度**。' +
       '★ `installed_only=true` 更贴近"眼下真能跑的语言"；省略则为语言名单全量（含未装包的语言）。',
     inputSchema: {
       installed_only: z.boolean().optional().describe('true = 只审已安装的 tree-sitter 语言包；省略 = 语言名单全量'),

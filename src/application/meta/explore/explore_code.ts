@@ -33,6 +33,8 @@ import { assertExploreArgKeys, assertExploreRequired } from './explore_arg_spec.
 import { semanticSearch } from '../llm/semantic_search.js';
 import { listProjectDocs, readProjectDoc, matchDocsForTargets, buildDocsPromptBlock } from '../docs/project_docs.js';
 import type { DocTargetSet } from '../docs/project_docs.js';
+import { checkDocBlocks } from '../../docs_view/check_doc_blocks.js';
+import { ADAPTERS } from '../../docs_view/registry.js';
 import { getDSL } from '../../../infrastructure/storage.js';
 import { analyzeHubs, analyzeImpact } from '../../../infrastructure/analysis/impact/index.js';
 import type { ImpactChangePoint } from '../../../infrastructure/analysis/impact/index.js';
@@ -301,7 +303,9 @@ export async function exploreCode(params: { action: ExploreAction; args: Record<
       const targets = args['targets'] && typeof args['targets'] === 'object' ? (args['targets'] as DocTargetSet) : undefined;
       if (targets && ((targets.features ?? []).length > 0 || (targets.steps ?? []).length > 0 || (targets.files ?? []).length > 0)) {
         const matched = matchDocsForTargets(man, targets);
-        const block = buildDocsPromptBlock(man, targets);
+        // §5.3：注入前现算投影对账，块带状态/rev；非绿块在注入层剔除正文（不引用陈旧数字）。
+        const checks = new Map(checkDocBlocks(projectDir, { adapters: ADAPTERS }).blocks.map((b) => [b.blockId, b]));
+        const block = buildDocsPromptBlock(man, targets, undefined, undefined, checks);
         return {
           message: `命中 ${matched.length}/${man.docs.length} 篇文档（frontmatter/文件名匹配）`,
           data: { dir: man.dir, total: man.docs.length, matched: matched.map((d) => d.id), block },

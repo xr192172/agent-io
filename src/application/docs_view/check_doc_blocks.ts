@@ -113,7 +113,7 @@ function checkOne(adapter: DocBlockAdapter, root: string): BlockCheck {
 }
 
 export interface CheckOptions {
-  adapters?: DocBlockAdapter[];
+  adapters?: readonly DocBlockAdapter[];
 }
 
 export function checkDocBlocks(root: string, opts: CheckOptions = {}): DocsCheckResult {

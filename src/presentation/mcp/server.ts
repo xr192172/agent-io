@@ -20,12 +20,20 @@ import { getProjectCacheDb } from '../../infrastructure/index/db.js';
 import { watchProjectTool } from '../../application/observe/runtime/watch_project_tool.js';
 import { listDesignSheets, getDSL } from '../../infrastructure/storage.js';
 import { listProjectDocs } from '../../application/meta/docs/project_docs.js';
+import { READ_ORDER } from '../../application/docs_view/read_order.js';
 import { installLifecycle } from './lifecycle.js';
 import { closeAllActiveWatches } from '../../application/observe/runtime/watch_project_tool.js';
 import { closeAllProjectCacheDbs } from '../../infrastructure/index/db.js';
 
 const SERVER_NAME = 'agent-io';
 const SERVER_VERSION = '0.1.3';
+
+// §5.1 取数顺序（单一出处 = docs_view/read_order.ts，instructions 不手抄第二份清单）：
+// 内部语义视图优先，手写/投影文档只是带新鲜度标注的人读缓冲，不是取数权威。
+const READ_ORDER_HINT =
+  '\n\n## 取数顺序（内部视图优先；docs/ 投影非权威）\n' +
+  READ_ORDER.map((s, i) => `${i + 1}. \`${s.key}\` —— ${s.role}`).join('\n') +
+  '\n事实优先从上述内部视图现取；docs/ 里的投影块只作辅助缓冲，非绿（stale/手改/缺失/未对账）块的数字与结论不得引用。';
 
 const server = new McpServer(
   { name: SERVER_NAME, version: SERVER_VERSION },
@@ -65,7 +73,7 @@ const server = new McpServer(
       '修改用 edit_code（符号级替换：文件+函数名+新函数体，AST 定位防改错行/改错函数，编辑后自动重建索引）；' +
       'Grep/Glob 仅作 fallback（DSL 未绑定的文件才全文搜索），Edit 工具仅作 edit_code 不适用场景的兜底。' +
       '绑定新鲜度由 edit_code（编辑即更新）/ import_project（全量）/ explore_code(action=watch)（增量）维护。' +
-      '\n\n增量模式让你逐步完善设计，避免每次重写整个 JSON。所有修改自动保存到 .agent-io/features/。' +
+      '\n\n增量模式让你逐步完善设计；设计册唯一权威位置 `.agent-io/design/<feature>.dsl.json`（旧 `features/` 目录已退场）。' +
       '\n\n能力不止于设计层，本 MCP 还提供：代码理解与索引（import_project / explore_code / find_references）、' +
       '确定性改造与重构（edit_code / rename_symbols / rename_files / refactor_pipeline / diff_views）、' +
       '运行时观测与契约对账（observe：action=log/trace/judge/instrument/uninstrument/restore/ledger/proposals/line · reconcile_chain / reconcile_effects）、' +
@@ -75,23 +83,13 @@ const server = new McpServer(
       '\n- 高频工具无需导航，直接可用：get_dsl / edit_dsl / explore_code / rename_symbols / rename_files / find_references。' +
       '\n- 执行类（observe / run_tests）、契约采集（contract_page / sync_contracts / annotate_functions）、重量分析（code_health / cross_repo_symbol_index）建议先经 capability_map 定位。' +
       '\n- 前缀语义（只列**真实存在**的）：`reconcile_`=对账（reconcile_chain / reconcile_effects）· `rename_`=改名（rename_files / rename_symbols）· `edit_`=修改（edit_code / edit_dsl）· `design_`=设计活文档（design_intent / design_line）· `move_`=搬迁（move_domain / move_symbol）。其余按 `capability_map` 的能力线查，不靠前缀猜。' +
-      '\n- 能力线：design 设计/活文档 · refactor 重构/改名 · observe 观测/验证 · harvest 契约/闭包采集 · cross 跨仓/翻译/健康 · meta 元信息/探索。',
+      '\n- 能力线：design 设计/活文档 · refactor 重构/改名 · observe 观测/验证 · cross 跨仓/翻译/健康 · meta 元信息/探索。' +
+      READ_ORDER_HINT,
   },
 );
 
 // 统一注册主工具
 registerAllTools(server);
-
-// ─────────────────────────────────────────────────────────────
-// Resource：批注语义工单（订阅式返回给外部 agent）
-// 模板 agent-io://{feature}/notes —— 读时实时解析几何批注 → Markdown 工单。
-// 与 `canvas_notes` 工具（显式调用）互为双通道。
-// ★ 2026-10-12（T188）更正：这里原先写的是 **`read_canvas_notes`** —— ★ **那个工具不存在**
-//   （注册表里的真名是 `canvas_notes`）。★ 这类"**指路到不存在的工具**"最坑：
-//   读到它的人会去调一个没有的工具，而报错来自"工具不存在"，**看不出是注释写错了**。
-// ─────────────────────────────────────────────────────────────
-// ★★★ 2026-10-23（和前端切割·第二步）：`agent-io://{feature}/notes` 这个 MCP 资源**已删除**。
-//   它读的是画布批注（canvas_notes）—— 用户裁定前端只是显示屏、人不直接插手，批注层整个退场。
 
 // Resource：项目文档清单（订阅式返回给外部 agent；正文按需用 explore_code action="docs" 显式读）
 // 与 explore_code action="docs" 互为双通道（★ 原独立工具 read_project_docs 已于 2026-10-28 并入它）。

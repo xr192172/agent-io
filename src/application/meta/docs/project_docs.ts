@@ -18,6 +18,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getStorageRoot } from '../../../infrastructure/storage.js';
+import { annotateDocForInjection } from '../../docs_view/inject_annotate.js';
+import type { BlockCheck } from '../../docs_view/types.js';
 
 /** 单篇项目文档的索引条目 */
 export interface ProjectDoc {
@@ -204,12 +206,16 @@ export function matchDocsForTargets(man: DocsManifest, targets: DocTargetSet, ma
 // Prompt 注入块（TOC 全量 + 命中正文封顶）
 // ─────────────────────────────────────────────────────────────
 
-/** 拼注入块：先全量 TOC（让 LLM 知道有哪些文档），再命中文档正文（截断封顶） */
+/** 拼注入块：先全量 TOC（让 LLM 知道有哪些文档），再命中文档正文（截断封顶）。
+ *  §5.3：投影块附对账状态/rev；非绿块正文剔除、不引用陈旧数字；人写段与生成段分区标注。
+ *  @param checks blockId → 对账读数（`checkDocBlocks` 现算；缺省 = 块未对账，非绿）
+ */
 export function buildDocsPromptBlock(
   man: DocsManifest,
   targets: DocTargetSet,
   maxLines = MAX_DOC_LINES,
   maxDocs = MAX_MATCHED_DOCS,
+  checks: Map<string, BlockCheck> = new Map(),
 ): string {
   if (man.docs.length === 0) return '';
   const toc = man.docs
@@ -219,10 +225,12 @@ export function buildDocsPromptBlock(
   const body =
     matched.length === 0
       ? ''
-      : '\n## 命中批内节点的项目文档（正文）\n' +
+      : '\n## 命中批内节点的项目文档（正文，投影块带新鲜度标注）\n' +
         matched
           .map((d) => {
-            const lines = fs.readFileSync(d.abs, 'utf8').split(/\r?\n/);
+            const raw = fs.readFileSync(d.abs, 'utf8');
+            const annotated = annotateDocForInjection(raw, checks).text;
+            const lines = annotated.split(/\r?\n/);
             const cap = Math.max(1, maxLines);
             const truncated = lines.length > cap;
             return `### ${d.id}\n\`\`\`md\n${lines.slice(0, cap).join('\n')}${truncated ? '\n…(截断，共 ' + lines.length + ' 行)' : ''}\n\`\`\``;
