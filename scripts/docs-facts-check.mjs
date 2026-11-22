@@ -35,17 +35,20 @@ const CHECKS = [
   //   "视图是不是最新"必须有门，否则手改视图（或引擎改了没重生成）在 `verify` 里是**看不见的**。
   //   退出码是三态（0 最新 / 3 陈旧或缺失 / 1 坏），本聚合器只关心"非 0 ⇒ 红"。
   ['ledger:check', 'docs/todo.md 视图是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账）'],
+  ['doc:check', '文档投影块是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账；手改生成区/stale/自洽失败非绿）'],
 ];
 
 const SUBCHECK_SCRIPT = {
   'lint:prose': 'scripts/lint-prose-as-structure.mjs',
   'manifest:check': 'scripts/gen_manifest.mjs',
+  'doc:check': 'scripts/gen_docs_view.mjs',
 };
 
-// 只读子检查的输入扩展：lint:prose 判文档散文，manifest:check 判 .agent-io 顶层。
+// 只读子检查的输入扩展：lint:prose 判文档散文，manifest:check 判 .agent-io 顶层，doc:check 判投影块与内核。
 const SUBCHECK_INPUTS = {
   'lint:prose': ['docs', 'AGENTS.md', 'README.md'],
   'manifest:check': ['.agent-io', 'structure.domains.json'],
+  'doc:check': ['docs', 'src/application/docs_view'],
 };
 
 const INHERIT_INPUTS = { ...DEFAULT_INPUTS, ...SUBCHECK_INPUTS };
@@ -87,7 +90,7 @@ for (const [script, what] of CHECKS) {
   console.log(`  ${tag} ${script.padEnd(18)} ${what} ${denom}`);
 }
 if (INHERIT) {
-  console.log(`  ⟲ 子检查继承：只读白名单 2 个（lint:prose / manifest:check）→ 继承 ${inheritedCount} / 实跑 ${ranCount}` +
+  console.log(`  ⟲ 子检查继承：只读白名单 3 个（lint:prose / manifest:check / doc:check）→ 继承 ${inheritedCount} / 实跑 ${ranCount}` +
     `（派生存储 .agent-io/scratch/verify-inheritance.json，不进 git）`);
 }
 

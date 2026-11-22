@@ -113,3 +113,22 @@ edit_dsl 写判据 → design:gen-db → design_line plan → edit_code
 | `E-GENDB` | 设计 DB | 2 |
 
 码数合计 73。★ 本表与源码逐族相等是**判据**（漂了就红），不是读数誊抄。
+
+<!-- DOC:GEN:guide.gates:BEGIN source=guide.gates@0fbed213f3744fec cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=a4f69603d93b80e2 -->
+| 门名 | 来源 |
+|---|---|
+| ts 类型 | `scripts/verify.mjs#GATES` |
+| 工具链完整 | `scripts/verify.mjs#GATES` |
+| MCP 工具签名 | `scripts/verify.mjs#GATES` |
+| Go 编译 | `scripts/verify.mjs#GATES` |
+| Go 静态检查 | `scripts/verify.mjs#GATES` |
+| 实现夹具 | `scripts/verify.mjs#GATES` |
+| 设计 DB 结构 | `scripts/verify.mjs#GATES` |
+| 设计册判据 | `scripts/verify.mjs#GATES` |
+| 判据突变 | `scripts/verify.mjs#GATES` |
+| 文档与事实 | `scripts/verify.mjs#GATES` |
+| 测试 | `scripts/verify.mjs#GATES` |
+| 结构意图 | `scripts/verify.mjs#GATES` |
+| 无卡写账 | `scripts/verify.mjs#GATES` |
+| 派生条目要求权 | `scripts/verify.mjs#GATES` |
+<!-- DOC:GEN:guide.gates:END body_sha256=a4f69603d93b80e2 -->

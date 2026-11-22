@@ -87,3 +87,20 @@ behavior-cases / call-exists / run / domain-independent
 3. 不把试点变成 DSH 专属引擎或插件。通用宿主无关层未成立前，不做 DSH 专属实现，不把任何远端 UI 当第二控制面或第二真相源。
 
 下一卡开工前必须给出：项目路径、目标功能、非目标、保持行为、验收反例、serves 哪个阶段出口。缺任一项先侦察，不施工。
+
+<!-- DOC:GEN:dev.live-cards:BEGIN source=dev.live-cards@7aef16768ba2bd2d cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=8b76276b245001d4 -->
+| 卡 | feature | 状态 | 更新时刻 |
+|---|---|---|---|
+| `todo_RESP-CONTRACT` | agent-io | candidate | 2026-11-22T16:01:42.981Z |
+| `file_src_application_refactor_edit_remove_dead_imports_ts` | agent-io | candidate | 2026-11-19T16:56:34.996Z |
+| `file_src_application_design_board_pool_ts` | agent-io | candidate | 2026-11-19T16:56:34.664Z |
+| `file_src_domain_overlay_ts` | agent-io | candidate | 2026-11-18T14:05:43.367Z |
+| `file_src_domain_discussion_log_ts` | agent-io | candidate | 2026-11-18T14:05:42.600Z |
+| `file_src_domain_design_sheet_ts` | agent-io | candidate | 2026-11-18T14:05:41.856Z |
+| `file_src_domain_b_terms_ts` | agent-io | candidate | 2026-11-18T14:05:41.114Z |
+| `file_src_application_design_rewrite_symbol_diff_ts` | agent-io | candidate | 2026-11-18T14:05:39.480Z |
+| `todo_处置卡-不是导览-src-application-design-intent-j` | agent-io | candidate | 2026-11-07T03:14:06.798Z |
+| `todo_处置卡-不是导览-src-domain-rejection-kind-ts-那-` | task-system-plan | candidate | 2026-11-07T03:13:58.504Z |
+
+活卡 = open（candidate/claimed）∧ 未被取代；done/void/被取代见台账与归档视图。
+<!-- DOC:GEN:dev.live-cards:END body_sha256=8b76276b245001d4 -->

@@ -69,3 +69,50 @@ AgentIO 是由目标驱动的程序开发引擎。一个真实开发任务应走
 4. 写文档先改既有入口，不新开平行说明。
 5. 历史由 git 与 ledger 保存；当前树只放可执行的现在。
 6. 任务卡分载体：节点卡在册、todo 卡在库；清点全部卡只用 `cardLivesOf`，不用 `live_cards` 单表（口径见 `docs/ROOTS.md` §3）。
+
+<!-- DOC:GEN:index.tools:BEGIN source=index.tools@eeda5c6983b3da1f cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=f447f4ebdf3571aa -->
+| 工具 | 线 | 说明 |
+|---|---|---|
+| `annotate_functions` | refactor | 让"函数做什么"由源码自带语义注释承载，而非每次由 LLM 从中重新提取。 |
+| `apply_refactor_plan` | refactor | 「先算清单 → 预览 → 批量落盘」的**第二半**（规划书 §16.3 P-C）：按本工具 `targets` 形态产出的清单落盘（不重算清单、不再要 old_text）。 |
+| `capability_audit` | meta | **能力矩阵自检**（缺口清单 |
+| `capability_map` | meta | 统一能力线入口（只读导航，无副作用）。 |
+| `chain_hop_args` | meta | **生成链上某一跳的可跑入参**（只读）：按 `direction` 分两档—— · `direction='first'`（缺省）：给**链名** `chain` 或**起点工具名** `t… |
+| `code_health` | cross | 代码健康度（选材体检）：对 project_dir 全项目做三层体检，输出健康分 + 问题清单。 |
+| `contract_page` | meta | **契约页 / 类型页**（只读）：给一个**符号名或类型名**，**一次给全**六块 —— 调用方**不用再调别的工具**：① 定义在哪（文件:行 + 签名，来自内核 AST） |
+| `cross_repo_symbol_index` | cross | 跨项目符号索引（杂交前"会不会撞名"）：对两个项目根各建顶层符号集合，再求交/求差。 |
+| `deprecate_offline` | refactor | 废弃积木**下线链**（C 链）：废弃证据自取（`detectDeadImports` 全量扫 + 编译级验收），把**项目内自研源码模块**真正下线。 |
+| `design_intent` | design | 「设计意图（why）」统一入口：**没有独立工具** —— 读 intent 走 `get_dsl`（query=goals / edge_intents），写 intent 走本入口 act… |
+| `design_line` | design | 设计链【六步读数】：源码 →① 实际 DB →② 实际 DSL →③ 设计 DSL →④ 人写意图 →⑤ 设计 DB →⑥ 设计签名 → 源码。 |
+| `diagnose` | meta | ★ **诊断统一入口**（2026-11-09 收敛试点）：`apply` 缺省/false ⇒ **只读诊断**（不写盘）：症状解析 → 符号定位（cache.db）→ 调用链追溯 → 影响… |
+| `diagnose_loop` | meta | ★ **兼容别名**：与 `diagnose` **共用同一个 handler**，行为逐字相同 —— 只为不断旧调用方与旧链（chain_wiring 的产物边）。 |
+| `diff_views` | refactor | 覆盖体检（**不是核销**）：比 design 与 live 两份 DSL，报「设计册待填充」——文件层 / 符号·API 层 / 边层 / 已声明排除 / 视图陈旧。 |
+| `edit_code` | refactor | 符号级语义编辑：按 文件+符号名 定位函数/方法/类/接口，AST 确定边界后整体替换/插入/删除。 |
+| `edit_dsl` | design | 统一写入口：通过 operations 列表批量执行节点/边/文件/API 的增删改、节点平移、语义绑定、状态更新，以及快照/自动布局/仿真重置。 |
+| `explore_code` | meta | 代码理解统一入口：通过 action 参数化执行各类分析（动作清单见 `action` 字段的 describe）。 |
+| `find_references` | refactor | 查找符号/字段的引用——改/删前看波及面。 |
+| `get_dsl` | design | 统一只读入口：通过 query 参数查询 DSL 数据。 |
+| `go_originals` | cross | 解析单个 Go 源码文件，返回其中每个顶层符号(func/const/var/type)的 Go 原文片段(srcSnippet)与起始行(srcLine)。 |
+| `import_project` | design | 扫描代码项目（.go/.ts/.py/.js 等）生成 DSL：文件节点 + 调用边 + 符号/API 语义层，写入 agent-io 存储。 |
+| `index_integrity` | meta | 只读自检：回答"我眼下读到的索引能不能当真"。 |
+| `ledger` | meta | **台账唯一入口**：单工具 + action 枚举，每个 action **直映一个引擎 API**（纯透传 + 参数校验）。 |
+| `move_domain` | refactor | ★ **一次搬完一个域**（整块搬迁，T166）：按**域表声明的变化**把旧家那一整块搬到新家，并**逐个改写 import**。 |
+| `move_symbol` | refactor | 跨文件移动模块级符号（语义重构第一棒）：把 file 里的模块级符号 symbol 搬到 to_file，并自动把工作区内所有「仅引入该符号」的 import/再导出目标从源文件重定向到 to… |
+| `observe` | observe | ★ 观察线只读三合一入口：**没有独立工具**（`observe_log` / `observe_trace` / `observe_judge` 都不存在）——三个只读动作都在本入口的 ac… |
+| `opl` | design | propose：由项目事实出候选 ChangeSet + 确认清单（只读）。 |
+| `recommend_observe_points` | observe | ★ 观测点推荐器：**不做全量插桩**，而是先用索引/图 + AST 语义算出「该在哪打日志」，只在推荐点上插。 |
+| `reconcile_chain` | observe | 中观档对账（工具可用性复盘缺口 C）：按「文件/宿主节点」一条命令的真跑 + 查数据 + 对账，填补宏观（整项目对账）与微观（trace-exec 纯函数子集）之间的空档。 |
+| `reconcile_effects` | observe | 积木契约动静对账（Brick Harvest Phase 2c 合龙）：读 <project>/.agent/observe/events-*.jsonl 中的 effect 事件（Go 语言… |
+| `recover_run` | observe | ★ P2 引擎原生可恢复执行的**只读**恢复入口：不依赖聊天上下文，现场组合任务（目标/owner/代际/租约）、Run/Attempt 事件流 fold 出的 checkpoint、既有证… |
+| `refactor_judge` | refactor | LLM 审闭环的裁决门：接受候选问题清单，逐条裁【采纳/驳回/不确定(+置信度+理由)】，把"拿不定主意"的（uncertain）上抛回控制台/上下文（经 alert_inbox 入箱，下一次… |
+| `refactor_pipeline` | refactor | 确定性重构管线：把可自动执行的瘦身改写串成一条链，一次调用按序执行、统一增量验证、失败只回滚到最近绿点。 |
+| `rename_files` | refactor | 文件改名/移动（单条或批量统一入口）并联动全仓 import 引用改写，对标脚本效率（消除"70 文件改名=70 次调用"的粒度问题）。 |
+| `rename_symbols` | refactor | 标识符改名**统一入口**：一个工具、两种作用域粒度，用 scope 选 |
+| `rules` | refactor | 规则库统一入口：**没有独立工具** —— 导出 / 应用 / 检查分别是 action=export / apply / check（三者操作的是**同一个库**）。 |
+| `run_tests` | observe | 跑目标项目的测试（走 package.json 的 scripts.test，以退出码判成败，退出码 0 ⇒ 成功）。 |
+| `snapshot` | refactor | 代码快照统一入口：**没有独立工具** —— 列快照走 action=list、回滚走 action=rollback（两者操作的是同一个快照库）。 |
+| `structure_gap` | refactor | 结构意图 vs 现状**六态**读数：读 `<project_dir>/structure.domains.json`（**域 = 能力的家**，声明"哪个目录算哪个域"）与磁盘现状对账，回答… |
+| `sync_contracts` | meta | 契约回填（修复契约漂移）：以注册表的 zod schema 为唯一事实源，把每个已注册工具的输入契约生成签名回填到 DSL semantic.files 的 expected_apis。 |
+| `translate` | cross | 把 Go 源文件机械生成 TS 骨架 + 验证闸（默认），并给出一份**回执**：known（AST/常量/import/调用边的事实）/ unknowns（推测的惯用法映射、缺库、行为假设… |
+| `upgrade` | meta | **版本升级契约差**（一个入口两个动作）。 |
+<!-- DOC:GEN:index.tools:END body_sha256=f447f4ebdf3571aa -->

@@ -213,6 +213,6 @@ test('R8 derived 存储落点 = .agent-io/scratch/ 下（不进 git 的 scratch 
   assert.match(I.STORE_REL, /^\.agent-io\/scratch\//, `存储必须在 scratch 下：${I.STORE_REL}`);
   const gi = fs.readFileSync(path.join(REPO, '.gitignore'), 'utf8');
   assert.match(gi, /\.agent-io\/\*/, '.gitignore 必须忽略 .agent-io/*（scratch 派生不进 git）');
-  // 只读门白名单恰好是 lead 裁定的四个（写面门不得混入）
-  assert.deepEqual([...I.INHERITABLE].sort(), ['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check'].sort());
+  // 只读门白名单恰好是 lead 裁定的五个（写面门不得混入）
+  assert.deepEqual([...I.INHERITABLE].sort(), ['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check', 'doc:check'].sort());
 });

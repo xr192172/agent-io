@@ -30,7 +30,7 @@ export const STORE_REL = '.agent-io/scratch/verify-inheritance.json';
 export const STORE_VERSION = 1;
 
 /** 继承白名单（只读门）—— 名字与 `GATES` / 子检查逐字相同 */
-export const INHERITABLE = Object.freeze(['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check']);
+export const INHERITABLE = Object.freeze(['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check', 'doc:check']);
 
 /** 默认额外输入（可覆盖；门的 args[0] 脚本自动进指纹） */
 export const DEFAULT_INPUTS = Object.freeze({
@@ -38,6 +38,7 @@ export const DEFAULT_INPUTS = Object.freeze({
   'Go 静态检查': ['observe-lang-go'],
   'lint:prose': [],
   'manifest:check': ['.agent-io'],
+  'doc:check': ['docs', 'src/application/docs_view'],
 });
 
 const norm = (p) => String(p ?? '').replace(/\\/g, '/').replace(/^\.\//, '');

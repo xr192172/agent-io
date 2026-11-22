@@ -26,9 +26,9 @@ AgentIO 是一个目标驱动的程序开发引擎：用户给目标，模型做
 | 台账 | append-only 事件流；挂账、批注、销账、裁定留痕，历史不能被静默改写 |
 
 <!-- FACTS:TOOLS:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
-## 六条能力线（41 个工具，全部证据闸控）
+## 六条能力线（42 个工具，全部证据闸控）
 
-> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 5 / cross 4 / design 6 / meta 11 / refactor 15。
+> 工具数与语言矩阵的**唯一事实源**是 [docs/FACTS.json](docs/FACTS.json)（`node scripts/gen-facts.mjs` 生成）；本节数字由它回写，**勿手改**。分线：observe 6 / cross 4 / design 6 / meta 11 / refactor 15。
 <!-- FACTS:TOOLS:END -->
 
 <!-- FACTS:LANG:BEGIN（由 scripts/gen-facts.mjs 生成，勿手改） -->
