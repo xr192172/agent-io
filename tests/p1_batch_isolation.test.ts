@@ -30,7 +30,8 @@ test('T6-② 槽位建池固定：worker 数 = min(jobs, n)，槽位随 worker �
 test('T6-③ INJECT_VAR 优先级：外层 DATA_ROOT 优先注入，否则 HOME；测试自钉 HOME 不被抢', () => {
   assert.match(runner, /process\.env\.AGENT_IO_DATA_ROOT\?\.trim\(\)\s*\?\s*'AGENT_IO_DATA_ROOT'\s*:\s*'AGENT_IO_HOME'/,
     'INJECT_VAR 必须 DATA_ROOT 优先、HOME 兜底');
-  assert.match(runner, /env:\s*\{\s*\.\.\.process\.env,\s*\[INJECT_VAR\]/, '注入必须保留既有环境（自钉值不被覆盖）');
+  assert.match(runner, /const childEnv = scrubNpmLifecycle\(\{\s*\.\.\.process\.env,\s*\[INJECT_VAR\]/, '注入必须保留既有环境（自钉值不被覆盖）');
+  assert.match(runner, /env: childEnv/, '子进程 env 走隔离构造（剥离 npm 脚本身份面，D-S1-b）');
 });
 
 test('T6-④ 并行档降级自白横幅；默认档无并行横幅（R4 平移）', () => {

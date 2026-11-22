@@ -156,6 +156,22 @@ let SEL = null;
 const RUN_HOME_ROOT = mkdtempSync(path.join(os.tmpdir(), 'agent-io-tests-home-'));
 const INJECT_VAR = process.env.AGENT_IO_DATA_ROOT?.trim() ? 'AGENT_IO_DATA_ROOT' : 'AGENT_IO_HOME';
 /**
+ * ★ D-S1-b（跨文件污染 F18）：测试子进程是**全新测试运行时**，剥掉外层 npm run-script 的身份变量。
+ *
+ * 病（实测复现）：`npm test` 由 npm 拉起 runner ⇒ runner 进程带 `npm_lifecycle_event=test`；
+ *   runner 用 `...process.env` 把它继承进每个测试子进程。被测 `run_tests` 的自递归守卫
+ *   （`run_tests.ts:76`）读到该变量且省略 filter ⇒ 误判"已在 npm 测试进程内"，返回 `fail()`
+ *   （回执无 `attempt` 字段）⇒ p2_run_recovery 的 P2-3/P2-8/P2-14 全量串行红；隔离单跑
+ *   （不经 npm、无此变量）19/19 绿。
+ * 修法（runner 隔离层，不改被测源码/expect）：子进程 env 剥离 npm 脚本身份面；外层 npm 配置
+ *   （`npm_config_*` / `npm_package_*`）与既有注入口径原样保留。守卫在真实运行期仍有效。
+ */
+const NPM_LIFECYCLE_KEYS = ['npm_lifecycle_event', 'npm_lifecycle_script', 'npm_execpath', 'npm_node_execpath'];
+function scrubNpmLifecycle(env) {
+  for (const k of NPM_LIFECYCLE_KEYS) delete env[k];
+  return env;
+}
+/**
  * 一个文件自己的数据根。
  *
  * 第二参 `slot` = **worker 固定槽位**（串行档恒 0）。
@@ -439,12 +455,14 @@ function runOne(rel, slot = 0) {
     //   ⇒ 本机任何 `npm test` 都恒红，而用例其实全绿（假红：红在口径，不在被测代码）。
     //   ⇒ 修法不是"再写一套 spec 解析"（那会让门的口径跟着 Node 版本漂，且是第二把尺），
     //     而是**要 TAP**：`--test-reporter tap` 在仓基线 Node 22 与本机 Node 24 上都存在。
+    const childEnv = scrubNpmLifecycle({ ...process.env, [INJECT_VAR]: testDataHome(rel, slot) });
     const child = spawn(process.execPath, ['--import', 'tsx', '--test', '--test-reporter', 'tap', rel], {
       cwd: ROOT,
       // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
       shell: false,
       // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
-      env: { ...process.env, [INJECT_VAR]: testDataHome(rel, slot) },
+      // ★ D-S1-b：剥除外层 npm 脚本身份变量（见 NPM_LIFECYCLE_KEYS 注释），自钉值仍由 spread 保留
+      env: childEnv,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     child.stdout.setEncoding('utf8');
