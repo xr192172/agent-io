@@ -47,7 +47,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import ts from 'typescript';
 // ★ R75：重活排他锁的**唯一实现**（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
@@ -95,6 +95,65 @@ export function journalRelOf(root, abs) {
     throw new Error(`恢复日志只接受项目内相对路径：${rel || '(空)'}`);
   }
   return rel;
+}
+
+// ── 还原后索引一致性（门 15 复发根治；Main 2026-11-23 授权事实抽取侧行为改动）─────────
+//
+// ## 病史（批 3 同型复发，只读定位）
+// 变异写盘 → 按需索引同步把 `files.modified_at` 记成变异时刻；旧三条还原路径只 `writeFileSync`
+// 写回字节 + `utimesSync` 回写 atime/mtime，**不回写索引行** ⇒ 磁盘 mtime 已还原，索引行却停在
+// 变异时刻；门 15（freshness 比 size + mtime）据此判陈旧。旧版靠事后 `refresh:true` 掩盖，不算根治。
+//
+// ## 根治口径
+// 还原成功后：① 失效受影响文件的旧索引行（`removeFile`，级联清节点 / 边 / FTS）；② 从磁盘事实
+// 重同步（`syncFile`，懒预热解析器）。两条都走现役索引写端（`symbols.ts` / `db.ts` 唯一住处），
+// 不另立第二份索引写口径。
+// · 无 `cache.db` ⇒ 本项目没有索引行，跳过（门 15 不计未索引文件）；
+// · 重同步失败 ⇒ 如实进 failures，不静默留陈旧（不许把判不了读成已一致）；
+// · 退出钩子（signal / uncaught / exit）进程即将结束，来不及 await 重同步；残留由下次启动的
+//   `journalRecover` 路径在测量前补做（与崩溃日志同一套恢复模型）。
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+let indexMods = null;
+
+async function loadIndexModules() {
+  if (indexMods) return indexMods;
+  const dir = pathToFileURL(path.join(REPO_ROOT, 'dist/src/infrastructure/index/')).href;
+  const db = await import(`${dir}db.js`);
+  const sym = await import(`${dir}symbols.js`);
+  indexMods = { db, sym };
+  return indexMods;
+}
+
+/**
+ * 还原后失效并重同步受影响文件的索引行。
+ * @returns {Promise<{status:'no-db'|'resynced'|'failed', path:string, node_count?:number, why?:string}>}
+ */
+export async function resyncRestoredIndex(root, abs) {
+  const rel = journalRelOf(root, abs);
+  const { db: dbMod, sym: symMod } = await loadIndexModules();
+  const dbPath = dbMod.projectCacheDbPath(root);
+  if (!fs.existsSync(dbPath)) return { status: 'no-db', path: rel };
+  const db = dbMod.getProjectCacheDb(root);
+  symMod.removeFile(db, root, abs); // 失效旧行（变异时刻事实全清，CASCADE 带走节点/边/FTS）
+  const res = await symMod.syncFile(db, root, abs);
+  if (res.status === 'failed') {
+    return { status: 'failed', path: rel, why: res.error ?? 'syncFile 未注明失败原因' };
+  }
+  return { status: 'resynced', path: rel, node_count: res.node_count };
+}
+
+/** 批量重同步；返回失败清单（空 = 全部 resynced / 无库跳过）。 */
+async function resyncRestored(root, rels) {
+  const failures = [];
+  for (const rel of rels) {
+    try {
+      const out = await resyncRestoredIndex(root, path.join(root, rel));
+      if (out.status === 'failed') failures.push({ file: rel, why: out.why });
+    } catch (e) {
+      failures.push({ file: rel, why: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return failures;
 }
 
 /**
@@ -331,18 +390,23 @@ export function journalRecover(root, log = (m) => console.error(m)) {
  * ★ DS-1R4：旧版（内容 sha 当身份、失败只 log 然后继续）已被上面的 U-01/U-02/U-04 版本取代。
  */
 function restoreAll(reason) {
+  const restored = [];
   for (const [abs, rec] of ACTIVE) {
     try {
       fs.writeFileSync(abs, rec.buf);
       if (rec.atimeMs) fs.utimesSync(abs, rec.atimeMs / 1000, rec.mtimeMs / 1000);
       const now = sha(fs.readFileSync(abs));
       if (now !== rec.sha) console.error(`  ✗ 还原后 sha256 不一致：${abs}（${reason}）`);
-      else if (JOURNAL_ROOT) journalCommit(JOURNAL_ROOT, abs);
+      else {
+        if (JOURNAL_ROOT) journalCommit(JOURNAL_ROOT, abs);
+        restored.push(journalRelOf(JOURNAL_ROOT ?? process.cwd(), abs));
+      }
     } catch (e) {
       console.error(`  ✗ 还原失败：${abs} —— ${e.message}（${reason}）`);
     }
   }
   ACTIVE.clear();
+  return restored;
 }
 
 function installHooks() {
@@ -1152,9 +1216,23 @@ export async function runMutate(feature, root = process.cwd(), opts = {}) {
     if (rec.restored.length > 0) {
       console.error(`★ 上一轮遗留 ${rec.restored.length} 个变异已恢复，继续本轮测量。`);
     }
+    // ★ 门 15 根治：崩溃日志恢复的文件，索引行必须随磁盘事实重同步（失效旧行 → 重同步），
+    //   不许把陈旧行留给事后 refresh 掩盖；重同步失败 ⇒ 拒绝开始新测量（树的索引事实不可知）。
+    const recoverResyncFailures = await resyncRestored(ROOT, rec.restored);
+    if (recoverResyncFailures.length > 0) {
+      throw new Error(
+        `崩溃日志恢复后索引重同步未完成（${recoverResyncFailures.length} 条）⇒ 拒绝开始新的变异测量：\n` +
+          recoverResyncFailures.map((f) => `  · ${f.file} —— ${f.why}`).join('\n'),
+      );
+    }
     return await runMutateLocked(ROOT, features, distEntry, opts);
   } finally {
-    restoreAll('finally');
+    const restoredResidual = restoreAll('finally');
+    // ★ 门 15 根治：进程级兜底还原的文件同样失效重同步；失败响亮点名（finally 内不抛，避免掩盖原错）。
+    if (restoredResidual.length) {
+      const rsFailures = await resyncRestored(ROOT, restoredResidual);
+      for (const f of rsFailures) console.error(`  ✗ 还原后索引重同步失败：${f.file} —— ${f.why}`);
+    }
     unlock();
   }
 }
@@ -1217,6 +1295,11 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
       ACTIVE.delete(abs);
       journalCommit(ROOT, abs); // ★ T-07：正常还原后销账
       if (!restored.includes(plan_.file)) restored.push(plan_.file);
+      // ★ 门 15 根治：字节 + mtime 还原后，索引行必须失效重同步；重同步失败视同还原未完成，停机。
+      const rs = await resyncRestoredIndex(ROOT, abs);
+      if (rs.status === 'failed') {
+        throw new Error(`★ 还原后索引重同步失败：${plan_.file} —— ${rs.why}（磁盘已还原，索引行未对齐；已停机，别再跑）`);
+      }
     }
   };
 
@@ -1241,7 +1324,12 @@ async function runMutateLocked(ROOT, features, distEntry, opts) {
   } finally {
     // ★ 锁不在本函数里释放：它由 `runMutate` 的 finally 统一释放（本函数整段跑在锁内）。
     //   在这里再 `unlock()` 一次只是重复（unlink 已幂等），但会让"谁拥有锁"变得含混。
-    restoreAll('finally');
+    const restoredResidual = restoreAll('finally');
+    // ★ 门 15 根治：残留还原的文件同样要失效重同步；失败响亮点名（不在 finally 内抛以免掩盖原错）。
+    if (restoredResidual.length) {
+      const rsFailures = await resyncRestored(ROOT, restoredResidual);
+      for (const f of rsFailures) console.error(`  ✗ 还原后索引重同步失败：${f.file} —— ${f.why}`);
+    }
   }
 
   const tally = (cls, v) => items.filter((i) => i.class === cls && i.verdict === v).length;

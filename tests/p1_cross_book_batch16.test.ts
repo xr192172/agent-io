@@ -239,16 +239,17 @@ const CARD_TOTAL_BEFORE = 86;
 // ★ 2026-11-20：批 16 的 74 张之后，新增 todo_dispose-write-log-audit-2026-11-04（done、非 void）拥有五笔冻结无卡写 ⇒ live_cards 合法 +1；不是改写批 16 历史。
 // ★ 2026-11-23：b0e0f850 受闸立卡 todo_RESP-CONTRACT（candidate / owner=null / 无 node_id 排队态，规格 docs/TASK-RESP-CONTRACT.md）⇒ live_cards 再 +1；不强制立设计册节点。
 // ★ 2026-11-23（批 4 施工卡 · Main 常设计数钉口径受闸同步）：受闸立卡 todo_batch4-ingestion-slice（candidate / owner=null / 无 node_id 排队态，单写者 engine:batch4-ingestion）⇒ live_cards 再 +1；纯计数钉随合法受闸立卡机械派生，无行为语义变化，证据见 artifacts/batch4-ingestion-slice-回执.md。
-const CARD_TOTAL_AFTER = 77;
+// ★ 2026-11-23（批 4 阶段 2 · Main 常设计数钉口径受闸同步）：受闸立卡 todo_batch4-stage2-wiring（candidate / owner=null / 无 node_id 排队态，actor=agent:batch4-stage2）⇒ live_cards 再 +1；纯计数钉随合法受闸立卡机械派生，无行为语义变化，证据见 artifacts/batch4-stage2-回执.md。
+const CARD_TOTAL_AFTER = 78;
 const ZONE_BEFORE: Readonly<Record<string, number>> = { 'agent-io': 8, 'task-system-plan': 78 };
-const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 17, 'task-system-plan': 60 };
+const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 18, 'task-system-plan': 60 };
 const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
 const CRITERIA_TOTAL = 900; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：890 → 900 = P1 五节点各 2 条判据（presentation/daemon/server.ts、application/tool_annotations.ts、application/meta/ledger/tool_schema.ts、application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；各 file-exists + run）共 10 条，出处 .agent-io/design/agent-io.dsl.json。 // ★ 2026-11-22（36-S1 判据守恒读数同步）：上一当前值 879 → 当前 890 = mutate 新增 7 条真实 call-exists + diff_impact 新增 4 条语义判据（7 + 4 = 11）；出处 = 当前设计册 .agent-io/design/agent-io.dsl.json（883）+ agent-io-toolface.dsl.json（7），归档册 task-system-plan 计 0。★ 旧读数 879 的出处保留在下面三段历史注释里，不回改。 // ★ 2026-11-20（DS-1R2 收尾）：877 → 879 = scheduling_policy 新增 planStanding（no_op 六条件）+ scopeDecision（scope 硬约束）两条行为判据；出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（DS-1 证据帧 / 只读影子调度）：868 → 877 = scheduling_evidence 3 + scheduling_policy 2 + evidence_frame 2 + shadow_scheduler 1 + schedule-shadow 1；每条都挂在新增文件节点上，出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；文档基线 857 的出处保留在历史注释。
-const RESP_TOTAL = 14371; // ★ 2026-11-23（批 4 切片 · Main 常设计数钉口径受闸同步）：13829 → 14371 = +542 字 = 受闸入册 5 个 ingestion 文件 responsibility 字数合计（逐文件实测：provenance 107 / record 90 / roads 99 / store 120 / candidates 126，探针 artifacts/batch4-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：12522 → 13829 = +1307 字 = A3 受闸入册 22 个新文件 responsibility 字数合计（逐文件实测出自 .agent-io/design/agent-io.dsl.json 的 semantic.files；探针 artifacts/d-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：12355 → 12522 = +167 字 = src/application/action_effect.ts 93 字 + tests/p1_action_effect_boundary.test.ts 74 字（实测；出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）。 // ★ 2026-11-20（DS-1）：11911 + 5 个新文件的 responsibility 字数 = 12355（实测；逐文件出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）
-const PATHS_TOTAL = 633; // ★ 2026-11-23（批 4 切片 · Main 常设计数钉口径受闸同步）：628 → 633 = +5 去重 path = 受闸入册 5 个 ingestion 文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：606 → 628 = +22 去重 path = A3 受闸入册 22 个新文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：604 → 606 = +2 去重 path = src/application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；不是放宽判定。 // ★ 2026-11-20（DS-1）：599 + 5 个新语义文件（scheduling_evidence / scheduling_policy / evidence_frame / shadow_scheduler / scripts.schedule-shadow） = 604；不是放宽判定。
+const RESP_TOTAL = 14829; // ★ 2026-11-23（批 4 阶段 2 · Main 常设计数钉口径受闸同步）：14371 → 14829 = +458 字 = 受闸入册 4 个接线文件 responsibility 字数合计（逐文件实测：spec_views 108 / failure_origin 123 / ablation_scope 101 / acceptance_metrics 126，探针 artifacts/batch4-stage2-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-23（批 4 切片 · Main 常设计数钉口径受闸同步）：13829 → 14371 = +542 字 = 受闸入册 5 个 ingestion 文件 responsibility 字数合计（逐文件实测：provenance 107 / record 90 / roads 99 / store 120 / candidates 126，探针 artifacts/batch4-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：12522 → 13829 = +1307 字 = A3 受闸入册 22 个新文件 responsibility 字数合计（逐文件实测出自 .agent-io/design/agent-io.dsl.json 的 semantic.files；探针 artifacts/d-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：12355 → 12522 = +167 字 = src/application/action_effect.ts 93 字 + tests/p1_action_effect_boundary.test.ts 74 字（实测；出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）。 // ★ 2026-11-20（DS-1）：11911 + 5 个新文件的 responsibility 字数 = 12355（实测；逐文件出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）
+const PATHS_TOTAL = 637; // ★ 2026-11-23（批 4 阶段 2 · Main 常设计数钉口径受闸同步）：633 → 637 = +4 去重 path = 受闸入册 4 个接线文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-23（批 4 切片 · Main 常设计数钉口径受闸同步）：628 → 633 = +5 去重 path = 受闸入册 5 个 ingestion 文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：606 → 628 = +22 去重 path = A3 受闸入册 22 个新文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：604 → 606 = +2 去重 path = src/application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；不是放宽判定。 // ★ 2026-11-20（DS-1）：599 + 5 个新语义文件（scheduling_evidence / scheduling_policy / evidence_frame / shadow_scheduler / scripts.schedule-shadow） = 604；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
@@ -262,12 +263,12 @@ test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 
   }
   const list = cards();
   assert.deepEqual(orphansOf(list), [], '孤儿必须归零（每张卡都要有显式归宿 —— 要么在属主册活着，要么已入史）');
-  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 施工卡 1；实测 ${list.length}）`);
+  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1；实测 ${list.length}）`);
   const zone: Record<string, number> = {};
   for (const c of list) zone[c.feature] = (zone[c.feature] ?? 0) + 1;
   assert.deepEqual(zone, ZONE_AFTER, `分区必须等于 ${JSON.stringify(ZONE_AFTER)}（实测 ${JSON.stringify(zone)}）`);
-  // Δ 闭合：agent-io +9（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 施工卡 1）· 计划册 −18（19 张里的 18 张全出列）
-  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 9, 'agent-io 分区 +9 = 批 16 净 +6 + 2026-11-20 认账卡 1 + 2026-11-23 立卡 1 + 批 4 施工卡 1');
+  // Δ 闭合：agent-io +10（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1）· 计划册 −18（19 张里的 18 张全出列）
+  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 10, 'agent-io 分区 +10 = 批 16 净 +6 + 2026-11-20 认账卡 1 + 2026-11-23 立卡 1 + 批 4 切片卡 1 + 批 4 阶段 2 卡 1');
   assert.equal(ZONE_BEFORE[TSP]! - zone[TSP]!, 18, `计划册分区 −18（19 − 1 张 agent-io 自己的）；实测 −${ZONE_BEFORE[TSP]! - zone[TSP]!}`);
 });
 

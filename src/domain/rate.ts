@@ -54,6 +54,11 @@ export const RATE_QUESTIONS = [
   //   这条问题回答的是「文件条目里有多少条写了**真职责**」（分子 = `responsibilityVerdict()` 判 `ok` 的条数，
   //   分母 = 全部文件条目）；★ 等于文件名/路径的占位值与扫描器统计文案**都不算**已填（AGENTS 0.12）。
   { id: 'responsibility-filled', label: '文件职责已写 → 全量文件条目' },
+  // ★ 2026-11-23（批 4 阶段 2 · 候选 6）：验收双口径 —— 唯一调用点 = `ingestion/acceptance_metrics.ts`。
+  //   `criteria-pass-rate` = 宽松均分口径（MUST/SHOULD 都计入）；`must-criteria-all-pass` = 严格口径
+  //   （MUST 全过才算通过；SHOULD 分期，不进这个率）。分子 ⊆ 分母由 `rateOf` 强制，双数同印。
+  { id: 'criteria-pass-rate', label: '验收判据通过 → 全部验收判据' },
+  { id: 'must-criteria-all-pass', label: 'MUST 判据全过 → MUST 判据总数' },
 ] as const;
 
 /** 一个率的 `question` 取值（从 `RATE_QUESTIONS` 派生，别再手写一份字面量联合类型）。 */

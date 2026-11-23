@@ -42197,6 +42197,54 @@
           "expectations": [],
           "updated_at": "2026-11-23T08:57:46.624Z"
         }
+      },
+      {
+        "id": "file_src_application_ingestion_spec_views_ts",
+        "label": "spec_views.ts",
+        "type": "file",
+        "path": "src/application/ingestion/spec_views.ts",
+        "title": "候选 1 只读分层视图：committed/projected 进判据/上下文注入，archived 只证据检索；superseded_by 指针在记录集内解析，悬空 → unsupported，取代是关系不是状态。",
+        "decision": {
+          "summary": "对齐现役 superseded_by 关系列 / supersede 事件 / 归档墓碑；不恢复 superseded 持久状态；归档读端过滤口径对账留待后续批次。",
+          "expectations": [],
+          "updated_at": "2026-11-23T11:37:38.195Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_failure_origin_ts",
+        "label": "failure_origin.ts",
+        "type": "file",
+        "path": "src/application/ingestion/failure_origin.ts",
+        "title": "候选 2 归因口径纯函数：枚举 agent/infra/harness/unknown；unknown 不得 pass（原判 pass 退 unsupported）；judge_noise 记录为校准信号不混能力分，阈值未实验前 pending。",
+        "decision": {
+          "summary": "harness/unknown 为 AgentIO 扩展值，provenance 注明；表外归因抛错不静默归类；落 ledger 字段走既有受闸写端，本模块不新建写端。",
+          "expectations": [],
+          "updated_at": "2026-11-23T11:37:38.311Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_ablation_scope_ts",
+        "label": "ablation_scope.ts",
+        "type": "file",
+        "path": "src/application/ingestion/ablation_scope.ts",
+        "title": "候选 5 消融范围与分名：content_placebo_ablation 一期范围 DSL/判据/提示注入；长会话/多轮边界二期登记不施工；与 incsel_ablation 严格分名，不替代不混淆。",
+        "decision": {
+          "summary": "门名归类闭集：表外名归 unknown 不造口径；消融任务集/模型对照/CI 成本范围待 Main 裁。",
+          "expectations": [],
+          "updated_at": "2026-11-23T11:37:38.418Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_acceptance_metrics_ts",
+        "label": "acceptance_metrics.ts",
+        "type": "file",
+        "path": "src/application/ingestion/acceptance_metrics.ts",
+        "title": "候选 6 双口径验收纯函数：criteria_pass_rate 宽松均分 + all_criteria_pass 严格（MUST 全过）+ failed_criteria_ids 一等清单；两率走现役 rateOf 注册表，SHOULD 分期不强制。",
+        "decision": {
+          "summary": "分层 tier 由调用方按现役口径传入，本模块不替判据自造 tier 字段；双口径字段落库属后续对账批次，不另造统计权威。",
+          "expectations": [],
+          "updated_at": "2026-11-23T11:37:38.529Z"
+        }
       }
     ],
     "edges": [
@@ -85753,6 +85801,79 @@
             "notes": "from:cache.db@1795424267918"
           }
         ]
+      },
+      {
+        "id": "file_src_application_ingestion_spec_views_ts",
+        "path": "src/application/ingestion/spec_views.ts",
+        "responsibility": "候选 1 只读分层视图：committed/projected 进判据/上下文注入，archived 只证据检索；superseded_by 指针在记录集内解析，悬空 → unsupported，取代是关系不是状态。",
+        "expected_apis": [
+          {
+            "signature": "activeInjectionRecords(records: readonly AbsorbedRecord[]): AbsorbedRecord[]",
+            "notes": "from:cache.db@1795433803060"
+          },
+          {
+            "signature": "archivedEvidenceRecords(records: readonly AbsorbedRecord[]): AbsorbedRecord[]",
+            "notes": "from:cache.db@1795433803060"
+          },
+          {
+            "signature": "resolveSupersededPointer(subject: T,\n  subjects: readonly T[],): SupersedeResolution",
+            "notes": "from:cache.db@1795433803060"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_failure_origin_ts",
+        "path": "src/application/ingestion/failure_origin.ts",
+        "responsibility": "候选 2 归因口径纯函数：枚举 agent/infra/harness/unknown；unknown 不得 pass（原判 pass 退 unsupported）；judge_noise 记录为校准信号不混能力分，阈值未实验前 pending。",
+        "expected_deps": [
+          "src/application/ingestion/candidates.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "isFailureOrigin(value: unknown): value is FailureOrigin",
+            "notes": "from:cache.db@1795433803060"
+          },
+          {
+            "signature": "isExtensionOrigin(origin: FailureOrigin): boolean",
+            "notes": "from:cache.db@1795433803060"
+          },
+          {
+            "signature": "verdictWithOrigin(origin: unknown, verdict: Verdict): Verdict",
+            "notes": "from:cache.db@1795433803060"
+          },
+          {
+            "signature": "recordJudgeNoise(): JudgeNoiseReading",
+            "notes": "from:cache.db@1795433803060"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_ablation_scope_ts",
+        "path": "src/application/ingestion/ablation_scope.ts",
+        "responsibility": "候选 5 消融范围与分名：content_placebo_ablation 一期范围 DSL/判据/提示注入；长会话/多轮边界二期登记不施工；与 incsel_ablation 严格分名，不替代不混淆。",
+        "expected_deps": [
+          "src/application/ingestion/candidates.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "classifyAblation(name: string): AblationScopeReading",
+            "notes": "from:cache.db@1795433803060"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_acceptance_metrics_ts",
+        "path": "src/application/ingestion/acceptance_metrics.ts",
+        "responsibility": "候选 6 双口径验收纯函数：criteria_pass_rate 宽松均分 + all_criteria_pass 严格（MUST 全过）+ failed_criteria_ids 一等清单；两率走现役 rateOf 注册表，SHOULD 分期不强制。",
+        "expected_deps": [
+          "src/domain/rate.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "evaluateAcceptance(items: readonly AcceptanceItem[]): AcceptanceMetrics",
+            "notes": "from:cache.db@1795433803060"
+          }
+        ]
       }
     ]
   },
@@ -85814,13 +85935,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2969,
+  "_dsl_rev": 2975,
   "_sync": {
-    "saved_at": "2026-11-23T09:28:04.573Z",
+    "saved_at": "2026-11-23T11:39:16.085Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2425087436,
+    "age": 2432958948,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },
