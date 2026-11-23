@@ -240,9 +240,10 @@ const CARD_TOTAL_BEFORE = 86;
 // ★ 2026-11-23：b0e0f850 受闸立卡 todo_RESP-CONTRACT（candidate / owner=null / 无 node_id 排队态，规格 docs/TASK-RESP-CONTRACT.md）⇒ live_cards 再 +1；不强制立设计册节点。
 // ★ 2026-11-23（批 4 施工卡 · Main 常设计数钉口径受闸同步）：受闸立卡 todo_batch4-ingestion-slice（candidate / owner=null / 无 node_id 排队态，单写者 engine:batch4-ingestion）⇒ live_cards 再 +1；纯计数钉随合法受闸立卡机械派生，无行为语义变化，证据见 artifacts/batch4-ingestion-slice-回执.md。
 // ★ 2026-11-23（批 4 阶段 2 · Main 常设计数钉口径受闸同步）：受闸立卡 todo_batch4-stage2-wiring（candidate / owner=null / 无 node_id 排队态，actor=agent:batch4-stage2）⇒ live_cards 再 +1；纯计数钉随合法受闸立卡机械派生，无行为语义变化，证据见 artifacts/batch4-stage2-回执.md。
-const CARD_TOTAL_AFTER = 78;
+// ★ 2026-11-23（第二企划前置批 · Main 常设计数钉口径受闸同步）：受闸立卡 todo_batch-second-plan-proof-pack-retired-gate（candidate / owner=null / 无 node_id 排队态，actor=agent:batch-second-plan）⇒ live_cards 再 +1；纯计数钉随合法受闸立卡机械派生，无行为语义变化，证据见 artifacts/batch-second-plan-回执.md。
+const CARD_TOTAL_AFTER = 79;
 const ZONE_BEFORE: Readonly<Record<string, number>> = { 'agent-io': 8, 'task-system-plan': 78 };
-const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 18, 'task-system-plan': 60 };
+const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 19, 'task-system-plan': 60 };
 const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
@@ -263,12 +264,12 @@ test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 
   }
   const list = cards();
   assert.deepEqual(orphansOf(list), [], '孤儿必须归零（每张卡都要有显式归宿 —— 要么在属主册活着，要么已入史）');
-  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1；实测 ${list.length}）`);
+  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1 + 第二企划前置批卡 1；实测 ${list.length}）`);
   const zone: Record<string, number> = {};
   for (const c of list) zone[c.feature] = (zone[c.feature] ?? 0) + 1;
   assert.deepEqual(zone, ZONE_AFTER, `分区必须等于 ${JSON.stringify(ZONE_AFTER)}（实测 ${JSON.stringify(zone)}）`);
-  // Δ 闭合：agent-io +10（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1）· 计划册 −18（19 张里的 18 张全出列）
-  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 10, 'agent-io 分区 +10 = 批 16 净 +6 + 2026-11-20 认账卡 1 + 2026-11-23 立卡 1 + 批 4 切片卡 1 + 批 4 阶段 2 卡 1');
+  // Δ 闭合：agent-io +11（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1 + 2026-11-23 批 4 切片卡 1 + 批 4 阶段 2 卡 1 + 第二企划前置批卡 1）· 计划册 −18（19 张里的 18 张全出列）
+  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 11, 'agent-io 分区 +11 = 批 16 净 +6 + 2026-11-20 认账卡 1 + 2026-11-23 立卡 1 + 批 4 切片卡 1 + 批 4 阶段 2 卡 1 + 第二企划前置批卡 1');
   assert.equal(ZONE_BEFORE[TSP]! - zone[TSP]!, 18, `计划册分区 −18（19 − 1 张 agent-io 自己的）；实测 −${ZONE_BEFORE[TSP]! - zone[TSP]!}`);
 });
 

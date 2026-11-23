@@ -178,6 +178,9 @@ export const WIDEN_PATTERNS: RegExp[] = [
   /^scripts\/lib\//,
   /^src\/application\/design\/verified_snapshot\.ts$/,
   /^src\/application\/design\/intent\/expectations\.ts$/,
+  // ★ 2026-11-23 第二企划：两个验证器文件此前漏在名单外（改它们不触发扩大）⇒ 补入。
+  /^src\/application\/verify\/verify_project\.ts$/,
+  /^src\/application\/design\/verifier_proof_pack\.ts$/,
   /^src\/domain\/expectation\.ts$/,
   /^src\/domain\/expectation_kinds\.ts$/,
   // ★ 2026-11-09 移除：`.agent-io/design/*.dsl.json`（原第 11 条）。

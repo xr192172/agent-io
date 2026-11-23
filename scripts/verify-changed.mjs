@@ -368,7 +368,12 @@ if (!NO_REUSE) {
 // ════════════════════════════════════════════════════════════════════
 let VS = null;
 // ★★ 2026-11-09：验证器自证包（改共享验证器时先跑它，通过则**不扩大**）
+// ★★★ 2026-11-23 第二企划：死块复活。PP 导入失败留 proofLoadError（fail-closed 亮红），
+//   不许静默回落 null 把死代码又复活一遍。
 let PP = null;
+let proofLoadError = null;
+// 包绿∧覆盖绿后提升的收窄名单：planInheritance 注入与 no-evidence 镜像共用同一数组；null = 未收窄。
+let verifierNarrowedPatterns = null;
 let impact = null;
 let drift;
 let tImpactStart = 0;
@@ -402,14 +407,33 @@ try {
   VS = await import('../dist/src/application/design/verified_snapshot.js');
   snapLoad = VS.loadVerifiedSnapshot(ROOT);
 
+  // ★★★ 2026-11-23 第二企划：自证包模块接线（与 VS 同簇动态 import）。
+  //   dist 缺失 / 导入抛错 ⇒ proofLoadError 留痕，后面 proofDecision 按 fail-closed 保守全跑，
+  //   不允许把 PP 静默置 null 走旧死块。
+  try {
+    PP = await import('../dist/src/application/design/verifier_proof_pack.js');
+  } catch (e) {
+    PP = null;
+    proofLoadError = String(e && e.message ? e.message : e).slice(0, 120);
+  }
+
   // ★★ 2026-11-09 收口：**验证器的局部修改不再无条件全跑**
   //   旧行为：命中 WIDEN_PATTERNS（含 verify-changed.mjs / verified_snapshot.ts）⇒ 每次都拉整册总门，见 scripts/verify.mjs 的门表。
   //   新行为：若本次只改了「共享验证器」⇒ 跑**自证包**；全绿且覆盖未丢 ⇒ 按增量走；
   //   有红 / 覆盖不足 / 额外还改了其它公共底座 ⇒ 才扩大。
+  // ★★★ 2026-11-23 第二企划复活：
+  //   · 触发 = sv.verifier.length>0（others 非空不阻断包执行，只决定公共底座是否仍扩大）；
+  //   · 执行改挂 runner 批通道（runNodeBatch，一次 invocation 跑去重清单 + --json），继承 TAP/守卫/隔离口径，
+  //     不新增第二把解析尺；ProofRun 形状不变，tail 从回执非 green 文件 out 截取；
+  //   · 双层闸：廉检 missing_* 非空直接 widen 不跑包；真跑兜底廉检子串假阳性；
+  //   · 自指回路：改动含包本体 ⇒ 恒 widen（改包定义不能自证自己）。
   let proofDecision = null;
-  if (PP) {
+  let proofPackReceipt = null;
+  if (proofLoadError) {
+    proofDecision = { widen: true, note: `自证包模块不可用（${proofLoadError}）⇒ 判不了验证器可信度，保守全跑（fail-closed，不静默回落 null）` };
+  } else if (PP) {
     const sv = PP.splitVerifierChange(changed);
-    if (sv.verifier.length > 0 && sv.others.length === 0) {
+    if (sv.verifier.length > 0) {
       const cov = PP.proofPackCoverage((rel) => {
         try {
           return fs.readFileSync(path.join(ROOT, rel), "utf-8");
@@ -417,19 +441,41 @@ try {
           return null;
         }
       });
+      const selfTouch = sv.verifier.includes('src/application/design/verifier_proof_pack.ts');
       if (!cov.ok) {
         proofDecision = { widen: true, note: "自证包覆盖不足（文件缺 " + cov.missing_files.length + " / 用例缺 " + cov.missing_cases.length + "）⇒ 扩大" };
+      } else if (selfTouch) {
+        proofDecision = { widen: true, note: "改动含自证包本体 ⇒ 改包定义不能自证自己，恒扩大" };
+      } else if (NO_RUN) {
+        // --no-run 只算不跑：廉检过了也不能凭"没跑"收窄 ⇒ 保守全跑（没验 ≠ 绿）。
+        proofDecision = { widen: true, note: "--no-run：未跑自证包 ⇒ 保守全跑" };
       } else {
-        const run = PP.runVerifierProofPack((rel) => {
-          const r = spawnSync(process.execPath, ["--import", "tsx", rel], { cwd: ROOT, encoding: "utf-8", env: { ...process.env, AGENT_IO_VERIFY_CHANGED_ROOT: ROOT } });
-          const out = String(r.stdout ?? "") + String(r.stderr ?? "");
-          const pass = /^# pass \d+/m.test(out) && /^# fail 0$/m.test(out);
-          return { code: r.status === 0 && pass ? 0 : (r.status ?? 1), out };
+        const proofFiles = [...new Set(PP.VERIFIER_PROOF_PACK.flatMap((a) => a.tests.map((t) => t.file)))];
+        const receipt = runNodeBatch(proofFiles, jobs);
+        proofPackReceipt = receipt.receipt;
+        const byFile = new Map((receipt.receipt?.files ?? []).map((e) => [String(e.rel ?? '').replace(/^tests\//, ''), e]));
+        const run = PP.runVerifierProofPack((rels) => {
+          const m = new Map();
+          for (const rel of rels) {
+            const ent = byFile.get(rel.replace(/^tests\//, ''));
+            if (!ent) {
+              // 回执缺条目 / 解析失败 ⇒ fail-closed 记红（不留 nosummary 洞）
+              m.set(rel, { code: receipt.rc !== 0 ? receipt.rc : 1, out: receipt.out });
+              continue;
+            }
+            const green = ent.ok !== false && ent.kind !== 'crash' && ent.kind !== 'static-fail';
+            m.set(rel, { code: green ? 0 : (ent.status ?? 1), out: ent.out ?? '' });
+          }
+          return m;
         });
         proofDecision = { widen: !run.ok, note: run.note };
       }
       if (!JSON_OUT) console.log("   " + (proofDecision.widen ? "\u26a0 " : "\u2713 ") + proofDecision.note);
     }
+  }
+  // 收窄数组：包绿∧覆盖绿 ⇒ 只剔验证器对应正则；提升为循环外单例，注入与镜像共用。
+  if (VS && PP && proofDecision && !proofDecision.widen) {
+    verifierNarrowedPatterns = VS.WIDEN_PATTERNS.filter((re) => !PP.VERIFIER_FILES.some((f) => re.test(f)));
   }
   // ★★ 2026-11-08（换锚点）：选择改为**改动集的波及集合**（O(改动数)），
   //   不再"把每条证据的去向闭包算到饱和再比哈希"（那是 O(证据×文件×2)，且长链文件永远判不了）。
@@ -504,8 +550,9 @@ try {
     testsOnDisk = undefined;
   }
   snapPlan = VS.planInheritance({
-    // ★★ 验证器自证包通过 ⇒ 从生效 widen 名单里剔掉「验证器文件」（其它公共底座仍无条件扩大）
-    ...(proofDecision && !proofDecision.widen ? { widenPatterns: VS.WIDEN_PATTERNS.filter((re) => !PP.VERIFIER_FILES.some((f) => re.test(f))) } : {}),
+    // ★★ 验证器自证包通过 ⇒ 从生效 widen 名单里剔掉「验证器文件」（其它公共底座仍无条件扩大）；
+    //   收窄数组与 no-evidence 镜像共用同一单例 verifierNarrowedPatterns（G4）。
+    ...(verifierNarrowedPatterns ? { widenPatterns: verifierNarrowedPatterns } : {}),
     loaded: snapLoad,
     changed,
     impact,
@@ -656,8 +703,9 @@ for (const r of snapPlan?.rerun ?? []) {
 //   "该文件的契约覆盖待建"是事实，但为它每次拉全量等于把内环永久关掉（与 2026-11-09 移除册 widen 同理）。
 //   ★ no-work 不动（0 对象本来就没活干）；混合改动走 widen 通道（:393 已处理，这里保守不过滤）。
 //   ★ VS 为 null（dist 缺失/导入失败）⇒ WIDEN 判定不可用 ⇒ 保守走全跑（与 523 的 noEvidenceWiden 合流）。
+const activeWidenPatterns = verifierNarrowedPatterns ?? (VS ? VS.WIDEN_PATTERNS : []);
 const changedHitsWiden = VS
-  ? VS.WIDEN_PATTERNS.some((re) => changed.some((c) => re.test(c)))
+  ? activeWidenPatterns.some((re) => changed.some((c) => re.test(c)))
   : true;
 const noEvidenceWiden = snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes') && changedHitsWiden;
 if (snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes' || snapPlan.state === 'no-work')) {
@@ -885,14 +933,15 @@ if (designCheckHit && !NO_RUN) {
     rc = typeof e.status === 'number' ? e.status : -1;
     out = String(e.stdout ?? '') + String(e.stderr ?? '');
   }
-  const c = out.match(/通过 (\d+) · ★ 不通过 (\d+) · 进行中 (\d+)（共 (\d+) 条）/);
+  const c = out.match(/通过 (\d+) · ★ 不通过 (\d+) · 进行中 (\d+) · 退役不可执行 (\d+)（共 (\d+) 条）/);
   designCheckRun = {
     rc,
     ms: Date.now() - t0,
     pass: c ? Number(c[1]) : null,
     fail: c ? Number(c[2]) : null,
     pending: c ? Number(c[3]) : null,
-    checked: c ? Number(c[4]) : null,
+    retired: c ? Number(c[4]) : null,
+    checked: c ? Number(c[5]) : null,
     out,
   };
 }
@@ -1326,6 +1375,7 @@ if (JSON_OUT) {
           pass: designCheckRun?.pass ?? null,
           fail: designCheckRun?.fail ?? null,
           pending: designCheckRun?.pending ?? null,
+          retired: designCheckRun?.retired ?? null,
           checked: designCheckRun?.checked ?? null,
           ms: designCheckRun?.ms ?? null,
         }
@@ -1430,7 +1480,7 @@ console.log(
 if (designCheckRun) {
   const tag = designCheckRun.rc === 0 ? '✓' : '★ 有红';
   console.log(
-    `   ${tag}  通过 ${designCheckRun.pass ?? '?'} · 不通过 ${designCheckRun.fail ?? '?'} · 进行中 ${designCheckRun.pending ?? '?'}（共 ${designCheckRun.checked ?? '?'} 条）  ${(designCheckRun.ms / 1000).toFixed(1)}s`,
+    `   ${tag}  通过 ${designCheckRun.pass ?? '?'} · 不通过 ${designCheckRun.fail ?? '?'} · 进行中 ${designCheckRun.pending ?? '?'} · 退役不可执行 ${designCheckRun.retired ?? '?'}（共 ${designCheckRun.checked ?? '?'} 条）  ${(designCheckRun.ms / 1000).toFixed(1)}s`,
   );
   if (designCheckRun.rc !== 0) console.log(designCheckRun.out.split('\n').slice(-15).join('\n'));
 } else if (designCheckHit && NO_RUN) {

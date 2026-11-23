@@ -130,6 +130,16 @@ for (const c of criteria) {
     results.push({ id, name, verdict: 'pending', detail: '★ 没有可执行断言（`expect`）—— 还没到能判的程度' });
     continue;
   }
+  // ★★★ 2026-11-23 第二企划：判据级 `retired` 第三 verdict（证据式三条件分类，不假绿）。
+  //   仅在**退役册模式**（FEATURE 缺省，FILE=RETIRED_PLAN_BOOK）下启用；活册一律不分类。
+  //   报告依赖：expect 文本引用 callReport / mutateReport；报告 null 或 {error} = 执行面随册退役消失的如实读数。
+  //   debt 标记 alone 不够（D1-D5b 带 debt 但可执行 ⇒ 正常求值）；D9 无 debt 字段靠报告依赖 clause 覆盖。
+  const dependentReport = (() => {
+    if (c.expect.includes('callReport')) return { kind: 'callReport', report: callReport };
+    if (c.expect.includes('mutateReport')) return { kind: 'mutateReport', report: mutateReport };
+    return null;
+  })();
+  const reportUnavailable = (report) => report === null || (typeof report === 'object' && report !== null && 'error' in report);
   try {
     // ★ 求值域：dsl / nodes / paths / fs / path / root（root = 被分析项目根，D4 要读源码查"迁移有没有执行者"）
     // ★★★ 2026-10-26（T-#20）：**kind 权威注入求值域** —— 不再让每条 expect 自己抄一份白名单。
@@ -138,9 +148,20 @@ for (const c of criteria) {
     //   ★ 依赖 dist（需先 build）—— 拿不到就**响亮报**，不静默降级。
     const fn = new Function('dsl', 'nodes', 'paths', 'fs', 'path', 'root', 'mutateReport', 'callReport', 'results', 'KINDS', `"use strict"; return (${c.expect});`);
     const ok = Boolean(fn(dsl, nodes, paths, fs, path, ROOT, mutateReport, callReport, results, EXPECTATION_KINDS));
-    results.push({ id, name, verdict: ok ? 'pass' : 'fail', detail: ok ? '断言成立' : `断言**不成立**：${c.expect.slice(0, 90)}…`, __fullExpect: ok ? undefined : c.expect });
+    if (ok) {
+      results.push({ id, name, verdict: 'pass', detail: '断言成立', debt: c.debt, why: c.why });
+    } else if (!FEATURE && dependentReport && reportUnavailable(dependentReport.report)) {
+      // 条件齐：退役册模式 + 报告依赖且报告缺失/报错 + false 归因执行面消失（判不了），非断言真实不成立。
+      const missing = dependentReport.report === null ? '缺失（册内无对应判据条目）' : `报错：${String(dependentReport.report.error).slice(0, 80)}`;
+      results.push({
+        id, name, verdict: 'retired', debt: c.debt, why: c.why,
+        detail: `退役不可执行：${dependentReport.kind} 报告 ${missing} ⇒ 执行面随册退役消失（不是"断言真实不成立"，也不是"通过"）；债务不核销，见台账卡 T-#ARCHIVED-D6-D7-D9（docs/todo.md）`,
+      });
+    } else {
+      results.push({ id, name, verdict: 'fail', detail: `断言**不成立**：${c.expect.slice(0, 90)}…`, debt: c.debt, why: c.why, __fullExpect: c.expect });
+    }
   } catch (e) {
-    results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}` });
+    results.push({ id, name, verdict: 'fail', detail: `判不了：${e.message}`, debt: c.debt, why: c.why });
   }
 }
 
@@ -216,16 +237,20 @@ for (const r of results) {
 }
 
 if (JSON_OUT) {
-  console.log(JSON.stringify({ feature: FEATURE ?? null, book: path.relative(ROOT, FILE).replace(/\\/g, '/'), retired: !FEATURE, checked: results.length, passed: count('pass'), failed: count('fail'), pending: count('pending'), items: results }, null, 2));
+  console.log(JSON.stringify({ feature: FEATURE ?? null, book: path.relative(ROOT, FILE).replace(/\\/g, '/'), retired: !FEATURE, checked: results.length, passed: count('pass'), failed: count('fail'), pending: count('pending'), retired_count: count('retired'), items: results }, null, 2));
 } else {
   console.log(`══ design:check · ${FEATURE ?? path.relative(ROOT, FILE).replace(/\\/g, '/')}${FEATURE ? '' : '（**已退役**，读归档件）'} ══`);
   for (const r of results) {
-    const mark = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' : '…';
+    const mark = r.verdict === 'pass' ? '✓' : r.verdict === 'fail' ? '✗' : r.verdict === 'retired' ? '⚑' : '…';
     console.log(`  ${mark} ${r.id}${r.name ? ' [' + r.name + ']' : ''} — ${r.detail}`);
   }
-  console.log(`\n  通过 ${count('pass')} · ★ 不通过 ${count('fail')} · 进行中 ${count('pending')}（共 ${results.length} 条）`);
+  console.log(`\n  通过 ${count('pass')} · ★ 不通过 ${count('fail')} · 进行中 ${count('pending')} · 退役不可执行 ${count('retired')}（共 ${results.length} 条）`);
   if (count('pending')) {
     console.log('  ★ pending 不是"通过" —— 是"还没写断言 / 卡在某处"。要它变绿，先写 expect 或解掉 blocked_by。');
+  }
+  if (count('retired')) {
+    const retiredIds = results.filter((r) => r.verdict === 'retired').map((r) => r.id);
+    console.log(`  ⚑ 退役不可执行 ${count('retired')} 条（${retiredIds.join(' / ')}）：执行面随册退役消失，**不计 pass、不抬退出码**；债务不核销，台账卡 T-#ARCHIVED-D6-D7-D9（docs/todo.md）保持 active。`);
   }
 }
 process.exit(count('fail') ? 1 : 0);

@@ -121,3 +121,22 @@ test('⑤ runner JSON 回执字段与 verify-changed 消费字段逐一对齐', 
   assert.match(changed, /ent\.kind === 'crash'/, 'crash 条目必须保持 crash');
   assert.match(changed, /ent\.ok === false/, 'ok=false 必须判 red');
 });
+
+/**
+ * ⑥ 第二企划：design-check 汇总五计数 ↔ verify-changed 消费正则对齐。
+ *   格式唯一定义在 design-check（单尺）；verify-changed 只解析那一行。改坏任一计数位必须判红。
+ */
+test('⑥ design-check 五计数汇总行 ↔ verify-changed 正则/JSON/文本计数位对齐', () => {
+  const dc = fs.readFileSync(path.join(ROOT, 'scripts/design-check.mjs'), 'utf8');
+  const changed = fs.readFileSync(path.join(ROOT, 'scripts/verify-changed.mjs'), 'utf8');
+  // design-check 产出顺序：pass · fail · pending · retired · 共
+  assert.ok(dc.includes("通过 ${count('pass')} · ★ 不通过 ${count('fail')} · 进行中 ${count('pending')} · 退役不可执行 ${count('retired')}（共 ${results.length} 条）"), 'design-check 汇总行五计数模板');
+  assert.match(dc, /retired_count: count\('retired'\)/, 'design-check JSON 增 retired 计数');
+  // verify-changed 正则五组同序捕获
+  assert.ok(changed.includes('通过 (\\d+) · ★ 不通过 (\\d+) · 进行中 (\\d+) · 退役不可执行 (\\d+)（共 (\\d+) 条）'), 'verify-changed 正则五计数对齐');
+  assert.ok(changed.includes('retired: designCheckRun?.retired ?? null'), 'verify-changed JSON 消费 retired 计数位');
+  assert.ok(changed.includes("退役不可执行 ${designCheckRun.retired ?? '?'}"), 'verify-changed 文本消费 retired 计数位');
+  // 反向鉴别：新五计数正则不得把四计数旧形状残行当汇总行（少 retired 段即不匹配）
+  const fiveCount = /通过 (\d+) · ★ 不通过 (\d+) · 进行中 (\d+) · 退役不可执行 (\d+)（共 (\d+) 条）/;
+  assert.ok(!fiveCount.test('通过 7 · ★ 不通过 0 · 进行中 0（共 10 条）'), '旧四计数残行不得冒充五计数汇总行');
+});

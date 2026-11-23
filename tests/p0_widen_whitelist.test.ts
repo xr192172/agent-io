@@ -36,6 +36,14 @@ test('P0-widen-whitelist · ②白名单外文件变更 + no-evidence ⇒ 不扩
   assert.equal(decideNoEvidenceWiden('empty-observes', ['src/application/refactor/edit/new_helper.ts']), false, '新 helper ⇒ 不扩大');
 });
 
+test('P0-widen-whitelist · ②b 第二企划补全：verify_project.ts / verifier_proof_pack.ts 在名单内 ⇒ 扩大', () => {
+  assert.equal(decideNoEvidenceWiden('no-evidence', ['src/application/verify/verify_project.ts']), true, '验证器检测/归因文件 ⇒ 扩大');
+  assert.equal(decideNoEvidenceWiden('empty-observes', ['src/application/design/verifier_proof_pack.ts']), true, '自证包本体 ⇒ 扩大（自指回路双保险）');
+  // 新正则只匹配各自文件，不误伤同目录其它实现
+  assert.equal(decideNoEvidenceWiden('no-evidence', ['src/application/verify/other_helper.ts']), false, 'verify 目录其它文件不在名单');
+  assert.equal(decideNoEvidenceWiden('no-evidence', ['src/application/design/other.ts']), false, 'design 目录其它文件不在名单');
+});
+
 test('P0-widen-whitelist · ③混合改动（白名单+非白名单）⇒ 扩大（保守正确）', () => {
   assert.equal(
     decideNoEvidenceWiden('no-evidence', ['src/application/impl.ts', 'scripts/judge-all.mjs']),
@@ -50,4 +58,8 @@ test('P0-widen-whitelist · ④脚本源码里的分支锚定（防删分支的�
   assert.ok(s.includes("const noEvidenceWiden = snapPlan && (snapPlan.state === 'no-evidence' || snapPlan.state === 'empty-observes') && changedHitsWiden;"), '判定表达式必须在');
   assert.ok(s.includes("kind: 'no-evidence-inherit'"), '说明性继承分支必须在');
   assert.ok(s.includes('该文件的契约覆盖待建'), '继承读数必须在（0.12：决定要可见）');
+  // 第二企划：两条新正则在名单源码里（防名单补全被回滚）
+  const vs = fs.readFileSync(path.join(REPO, 'src', 'application', 'design', 'verified_snapshot.ts'), 'utf8');
+  assert.ok(vs.includes('/^src\\/application\\/verify\\/verify_project\\.ts$/'), 'verify_project.ts 正则必须在名单源码');
+  assert.ok(vs.includes('/^src\\/application\\/design\\/verifier_proof_pack\\.ts$/'), 'verifier_proof_pack.ts 正则必须在名单源码');
 });
