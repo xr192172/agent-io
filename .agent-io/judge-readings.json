@@ -1,9 +1,9 @@
 {
   "//": "判定闸的 per-kind 读数（judge-all.mjs 每次跑完覆盖写）—— gen-db-check 的「judge 判过」列读它",
-  "at": "2026-11-20T05:22:11.066Z",
+  "at": "2026-11-23T08:07:47.868Z",
   "books": 2,
-  "judged": 868,
-  "pass": 868,
+  "judged": 900,
+  "pass": 900,
   "by_kind": {
     "domain-independent": {
       "pass": 58,
@@ -22,20 +22,20 @@
       "judged": 60
     },
     "source-has": {
-      "pass": 132,
+      "pass": 136,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 132,
-      "judged": 132
+      "checked": 136,
+      "judged": 136
     },
     "run": {
-      "pass": 260,
+      "pass": 266,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 260,
-      "judged": 260
+      "checked": 266,
+      "judged": 266
     },
     "symbol-exists": {
       "pass": 34,
@@ -46,20 +46,20 @@
       "judged": 34
     },
     "call-exists": {
-      "pass": 166,
+      "pass": 176,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 166,
-      "judged": 166
+      "checked": 176,
+      "judged": 176
     },
     "behavior-cases": {
-      "pass": 104,
+      "pass": 111,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 104,
-      "judged": 104
+      "checked": 111,
+      "judged": 111
     },
     "edge-exists": {
       "pass": 4,
@@ -78,12 +78,12 @@
       "judged": 2
     },
     "file-exists": {
-      "pass": 47,
+      "pass": 52,
       "fail": 0,
       "unsupported": 0,
       "pending": 0,
-      "checked": 47,
-      "judged": 47
+      "checked": 52,
+      "judged": 52
     },
     "runtime": {
       "pass": 1,

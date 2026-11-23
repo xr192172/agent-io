@@ -161,13 +161,16 @@ await d.handler({});`;
  * 分家**前**（真仓 HEAD `1f98ec72` 的 `dist/`）用同一把尺量出来的工具面指纹：
  *   41 个工具 / wire 160259 B / 规范化 sha256 = 下面这个值。
  * 分家后只接受一次显式有意识面变化：`ledger.list.include_superseded` 入参（T-#LEDGER-CURRENT-PROJECTION）。
- * P2 恢复切片再入一只读工具 `recover_run`：当前读数 = 42 工具 / wire 162886 B / sha256 见下。
+ * P2 恢复切片再入一只读工具 `recover_run`：当前读数 = 42 工具 / wire 162863 B / sha256 见下。
+ * ★ 2026-11-23（批 2 R1 五线对齐）：capability_map 描述删 harvest 词条（6→5 条线）+ lane 入参描述 6→5；
+ *   capability_audit 描述 6→5（等长数字替换）；语义评审仅文字漂移、无工具增删/入参形状/线归属变化，
+ *   证据见 artifacts/redb-surface-review.md；受闸刷新本指纹与 mcp_scan 基线。
  *
- * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那 baseline 的 bytes 已是 162886（与上值一致），
+ * ★ 为什么不直接跟 `scripts/mcp/tool-surface-baseline.json` 比：那 baseline 的 bytes 已是 162863（与上值一致），
  *   但本测试继续钉住“本笔加载策略分家 + 唯一新入参 + P2 只读恢复工具”的 sha，防止未来有人只改 baseline 不改语义。
  */
-const SURFACE_SHA256_AT_HEAD = 'e7609910131a48768b09744b5cada3ddbfe086050d2dfe405ab0da8865f25fef';
-const SURFACE_BYTES_AT_HEAD = 162886;
+const SURFACE_SHA256_AT_HEAD = 'f73f29f6ca208b48aabf4e3aed9f640539db7723c3cdceebbf7d5cff38ef12d9';
+const SURFACE_BYTES_AT_HEAD = 162863;
 
 test('簇 A ③ 工具面逐字节不变：tools/list 的规范化指纹 == 分家前 HEAD 的实测值（改一个描述/schema 字段即红）', async () => {
   assert.equal(fs.existsSync(SERVER), true, '缺 ' + SERVER + ' ⇒ 先 npm run build');

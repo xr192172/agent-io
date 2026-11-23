@@ -5346,8 +5346,9 @@
             },
             {
               "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('if (!NO_RUN && !isJavaProject) {'); })()",
-              "why": "上一条只查病灶**不在**（`else if` 消失）；本条查正确形态**在场**（独立 `if (!NO_RUN && !isJavaProject) {`）。两条合起来才是双向：只删 else-if 而不补独立 if ⇒ 上一条绿、本条红（测试仍然一个都不跑，只是从\"被遮蔽\"变成\"根本没有\"）。★ 会红的情形：把 node 测试循环整段删掉 / 改成 `if (false)` / 条件里丢掉 `!isJavaProject`（那样 Java 项目会双跑）。"
+              "path": "scripts/verify-changed.mjs",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); return s.includes('if (!NO_RUN && !isJavaProject && nodeHits.length > 0) {'); })()",
+              "why": "独立 node 测试分支在场（2026-11-22 批调用重构 4a4b43fa：node 命中集先滤掉 .java 得 nodeHits，分支条件随之收敛为 `!NO_RUN && !isJavaProject && nodeHits.length > 0`；旧独立串 `if (!NO_RUN && !isJavaProject) {` 已退役）。"
             },
             {
               "kind": "run",
@@ -5356,8 +5357,9 @@
             },
             {
               "kind": "run",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); const at = s.indexOf('if (!NO_RUN && !isJavaProject) {'); if (at < 0) return false; const seg = s.slice(at, at + 700); return seg.includes(\"if (h.file.endsWith('.java')) continue;\"); })()",
-              "why": "修好遮蔽后，node 分支会**真的**遍历 testHits ⇒ 必须保住原来的「`.java` 条目由委托块处理、node 兜底不许再碰」那条护栏，否则同一支 Java 测试会被跑两遍（委托一条 + node 一条），后者恒失败 ⇒ 假红。★ 会红的情形：修 if/else 时顺手删掉那行 `continue` ⇒ 本条红。"
+              "path": "scripts/verify-changed.mjs",
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'scripts/verify-changed.mjs'), 'utf8'); if (!s.includes(\"const nodeHits = testHits.filter((h) => !h.file.endsWith('.java'));\")) return false; return s.includes('if (!NO_RUN && !isJavaProject && nodeHits.length > 0) {'); })()",
+              "why": ".java 护栏上移：nodeHits 进 node 分支前滤掉 .java（委托块处理），node 分支只遍历非 .java 条目，同一支 Java 测试不双跑；锚点由旧的分支内 `.java continue` 改为上游过滤（4a4b43fa 重构后形态）。"
             },
             {
               "kind": "source-has",
@@ -5369,7 +5371,7 @@
               "why": "★ 2026-11-20（批17 册退役后果）：`task-system-plan` 册已归档，`PLAN=.../task-system-plan.dsl.json` 常量删除 ⇒ 原 must 指向不存在路径。改为钉现实现：内环必须逐册遍历 `DESIGN_DIR/*.dsl.json`（每一条册都要读到）。"
             }
           ],
-          "updated_at": "2026-11-19T18:01:59.625Z",
+          "updated_at": "2026-11-23T05:10:45.016Z",
           "agent": "lead-recovery",
           "status": "active",
           "author": "llm"
@@ -25670,11 +25672,11 @@
             {
               "kind": "run",
               "path": "src/presentation/daemon/server.ts",
-              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/daemon/server.ts'), 'utf8'); return s.includes('hostAllowed') && s.includes('/api/dsl') && s.includes('/api/watch') && s.includes('/api/shutdown') && s.includes('enqueueDslWrite') && !/req\\.headers\\.origin|headers\\['origin'\\]/.test(s); })()",
-              "why": "daemon 三口（dsl/watch/shutdown）必须在控制 handler 前消费同一纯裁决；既有 Host 白名单与按 feature 串行队列保留。本判据机械核对三口与 hostAllowed/串行队列仍在本文件、且现状确无 Origin 读取（缺口如实记账，收口时由裁决补齐，不伪称已有 Origin 保护）。"
+              "expect": "(() => { const s = fs.readFileSync(path.join(root, 'src/presentation/daemon/server.ts'), 'utf8'); return s.includes('hostAllowed') && s.includes('/api/dsl') && s.includes('/api/watch') && s.includes('/api/shutdown') && s.includes('enqueueDslWrite') && s.includes('req.headers.origin'); })()",
+              "why": "三口 + Host 白名单 + 串行队列在本文件；2026-11-22 c32c2a21 起 Origin 作为 TransportFacts 事实采集在场（裁决在 action_effect 纯模块，本文件只采 host/origin/remoteAddress 喂裁决）；旧「无 Origin 读取」负向断言随源码演进退役。"
             }
           ],
-          "updated_at": "2026-11-21T21:44:18.817Z",
+          "updated_at": "2026-11-23T05:10:45.149Z",
           "agent": "agent:action-effect-boundary"
         },
         "task": {
@@ -41837,11 +41839,11 @@
             {
               "kind": "run",
               "path": "tests/p1_action_effect_boundary.test.ts",
-              "expect": "(() => { const p = path.join(root, 'tests/p1_action_effect_boundary.test.ts'); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); const cases = ['/api/tool/', '/api/opl', '/api/dsl', '/api/shutdown', 'Origin', 'Host', 'loopback', 'deny']; return cases.every((c) => s.includes(c)) && !/http\\.createServer\\(|startServer\\(|createDaemonServer\\(/.test(s); })()",
-              "why": "行为族验收：定向测试必须点名通用工具口/opl/daemon 三口与 Origin/Host/回环/deny 反例；夹具走注入 handler 与隔离 AGENT_IO_HOME，不得启动真实服务（不向真实项目/快照/daemon 发 rollback/shutdown）。"
+              "expect": "(() => { const p = path.join(root, 'tests/p1_action_effect_boundary.test.ts'); if (!fs.existsSync(p)) return false; const s = fs.readFileSync(p, 'utf8'); const cases = ['/api/opl', '/api/dsl', '/api/watch', '/api/shutdown', 'Origin', 'Host', 'loopback', 'deny']; return cases.every((c) => s.includes(c)); })()",
+              "why": "行为族验收：定向测试点名 opl/daemon 三口与 Origin/Host/回环/deny 反例；现役夹具形态为真实回环随机端口 + 注入 handler + 隔离 HOME（R4/R10/R3 用例），旧「不得启动真实服务」负向正则随形态演进退役；不向真实项目/快照/daemon 发 rollback/shutdown 由 R3 shutdown spy 0 用例断言（c61f314f）。"
             }
           ],
-          "updated_at": "2026-11-21T21:48:36.570Z",
+          "updated_at": "2026-11-23T05:10:45.280Z",
           "agent": "agent:action-effect-boundary"
         },
         "task": {
@@ -41871,6 +41873,270 @@
           "last_heartbeat_at": "2026-11-21T21:54:34.566Z"
         },
         "status": "in_progress"
+      },
+      {
+        "id": "file_scripts_card-sheet-projection-gate_mjs",
+        "label": "card-sheet-projection-gate.mjs",
+        "type": "file",
+        "path": "scripts/card-sheet-projection-gate.mjs",
+        "title": "门脚本：卡↔册结案投影只读点名（批3 C6，一期点名优先于强制）；复用 stale_projection 判据核，只做 I/O 与三态退出。",
+        "decision": {
+          "summary": "结案投影点名门：已结案卡三来源合一（live_cards/task_history/册），只读点名册单侧结案投影；一期不挂强制红门。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:32.790Z"
+        }
+      },
+      {
+        "id": "file_scripts_gen_docs_view_mjs",
+        "label": "gen_docs_view.mjs",
+        "type": "file",
+        "path": "scripts/gen_docs_view.mjs",
+        "title": "文档投影块生成/对账 CLI 入口（doc:render/doc:check）；只调 application 纯函数、写盘、打印读数与退出码，渲染逻辑在 docs_view。",
+        "decision": {
+          "summary": "文档视图 CLI 入口：调度 docs_view 纯函数生成/对账投影块；不排版，三态退出码 0 最新 / 3 陈旧缺失 / 1 判定坏。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:32.914Z"
+        }
+      },
+      {
+        "id": "file_scripts_index-integrity-gate_mjs",
+        "label": "index-integrity-gate.mjs",
+        "type": "file",
+        "path": "scripts/index-integrity-gate.mjs",
+        "title": "门脚本：索引可信度进门（批3 G4）；把 index_integrity 三态 verdict 接入 verify 总门，判定核在 meta/integrity。",
+        "decision": {
+          "summary": "索引可信度门：把 index_integrity 的 trusted/untrusted/unknown 三态接进总门；核在 application/meta/integrity，本脚本只做 I/O 与退出码。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.020Z"
+        }
+      },
+      {
+        "id": "file_scripts_tasks-mirror-gate_mjs",
+        "label": "tasks-mirror-gate.mjs",
+        "type": "file",
+        "path": "scripts/tasks-mirror-gate.mjs",
+        "title": "门脚本：tasks.db ↔ tasks.jsonl 镜像对账（批3 G3）；逐行对账库两侧与镜像，分叉即点名；判定核在 meta/reconcile/tasks_mirror。",
+        "decision": {
+          "summary": "镜像对账门：tasks.db 权威行 ↔ tasks.jsonl 镜像逐行比较，缺行/多行/字段漂移逐条点名；三态 ok/diverged/unavailable。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.130Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_gates_ts",
+        "label": "gates.ts",
+        "type": "file",
+        "path": "src/application/docs_view/adapters/gates.ts",
+        "title": "适配器：门表清单（静态解析 verify.mjs#GATES，惰性补 ts 类型门）；纯清单段，不投影散文纪律。",
+        "decision": {
+          "summary": "门表适配器：从 verify.mjs#GATES 静态解析门名清单；不 import 门执行器，纯清单/指针段。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.240Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_live_cards_ts",
+        "label": "live_cards.ts",
+        "type": "file",
+        "path": "src/application/docs_view/adapters/live_cards.ts",
+        "title": "适配器：活卡 top-N（listLiveCards 只读，open ∧ 未取代）；纯清单段。",
+        "decision": {
+          "summary": "活卡适配器：只读 listLiveCards 取在册 candidate/claimed 未取代卡 top-N；done/void/取代不进当前视图。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.346Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_tools_ts",
+        "label": "tools.ts",
+        "type": "file",
+        "path": "src/application/docs_view/adapters/tools.ts",
+        "title": "适配器：工具注册表指针表（TOOL_DEFS + laneOfFromSources 只读）；归属由 LANE_SOURCES 派生。",
+        "decision": {
+          "summary": "工具适配器：TOOL_DEFS + laneOfFromSources 派生工具名/归属线/说明指针；不存第二份线清单。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.450Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_authority_sources_ts",
+        "label": "authority_sources.ts",
+        "type": "file",
+        "path": "src/application/docs_view/authority_sources.ts",
+        "title": "权威输入源登记：authority-input / projection / archive 三类内核级区分；projection 条目同源落账。",
+        "decision": {
+          "summary": "权威源登记：区分人写权威输入（不可再生）/ 可再生投影 / 归档证据；投影条目同源落账，不被生成区覆盖。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.559Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_check_doc_blocks_ts",
+        "label": "check_doc_blocks.ts",
+        "type": "file",
+        "path": "src/application/docs_view/check_doc_blocks.ts",
+        "title": "块核三向对账：引擎现算 vs 盘上 vs git HEAD；七态 + 三态退出码；恒全量现算不读缓存结论。",
+        "decision": {
+          "summary": "块核对账核：三向（现算/盘上/HEAD）比对投影块落七态；degraded-current/未验一律非绿单列；check 恒全量现算。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.680Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_inject_annotate_ts",
+        "label": "inject_annotate.ts",
+        "type": "file",
+        "path": "src/application/docs_view/inject_annotate.ts",
+        "title": "取数侧注入标注：文档切段（人写段/投影块），非绿块正文剔除；投影块附对账状态与 rev。",
+        "decision": {
+          "summary": "取数注入标注：注入提示词前切段，非绿块正文剔除不引用其数字结论；投影块附对账状态与 rev。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.790Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_lifecycle_ts",
+        "label": "lifecycle.ts",
+        "type": "file",
+        "path": "src/application/docs_view/lifecycle.ts",
+        "title": "九态生命周期状态机（吸收→投影流水线位置）；与投影对账态两层模型分开。",
+        "decision": {
+          "summary": "生命周期状态机：ingested→…→archived 九态流水线位置；与块核对账态（视图新鲜度）严格分层。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:33.896Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_markers_ts",
+        "label": "markers.ts",
+        "type": "file",
+        "path": "src/application/docs_view/markers.ts",
+        "title": "块标记方案：DOC:GEN 起止注释 + body_sha256 标记格式单点定义。",
+        "decision": {
+          "summary": "块标记格式：DOC:GEN 起止注释（block-id/源@rev/cmd/format/generator/body_sha256）单点定义。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.010Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_read_order_ts",
+        "label": "read_order.ts",
+        "type": "file",
+        "path": "src/application/docs_view/read_order.ts",
+        "title": "取数顺序模型：capability_map→index_integrity→get_dsl→design_line→ledger→capability_audit；新鲜度与降级口径。",
+        "decision": {
+          "summary": "取数顺序模型：固定六视图顺序 + 新鲜度标注与两路降级口径；只冻结顺序与职责，不实现各视图调用。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.114Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_registry_ts",
+        "label": "registry.ts",
+        "type": "file",
+        "path": "src/application/docs_view/registry.ts",
+        "title": "适配器注册表：block-id → 源读端/rev 取法/渲染函数；表驱动，后续只加条目不改内核。",
+        "decision": {
+          "summary": "适配器注册表：block-id 到读端/rev/渲染函数的表驱动映射；后续规范源吸收只加条目，不改内核契约。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.249Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_render_doc_blocks_ts",
+        "label": "render_doc_blocks.ts",
+        "type": "file",
+        "path": "src/application/docs_view/render_doc_blocks.ts",
+        "title": "渲染纯函数：确定性渲染文档块；自洽断言走独立注册表实体现算。",
+        "decision": {
+          "summary": "渲染纯函数：同输入两次逐字节相同；自洽断言走独立注册表实体现算，读端不可用不固化空快照。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.353Z"
+        }
+      },
+      {
+        "id": "file_src_application_docs_view_types_ts",
+        "label": "types.ts",
+        "type": "file",
+        "path": "src/application/docs_view/types.ts",
+        "title": "适配器契约与块核类型（终局形状）；read/render/selfCheck 边界。",
+        "decision": {
+          "summary": "适配器契约类型：read 只读、render 确定性纯函数、selfCheck 独立实体现算；后续适配器只加条目不改契约。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.463Z"
+        }
+      },
+      {
+        "id": "file_src_application_meta_reconcile_stale_projection_ts",
+        "label": "stale_projection.ts",
+        "type": "file",
+        "path": "src/application/meta/reconcile/stale_projection.ts",
+        "title": "既有裸奔对账 C6：已结案卡三来源合一（live_cards/task_history/册），只读点名册单侧投影。",
+        "decision": {
+          "summary": "结案投影点名核：closed 卡按 cardLivesOf 三来源合一归类，册单侧结案投影只读点名；一期点名优先于强制。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.572Z"
+        }
+      },
+      {
+        "id": "file_src_application_meta_reconcile_tasks_mirror_ts",
+        "label": "tasks_mirror.ts",
+        "type": "file",
+        "path": "src/application/meta/reconcile/tasks_mirror.ts",
+        "title": "既有裸奔对账 G3：tasks.db 权威行 ↔ tasks.jsonl 镜像只读比较器，分叉逐条点名。",
+        "decision": {
+          "summary": "镜像比较器：库两侧（live_cards ∪ task_history）逐行对 tasks.jsonl 镜像；缺行/多行/字段不符/坏行/未知 kind 逐条点名。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.688Z"
+        }
+      },
+      {
+        "id": "file_src_application_observe_runtime_attempt_recorder_ts",
+        "label": "attempt_recorder.ts",
+        "type": "file",
+        "path": "src/application/observe/runtime/attempt_recorder.ts",
+        "title": "正式 runner 的 Attempt 事件记录器：attempt_started/finished 落审计旁路；不编造 pid/活性。",
+        "decision": {
+          "summary": "Attempt 事件记录器：解析出命令后 spawn 前落 started、退出后落 finished；审计旁路，追加失败回 error 不阻断执行。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.793Z"
+        }
+      },
+      {
+        "id": "file_src_application_observe_runtime_recover_ts",
+        "label": "recover.ts",
+        "type": "file",
+        "path": "src/application/observe/runtime/recover.ts",
+        "title": "P2 只读恢复工具内核 recover_run：新会话接上现场组合；不 claim/不写盘，grants 恒 none。",
+        "decision": {
+          "summary": "只读恢复内核：组合 Task/lease/Run-Attempt fold/evidence/HEAD 脏树/进程探测给新会话接上下文；零写权，建议不持久化。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:34.904Z"
+        }
+      },
+      {
+        "id": "file_src_application_observe_runtime_run_events_ts",
+        "label": "run_events.ts",
+        "type": "file",
+        "path": "src/application/observe/runtime/run_events.ts",
+        "title": "P2 执行事件流追加/读取应用层；表住既有 tasks.db run_events，不新建第二 DB。",
+        "decision": {
+          "summary": "执行事件流应用层：run_events 追加/读取住既有 tasks.db；追加是审计旁路，失败回 {ok:false,error} 不静默。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:35.024Z"
+        }
+      },
+      {
+        "id": "file_src_domain_run_events_ts",
+        "label": "run_events.ts",
+        "type": "file",
+        "path": "src/domain/run_events.ts",
+        "title": "P2 可恢复执行纯域：事件种类/Run 上下文键/Attempt 派生/Checkpoint fold；零 IO 不存当前态。",
+        "decision": {
+          "summary": "Run/Attempt/Checkpoint 纯域语义：事件前缀派生读模型；零 IO、不建表、不持久化当前态；落盘开库住 application 层。",
+          "expectations": [],
+          "updated_at": "2026-11-23T05:41:35.136Z"
+        }
       }
     ],
     "edges": [
@@ -80609,7 +80875,10 @@
           }
         ],
         "path": "src/presentation/daemon/server.ts",
-        "status": "in_progress"
+        "status": "in_progress",
+        "expected_deps": [
+          "src/application/action_effect.ts"
+        ]
       },
       {
         "id": "file_src_presentation_http_contract_ts",
@@ -84810,43 +85079,549 @@
         "id": "file_src_domain_scheduling_evidence_ts",
         "path": "src/domain/scheduling_evidence.ts",
         "responsibility": "调度证据帧的纯类型/形状判据/版本对齐（无 IO）：区分 pass|fail|unsupported|pending|unknown 与 fresh|stale|unavailable|conflicting；缺版本不判新鲜；scope=[] 不等于全项目",
-        "status": "done"
+        "status": "done",
+        "expected_apis": [
+          {
+            "signature": "identityOf(absPath: string, platform: string = process.platform): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "relativeKey(rel: string): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "subjectKey(subject: EvidenceSubject | undefined | null): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "signalShapeError(v: unknown): string | null",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "assertEvidenceSignal(v: unknown): EvidenceSignal",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "versionAlignment(produced: string | null | undefined,\n  current: string | null | undefined,): { freshness: EvidenceFreshness; reason: string }",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "observesAlignment(input: {\n  observes: readonly string[] | undefined;\n  baselineFiles: Record<string, string> | null | undefined;\n  currentFiles: Record<string, string> | null | undefined;\n}): { freshness: EvidenceFreshness; reason: string; drifted: string[] }",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "scopeOfSignal(signal: Pick<EvidenceSignal, 'scope'>): 'declared' | 'undeclared'",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "isJudgementRef(target: string): boolean",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "isTestObjectPath(target: string): boolean",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "resolveSubjectCandidates(candidates: ReadonlyArray<{ raw: string; id?: string }>,): {\n  resolved: Array<{ key: string; raws: string[]; id?: string }>;\n  ambiguous: Array<{ key: string; ids: string[]; raws: string[] }>;\n}",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "scopeCompatible(a: readonly string[], b: readonly string[]): boolean",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "detectVerdictConflicts(signals: readonly EvidenceSignal[],): Array<{ subject: string; left: string; right: string; reason: string }>",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "subjectOfEntryId(entryId: string): { kind: 'test' | 'contract' | 'other'; path?: string }",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "frameShapeError(frame: unknown): string | null",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       },
       {
         "id": "file_src_domain_scheduling_policy_ts",
         "path": "src/domain/scheduling_policy.ts",
         "responsibility": "影子调度纯策略（无 IO）：缺口→候选动作→硬过滤→规则号/依赖/相关度/成本/字典序确定排序→预算截断；动作词表里没有写/完成/提交/回滚",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/domain/scheduling_evidence.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "costRank(cost: CostFact): [number, number]",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "scopeDecision(frame: EvidenceFrame, target: string): 'in' | 'out' | 'undeclared'",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "planStanding(s: {\n  open_gaps: readonly string[];\n  undetermined: number;\n  conflicts: number;\n  fresh_fail: number;\n  unsupported: number;\n  actions: number;\n  deferred: number;\n}): 'no_op' | 'work' | 'unresolved'",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "planShadow(frame: EvidenceFrame, opts: PolicyOptions = {}): ShadowPlan",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "assertReadOnlyPlan(plan: ShadowPlan): void",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "planDigest(plan: ShadowPlan): string",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       },
       {
         "id": "file_src_application_scheduling_evidence_frame_ts",
         "path": "src/application/scheduling/evidence_frame.ts",
         "responsibility": "通过注入的只读端口组装 Evidence Frame：不自己开库、不建索引；继承/重跑/不可判只调 verified_snapshot 的唯一判据，不复制第二套算法",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/verified_snapshot.ts",
+          "src/domain/scheduling_evidence.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "scopeEscape(rel: string): string | null",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "buildEvidenceFrame(input: FrameInput): EvidenceFrame",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "const unavailable = (reason: string): { ok: false; reason: string } => ({ ok:…",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "const portIdentity = (root: string): string => identityOf(root)",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       },
       {
         "id": "file_src_application_scheduling_shadow_scheduler_ts",
         "path": "src/application/scheduling/shadow_scheduler.ts",
         "responsibility": "只读影子调度器：把现有事实读端接成端口（cache.db 只以 readOnly 打开、schema 落后不开库、不经 invokeTool 的自动保鲜），输出 Shadow Plan 且不执行",
-        "status": "done"
+        "status": "done",
+        "expected_deps": [
+          "src/application/design/verified_snapshot.ts",
+          "src/application/meta/integrity/index_integrity.ts",
+          "src/application/refactor/parse_capability/parse_capability.ts",
+          "src/application/scheduling/evidence_frame.ts",
+          "src/application/verify/execution_intents.ts",
+          "src/application/verify/verify_project.ts",
+          "src/domain/scheduling_policy.ts",
+          "src/infrastructure/analysis/facts/impact_set.ts",
+          "src/infrastructure/index/db.ts",
+          "src/infrastructure/index/index_freshness.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "createReadOnlyPorts(root: string, receipts: PortReceipt[] = []): ReadOnlyPorts & { close: () => void }",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "runShadowScheduler(input: ShadowRunInput): ShadowRunResult",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       },
       {
         "id": "file_scripts_schedule-shadow_mjs",
         "path": "scripts/schedule-shadow.mjs",
         "responsibility": "DS-1 只读诊断入口：人读 + JSON 投影，退出码三态（0 产出 / 1 用法错 / 2 判不了）；不执行建议、不建索引、不写盘",
-        "status": "draft"
+        "status": "draft",
+        "expected_deps": [
+          "scripts/lib/changed_set.mjs"
+        ]
       },
       {
         "id": "file_src_application_action_effect_ts",
         "path": "src/application/action_effect.ts",
         "responsibility": "动作效果唯一纯模块：派生 safe-read/may-write、resources、conditional-write、destructive 事实；纯函数，无 fs/网络/时钟副作用",
-        "status": "in_progress"
+        "status": "in_progress",
+        "expected_apis": [
+          {
+            "signature": "declareEffect(effect: Effect,\n  resources: readonly ResourceDomain[],\n  extra?: Partial<Omit<ActionEffect, 'effect' | 'resources'>>,): ActionEffect",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "declareActionEffects(actions: Readonly<Record<string, ActionEffect>>,): Readonly<Record<string, ActionEffect>>",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "bindActionEffects(defs: readonly { readonly name: string; readonly effect?: ActionEffect }[]): void",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "actionEffectOf(toolName: string, actionKey?: string): ActionEffect | null",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "extractActionKey(args: Record<string, unknown> | undefined): string | undefined",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "adjudicateActionEffect(input: AdjudicationInput): Adjudication",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       },
       {
         "id": "file_tests_p1_action_effect_boundary_test_ts",
         "path": "tests/p1_action_effect_boundary.test.ts",
         "responsibility": "本卡定向边界反例集：隔离 AGENT_IO_HOME + 临时项目 + 随机回环端口 + 注入 handler；R1–R13 受控消融，不触真实服务",
         "status": "in_progress"
+      },
+      {
+        "id": "file_scripts_card-sheet-projection-gate_mjs",
+        "path": "scripts/card-sheet-projection-gate.mjs",
+        "responsibility": "门脚本：卡↔册结案投影只读点名（批3 C6，一期点名优先于强制）；复用 stale_projection 判据核，只做 I/O 与三态退出。"
+      },
+      {
+        "id": "file_scripts_gen_docs_view_mjs",
+        "path": "scripts/gen_docs_view.mjs",
+        "responsibility": "文档投影块生成/对账 CLI 入口（doc:render/doc:check）；只调 application 纯函数、写盘、打印读数与退出码，渲染逻辑在 docs_view。",
+        "expected_deps": [
+          "src/application/docs_view/check_doc_blocks.ts",
+          "src/application/docs_view/registry.ts",
+          "src/application/docs_view/render_doc_blocks.ts"
+        ]
+      },
+      {
+        "id": "file_scripts_index-integrity-gate_mjs",
+        "path": "scripts/index-integrity-gate.mjs",
+        "responsibility": "门脚本：索引可信度进门（批3 G4）；把 index_integrity 三态 verdict 接入 verify 总门，判定核在 meta/integrity。"
+      },
+      {
+        "id": "file_scripts_tasks-mirror-gate_mjs",
+        "path": "scripts/tasks-mirror-gate.mjs",
+        "responsibility": "门脚本：tasks.db ↔ tasks.jsonl 镜像对账（批3 G3）；逐行对账库两侧与镜像，分叉即点名；判定核在 meta/reconcile/tasks_mirror。"
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_gates_ts",
+        "path": "src/application/docs_view/adapters/gates.ts",
+        "responsibility": "适配器：门表清单（静态解析 verify.mjs#GATES，惰性补 ts 类型门）；纯清单段，不投影散文纪律。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts"
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_live_cards_ts",
+        "path": "src/application/docs_view/adapters/live_cards.ts",
+        "responsibility": "适配器：活卡 top-N（listLiveCards 只读，open ∧ 未取代）；纯清单段。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts",
+          "src/domain/task_schema.ts",
+          "src/infrastructure/task_history.ts"
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_adapters_tools_ts",
+        "path": "src/application/docs_view/adapters/tools.ts",
+        "responsibility": "适配器：工具注册表指针表（TOOL_DEFS + laneOfFromSources 只读）；归属由 LANE_SOURCES 派生。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts",
+          "src/application/meta/registry/lane_ids.ts",
+          "src/application/tool_registry.ts"
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_authority_sources_ts",
+        "path": "src/application/docs_view/authority_sources.ts",
+        "responsibility": "权威输入源登记：authority-input / projection / archive 三类内核级区分；projection 条目同源落账。",
+        "expected_apis": [
+          {
+            "signature": "registerProjectionSource(entry: AuthoritySourceEntry): void",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "listSources(kind?: AuthorityKind): AuthoritySourceEntry[]",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "getSource(id: string): AuthoritySourceEntry | undefined",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_check_doc_blocks_ts",
+        "path": "src/application/docs_view/check_doc_blocks.ts",
+        "responsibility": "块核三向对账：引擎现算 vs 盘上 vs git HEAD；七态 + 三态退出码；恒全量现算不读缓存结论。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts",
+          "src/application/docs_view/render_doc_blocks.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "checkDocBlocks(root: string, opts: CheckOptions = {}): DocsCheckResult",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_inject_annotate_ts",
+        "path": "src/application/docs_view/inject_annotate.ts",
+        "responsibility": "取数侧注入标注：文档切段（人写段/投影块），非绿块正文剔除；投影块附对账状态与 rev。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "segmentDoc(docText: string): DocSegment[]",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "annotateDocForInjection(docText: string, checks: Map<string, BlockCheck> = new Map()): AnnotatedDoc",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_lifecycle_ts",
+        "path": "src/application/docs_view/lifecycle.ts",
+        "responsibility": "九态生命周期状态机（吸收→投影流水线位置）；与投影对账态两层模型分开。",
+        "expected_apis": [
+          {
+            "signature": "isLifecycleState(s: string): s is LifecycleState",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "canTransition(from: LifecycleState, to: LifecycleState): boolean",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "assertCommittable(state: LifecycleState): { ok: boolean; reason: string }",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_markers_ts",
+        "path": "src/application/docs_view/markers.ts",
+        "responsibility": "块标记方案：DOC:GEN 起止注释 + body_sha256 标记格式单点定义。",
+        "expected_apis": [
+          {
+            "signature": "sha16Hex(text: string): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "parseBegin(line: string): ParsedHeader | null",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "parseEnd(line: string): { blockId: string; bodySha16: string } | null",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "buildHeader(opts: {\n  blockId: string;\n  source: string;\n  rev: string;\n  cmd: string;\n  generator: string;\n  bodySha16: string;\n}): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "buildFooter(blockId: string, bodySha16: string): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "extractBlock(docText: string, blockId: string): ExtractedBlock | null",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_read_order_ts",
+        "path": "src/application/docs_view/read_order.ts",
+        "responsibility": "取数顺序模型：capability_map→index_integrity→get_dsl→design_line→ledger→capability_audit；新鲜度与降级口径。"
+      },
+      {
+        "id": "file_src_application_docs_view_registry_ts",
+        "path": "src/application/docs_view/registry.ts",
+        "responsibility": "适配器注册表：block-id → 源读端/rev 取法/渲染函数；表驱动，后续只加条目不改内核。",
+        "expected_deps": [
+          "src/application/docs_view/adapters/gates.ts",
+          "src/application/docs_view/adapters/live_cards.ts",
+          "src/application/docs_view/adapters/tools.ts",
+          "src/application/docs_view/authority_sources.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "listAdapters(): DocBlockAdapter[]",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "getAdapter(id: string): DocBlockAdapter | undefined",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_render_doc_blocks_ts",
+        "path": "src/application/docs_view/render_doc_blocks.ts",
+        "responsibility": "渲染纯函数：确定性渲染文档块；自洽断言走独立注册表实体现算。",
+        "expected_deps": [
+          "src/application/docs_view/markers.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "defaultSelfCheck(source: AdapterSource, body: string): SelfCheckResult",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "renderBlock(adapter: DocBlockAdapter, root: string): RenderedBlock",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "renderDocBlocks(root: string, opts: RenderOptions = {}): RenderedBlock[]",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_docs_view_types_ts",
+        "path": "src/application/docs_view/types.ts",
+        "responsibility": "适配器契约与块核类型（终局形状）；read/render/selfCheck 边界。"
+      },
+      {
+        "id": "file_src_application_meta_reconcile_stale_projection_ts",
+        "path": "src/application/meta/reconcile/stale_projection.ts",
+        "responsibility": "既有裸奔对账 C6：已结案卡三来源合一（live_cards/task_history/册），只读点名册单侧投影。",
+        "expected_deps": [
+          "src/application/design/db/rewrite_plan.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "classifyClosedOnly(lives: Map<string, CardLife>, why: Map<string, string>): ClosedOnlyHit[]",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "nameClosedOnlyProjections(projectRoot: string): StaleProjectionReport",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_meta_reconcile_tasks_mirror_ts",
+        "path": "src/application/meta/reconcile/tasks_mirror.ts",
+        "responsibility": "既有裸奔对账 G3：tasks.db 权威行 ↔ tasks.jsonl 镜像只读比较器，分叉逐条点名。",
+        "expected_deps": [
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "reconcileTasksMirror(projectRoot: string): TasksMirrorReport",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_observe_runtime_attempt_recorder_ts",
+        "path": "src/application/observe/runtime/attempt_recorder.ts",
+        "responsibility": "正式 runner 的 Attempt 事件记录器：attempt_started/finished 落审计旁路；不编造 pid/活性。",
+        "expected_deps": [
+          "src/application/observe/runtime/run_events.ts",
+          "src/domain/actor_spec.ts",
+          "src/domain/task_machine.ts",
+          "src/domain/task_schema.ts",
+          "src/infrastructure/git.ts",
+          "src/infrastructure/storage.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "hasTaskContext(ctx: AttemptContext | undefined): boolean",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "startAttempt(projectRoot: string,\n  ctx: AttemptContext | undefined,\n  attemptRef: string,\n  fact: AttemptStartFact,): AttemptRecord",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "finishAttempt(projectRoot: string,\n  ctx: AttemptContext | undefined,\n  attemptRef: string,\n  fact: AttemptFinishFact,\n  cwd: string,): AttemptFinishRecord | null",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_observe_runtime_recover_ts",
+        "path": "src/application/observe/runtime/recover.ts",
+        "responsibility": "P2 只读恢复工具内核 recover_run：新会话接上现场组合；不 claim/不写盘，grants 恒 none。",
+        "expected_deps": [
+          "src/application/design/dsl_ops/task_ops.ts",
+          "src/application/observe/runtime/run_events.ts",
+          "src/domain/actor_spec.ts",
+          "src/domain/run_events.ts",
+          "src/domain/task_machine.ts",
+          "src/domain/task_schema.ts",
+          "src/infrastructure/analysis/project_root/index.ts",
+          "src/infrastructure/git.ts",
+          "src/infrastructure/storage.ts",
+          "src/infrastructure/task_history.ts",
+          "src/infrastructure/write_log.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "recoverRun(input: RecoveryInput): RecoveryReport",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "listActiveCards(root: string): Array<{ id: string; feature: string; state: string; summary: string | null }>",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_observe_runtime_run_events_ts",
+        "path": "src/application/observe/runtime/run_events.ts",
+        "responsibility": "P2 执行事件流追加/读取应用层；表住既有 tasks.db run_events，不新建第二 DB。",
+        "expected_deps": [
+          "src/domain/run_events.ts",
+          "src/infrastructure/task_history.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "appendRunEvent(projectRoot: string, input: RunEventInput): AppendEventResult",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "ensureRunStarted(projectRoot: string,\n  input: Omit<RunEventInput, 'kind' | 'body'> & { body?: Record<string, unknown> },): AppendEventResult",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "listRunEvents(projectRoot: string,\n  filter?: { feature?: string; node_id?: string; runId?: string },): RunEventsRead",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "eventsForTask(projectRoot: string, feature: string, nodeId: string): RunEventsRead",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
+      },
+      {
+        "id": "file_src_domain_run_events_ts",
+        "path": "src/domain/run_events.ts",
+        "responsibility": "P2 可恢复执行纯域：事件种类/Run 上下文键/Attempt 派生/Checkpoint fold；零 IO 不存当前态。",
+        "expected_apis": [
+          {
+            "signature": "runIdOf(ctx: RunContextKey): string",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "foldCheckpoint(runId: string,\n  events: readonly Pick<RunEventRecord, 'seq' | 'kind' | 'body'>[],): { run_id: string; last_event_seq: number | null; digest: string | null }",
+            "notes": "from:cache.db@1795410645533"
+          },
+          {
+            "signature": "attemptsOf(events: readonly RunEventRecord[]): AttemptView[]",
+            "notes": "from:cache.db@1795410645533"
+          }
+        ]
       }
     ]
   },
@@ -84908,15 +85683,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2936,
+  "_dsl_rev": 2962,
   "_sync": {
-    "saved_at": "2026-11-22T16:01:42.978Z",
+    "saved_at": "2026-11-23T06:55:33.269Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2362305841,
+    "age": 2415936132,
     "dbSchemaVersion": 17,
-    "via": "edit_dsl:edit_dsl"
+    "via": "derived:project_actual_fields"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",

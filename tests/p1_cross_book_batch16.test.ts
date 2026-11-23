@@ -30,7 +30,7 @@
  * ## 这批立的十九条
  * | # | 判据 | 绿的真身（本文件断的东西） |
  * |---|---|---|
- * | 16.1 | **孤儿 19 → 0**（现读）；分区 86 → 75（agent-io 8→15 / 计划册 78→60；2026-11-20 新增一张已完成的历史认账处置卡） | 留下一张悬挂的卡、或搬漏一张，这里红 |
+ * | 16.1 | **孤儿 19 → 0**（现读）；分区 86 → 76（agent-io 8→16 / 计划册 78→60；2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 T-#RESP-CONTRACT 排队 1，见 b0e0f850） | 留下一张悬挂的卡、或搬漏一张，这里红 |
  * | 16.1b | 名单形状：19 = 累计 17 + 另计 2 · 四类 7/7/4/1 · 码位序 · 互斥 · steps 形状 | 手抄错一条 / 把"无家可归"混进别的类 |
  * | 16.2 | 每张卡的**归宿**逐条对表（home / nodeTask / from_state / steps）—— 没有"顺手批量"的一类 | 拿一类套一切（不逐张裁定） |
  * | 16.3 | 真仓：重挂 7 张在**属主册**，卡体 sha256 = **搬前**（逐字）、`state`/`node_id` 未变、计划册分区已无 | 重挂时改了卡 / 只删不搬 |
@@ -42,7 +42,7 @@
  * | 16.9 | 卡的家仍在 `tasks.db`：三册 `todos[]` 全空 · 7 个重挂节点**不伪造** `node.task` · 唯一一处 progress 投影 | 把卡搬进册里当第二权威 |
  * | 16.10 | 镜像 `tasks.jsonl` = 活卡 + 历史（同一条载体），逐行 `(feature,id,state)` 与库一致 | 改了库不刷镜像 |
  * | 16.11 | `structure-gate` ② 档**三读数仍 0** + 基线三组 = 0 / 空集合指纹 | 谁又造出错位 / 漂移，或改册不改基线 |
- * | 16.12 | 判据 **900** / 职责 **12,522** 当前守恒（批 16 历史为 854 / 10,366；890 → 900 的出处：P1 五节点各 2 条判据共 +10，见 `.agent-io/design/agent-io.dsl.json`；12,355 → 12,522 = P1 两新文件职责字数 93 + 74） | 借"收卡"顺手改册 |
+ * | 16.12 | 判据 **900** / 职责 **13,829** 当前守恒（批 16 历史为 854 / 10,366；890 → 900 的出处：P1 五节点各 2 条判据共 +10；12,522 → 13,829 = A3 受闸入册 22 文件 +1307 字，逐文件探针在案） | 借"收卡"顺手改册 |
  * | 16.13 | **有牙①**：纯核把一张重挂卡塞回计划册分区 ⇒ 孤儿 0 → 1；再删 ⇒ 0 | 孤儿判据恒 0 的假绿 |
  * | 16.14 | **有牙②**：少一行 history / 改 1 个字节的理由 ⇒ 16.5 的判据红 | 常数表与实测脱钩时没人发现 |
  * | 16.15 | **AGENTS.md 缺口**：`nodeIdOf('AGENTS.md')` 在三册 0 节点（钉住"这张卡无处可指"） | 假装重指到一个不存在的节点 |
@@ -237,35 +237,36 @@ const STILL_LIVE: readonly string[] = CARD_TABLE.filter((c) => c.action === 'REH
 
 const CARD_TOTAL_BEFORE = 86;
 // ★ 2026-11-20：批 16 的 74 张之后，新增 todo_dispose-write-log-audit-2026-11-04（done、非 void）拥有五笔冻结无卡写 ⇒ live_cards 合法 +1；不是改写批 16 历史。
-const CARD_TOTAL_AFTER = 75;
+// ★ 2026-11-23：b0e0f850 受闸立卡 todo_RESP-CONTRACT（candidate / owner=null / 无 node_id 排队态，规格 docs/TASK-RESP-CONTRACT.md）⇒ live_cards 再 +1；不强制立设计册节点。
+const CARD_TOTAL_AFTER = 76;
 const ZONE_BEFORE: Readonly<Record<string, number>> = { 'agent-io': 8, 'task-system-plan': 78 };
-const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 15, 'task-system-plan': 60 };
+const ZONE_AFTER: Readonly<Record<string, number>> = { 'agent-io': 16, 'task-system-plan': 60 };
 const HISTORY_ROWS = 19;
 const HISTORY_ROWS_TSP = 18;
 
 /** 判定器口径的当前守恒数；批 16 收口时为 854 / 10,366，后续合法册增量必须逐项有出处。 */
 const CRITERIA_TOTAL = 900; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：890 → 900 = P1 五节点各 2 条判据（presentation/daemon/server.ts、application/tool_annotations.ts、application/meta/ledger/tool_schema.ts、application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；各 file-exists + run）共 10 条，出处 .agent-io/design/agent-io.dsl.json。 // ★ 2026-11-22（36-S1 判据守恒读数同步）：上一当前值 879 → 当前 890 = mutate 新增 7 条真实 call-exists + diff_impact 新增 4 条语义判据（7 + 4 = 11）；出处 = 当前设计册 .agent-io/design/agent-io.dsl.json（883）+ agent-io-toolface.dsl.json（7），归档册 task-system-plan 计 0。★ 旧读数 879 的出处保留在下面三段历史注释里，不回改。 // ★ 2026-11-20（DS-1R2 收尾）：877 → 879 = scheduling_policy 新增 planStanding（no_op 六条件）+ scopeDecision（scope 硬约束）两条行为判据；出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（DS-1 证据帧 / 只读影子调度）：868 → 877 = scheduling_evidence 3 + scheduling_policy 2 + evidence_frame 2 + shadow_scheduler 1 + schedule-shadow 1；每条都挂在新增文件节点上，出处见 .agent-io/design/agent-io.dsl.json // ★ 2026-11-20（C1 当前执行资格）：861 → 868 = execution_eligibility 2 + execution_intents 3 + semantic 1 + verify_project 1；文档基线 857 的出处保留在历史注释。
-const RESP_TOTAL = 12522; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：12355 → 12522 = +167 字 = src/application/action_effect.ts 93 字 + tests/p1_action_effect_boundary.test.ts 74 字（实测；出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）。 // ★ 2026-11-20（DS-1）：11911 + 5 个新文件的 responsibility 字数 = 12355（实测；逐文件出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）
-const PATHS_TOTAL = 606; // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：604 → 606 = +2 去重 path = src/application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；不是放宽判定。 // ★ 2026-11-20（DS-1）：599 + 5 个新语义文件（scheduling_evidence / scheduling_policy / evidence_frame / shadow_scheduler / scripts.schedule-shadow） = 604；不是放宽判定。
+const RESP_TOTAL = 13829; // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：12522 → 13829 = +1307 字 = A3 受闸入册 22 个新文件 responsibility 字数合计（逐文件实测出自 .agent-io/design/agent-io.dsl.json 的 semantic.files；探针 artifacts/d-nail-probe.mjs 在案；纯字数钉随合法册增量移动，无行为语义变化）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：12355 → 12522 = +167 字 = src/application/action_effect.ts 93 字 + tests/p1_action_effect_boundary.test.ts 74 字（实测；出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）。 // ★ 2026-11-20（DS-1）：11911 + 5 个新文件的 responsibility 字数 = 12355（实测；逐文件出自 .agent-io/design/agent-io.dsl.json 的 semantic.files）
+const PATHS_TOTAL = 628; // ★ 2026-11-23（批 3 收口 · Main 裁决受闸同步）：606 → 628 = +22 去重 path = A3 受闸入册 22 个新文件节点（清单与上条职责字数探针同案；不是放宽判定）。 // ★ 2026-11-22（P1-ACTION-EFFECT-BOUNDARY-01 收口）：604 → 606 = +2 去重 path = src/application/action_effect.ts、tests/p1_action_effect_boundary.test.ts；不是放宽判定。 // ★ 2026-11-20（DS-1）：599 + 5 个新语义文件（scheduling_evidence / scheduling_policy / evidence_frame / shadow_scheduler / scripts.schedule-shadow） = 604；不是放宽判定。
 
 const rowOf = (id: string) => CARD_TABLE.find((c) => c.id === id);
 
 // ════════════════════════════════════════════════════════════════════
 // 16.1 / 16.1b / 16.2 名单与形状（不需要 tasks.db 的那一半）
 // ════════════════════════════════════════════════════════════════════
-test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 0**；分区 86 → 75（agent-io 8→15 / 计划册 78→60）', (t) => {
+test('16.1 真仓：孤儿（node_id 在**自己的册**里查不到）**19 → 0**；分区 86 → 76（agent-io 8→16 / 计划册 78→60）', (t) => {
   if (!hasCards()) {
     t.skip('本机没有 tasks.db（干净克隆：卡的家不在版本库里）⇒ 卡那半读不回；名单/规则由 16.1b / 16.2 钉住');
     return;
   }
   const list = cards();
   assert.deepEqual(orphansOf(list), [], '孤儿必须归零（每张卡都要有显式归宿 —— 要么在属主册活着，要么已入史）');
-  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1；实测 ${list.length}）`);
+  assert.equal(list.length, CARD_TOTAL_AFTER, `live_cards 总数 ${CARD_TOTAL_AFTER}（批 16 后 74 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1；实测 ${list.length}）`);
   const zone: Record<string, number> = {};
   for (const c of list) zone[c.feature] = (zone[c.feature] ?? 0) + 1;
   assert.deepEqual(zone, ZONE_AFTER, `分区必须等于 ${JSON.stringify(ZONE_AFTER)}（实测 ${JSON.stringify(zone)}）`);
-  // Δ 闭合：agent-io +7（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1）· 计划册 −18（19 张里的 18 张全出列）
-  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 7, 'agent-io 分区 +7 = 批 16 净 +6，再加一张已完成的历史认账处置卡');
+  // Δ 闭合：agent-io +8（批 16 的 7 重挂 − 1 无家入史 + 2026-11-20 历史认账处置卡 1 + 2026-11-23 立卡 RESP-CONTRACT 1）· 计划册 −18（19 张里的 18 张全出列）
+  assert.equal(zone[AI]! - ZONE_BEFORE[AI]!, 8, 'agent-io 分区 +8 = 批 16 净 +6 + 2026-11-20 认账卡 1 + 2026-11-23 立卡 1');
   assert.equal(ZONE_BEFORE[TSP]! - zone[TSP]!, 18, `计划册分区 −18（19 − 1 张 agent-io 自己的）；实测 −${ZONE_BEFORE[TSP]! - zone[TSP]!}`);
 });
 
@@ -550,7 +551,7 @@ test('16.11 `structure-gate` ② 档三读数**仍为 0** + 门档三组指纹 =
   }
 });
 
-test('16.12 守恒：判据 **900** · 职责 **12,522**（批 16 历史 854 / 10,366；890 → 900 = P1 五节点 +10；12,355 → 12,522 = 两新文件 +167，当前增量有出处）', () => {
+test('16.12 守恒：判据 **900** · 职责 **13,829**（批 16 历史 854 / 10,366；890 → 900 = P1 五节点 +10；12,522 → 13,829 = A3 入册 22 文件 +1307 字，当前增量有出处）', () => {
   assert.equal(criteriaTotal(), CRITERIA_TOTAL, `三册判据合计 ${CRITERIA_TOTAL}（实测 ${criteriaTotal()}）`);
   assert.equal(respTotal(), RESP_TOTAL, `三册职责字数合计 ${RESP_TOTAL}（实测 ${respTotal()}）`);
 });

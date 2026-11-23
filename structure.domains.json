@@ -481,6 +481,27 @@
                   "role": "engine",
                   "dir": "src/application/meta/ledger",
                   "note": "台账写面单工具（单 ledger 工具 10 action 纯透传，FACE-STABILITY 裁定的落地）——真相状态变更的对外面（2026-11-18 d8060cfb）；字段序与 role=engine 同 meta-view 先例"
+            },
+            {
+                  "id": "docs-view",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/docs_view",
+                  "note": "文档投影视图族（批1-2 docs_view）：适配器注册表 gates/live_cards/tools + authority_sources 权威源登记 + check_doc_blocks 块核三向对账 + render_doc_blocks 确定性渲染 + inject_annotate 取数注入 + lifecycle/markers/read_order/types 契约；从既读读端派生可再生视图，不新写 SQL；完整规范源语义吸收留批4"
+            },
+            {
+                  "id": "meta-reconcile",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/meta/reconcile",
+                  "note": "既有裸奔对账族（批3 G3/C6）：tasks_mirror 比较器（tasks.db 权威行 ↔ tasks.jsonl 镜像，只读分叉点名）+ stale_projection（结案卡三来源合一，册单侧结案投影只读点名）；只读产判断、被门脚本调用的辅助判定引擎，不写权威；门脚本在 scripts/tasks-mirror-gate.mjs 与 scripts/card-sheet-projection-gate.mjs。注：产物偏判断，与 capability 同父混装的搬家决策留批4"
+            },
+            {
+                  "id": "scheduling",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/scheduling",
+                  "note": "影子调度族：evidence_frame 经注入只读端口组装证据帧（不自己开库建索引）+ shadow_scheduler 只读影子调度器（事实读端成端口、组帧、调纯策略、产影子计划；零写入四道闸）；被未来调度工具调用的组帧/策略辅助引擎，只产建议不执行；注：产物偏判断，与 capability 同父混装的搬家决策留批4"
             }
       ],
       "flatDirs": [
