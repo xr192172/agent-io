@@ -42137,6 +42137,66 @@
           "expectations": [],
           "updated_at": "2026-11-23T05:41:35.136Z"
         }
+      },
+      {
+        "id": "file_src_application_ingestion_provenance_ts",
+        "label": "provenance.ts",
+        "type": "file",
+        "path": "src/application/ingestion/provenance.ts",
+        "title": "provenance schema 契约：来源类别/一手引用/时刻/模型席位版本输入指纹/裁决回执/写者/raw 逐字；校验逐条点名；rawSha256 + rowFingerprint（M3 行级完整哈希分期）。",
+        "decision": {
+          "summary": "吸收事实 provenance 契约：每条候选带来源/裁决/时间/写者；模型席位缺失留空不编版本；行级完整哈希与交叉核对列独立后续批次。",
+          "expectations": [],
+          "updated_at": "2026-11-23T08:57:46.180Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_record_ts",
+        "label": "record.ts",
+        "type": "file",
+        "path": "src/application/ingestion/record.ts",
+        "title": "吸收记录形状：候选四类（fact/intent/expectation/card）+ 九态轨迹事件 + 非语义路降级留痕 + 行指纹；轨迹 append-only，不存可派生快照。",
+        "decision": {
+          "summary": "记录契约：payload 含主张/落位形状/现役对齐锚点/边界/blocked 点；两层状态（生命周期态 vs 投影对账态）不混。",
+          "expectations": [],
+          "updated_at": "2026-11-23T08:57:46.299Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_roads_ts",
+        "label": "roads.ts",
+        "type": "file",
+        "path": "src/application/ingestion/roads.ts",
+        "title": "管线两路分类与降级口径：语义路（提取/翻译/蒸馏/复核）缺模型响亮 blocked/unsupported；非语义增强路（向量化/重排/REM/heat/剪枝）降级可见化；口径外环节不许默认可降级。",
+        "decision": {
+          "summary": "两路降级闸口径：语义产物是候选非权威；blocked/degraded-visible 都是非绿读数，聚合门不得把 exit 0 当通过。",
+          "expectations": [],
+          "updated_at": "2026-11-23T08:57:46.409Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_store_ts",
+        "label": "store.ts",
+        "type": "file",
+        "path": "src/application/ingestion/store.ts",
+        "title": "单写者闸控内核：register/parse/adjudicate/commit/archive/通用迁移；committed 闸仅 adjudicated 且回执完整；语义步端口缺席/抛错/空候选落 blocked；非语义降级留痕不改态。",
+        "decision": {
+          "summary": "唯一写端：封写者身份，旁路直写禁止；九态边表复用 docs_view/lifecycle.ts 唯一住处；model-in-the-loop 端口可替换注入。",
+          "expectations": [],
+          "updated_at": "2026-11-23T08:57:46.518Z"
+        }
+      },
+      {
+        "id": "file_src_application_ingestion_candidates_ts",
+        "label": "candidates.ts",
+        "type": "file",
+        "path": "src/application/ingestion/candidates.ts",
+        "title": "批 4 候选受闸吸收登记册：候选 1/2/5/6 走九态 committed（Main 2026-11-23 裁决 + 一手 URL 落 provenance）；3/4/7a/7b 二期观察 blocked；候选 8 移出不登记；附归因枚举/门名常量。",
+        "decision": {
+          "summary": "候选吸收口径：失实数字不进吸收正文；对齐现役 superseded_by/rateOf/incsel_ablation，不另造统计权威与第二失败分类；未决项留 blocked 待裁。",
+          "expectations": [],
+          "updated_at": "2026-11-23T08:57:46.624Z"
+        }
       }
     ],
     "edges": [
@@ -85622,6 +85682,77 @@
             "notes": "from:cache.db@1795410645533"
           }
         ]
+      },
+      {
+        "id": "file_src_application_ingestion_provenance_ts",
+        "path": "src/application/ingestion/provenance.ts",
+        "responsibility": "provenance schema 契约：来源类别/一手引用/时刻/模型席位版本输入指纹/裁决回执/写者/raw 逐字；校验逐条点名；rawSha256 + rowFingerprint（M3 行级完整哈希分期）。",
+        "expected_apis": [
+          {
+            "signature": "rawSha256(raw: string): string",
+            "notes": "from:cache.db@1795424267918"
+          },
+          {
+            "signature": "sha16Hex(text: string): string",
+            "notes": "from:cache.db@1795424267918"
+          },
+          {
+            "signature": "validateProvenance(p: Provenance): ProvenanceCheck",
+            "notes": "from:cache.db@1795424267918"
+          },
+          {
+            "signature": "validateAdjudication(a: Adjudication | undefined): ProvenanceCheck",
+            "notes": "from:cache.db@1795424267918"
+          },
+          {
+            "signature": "rowFingerprint(input: {\n  provenance: Provenance;\n  claim: string;\n  absorbed_as: string;\n}): string",
+            "notes": "from:cache.db@1795424267918"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_record_ts",
+        "path": "src/application/ingestion/record.ts",
+        "responsibility": "吸收记录形状：候选四类（fact/intent/expectation/card）+ 九态轨迹事件 + 非语义路降级留痕 + 行指纹；轨迹 append-only，不存可派生快照。"
+      },
+      {
+        "id": "file_src_application_ingestion_roads_ts",
+        "path": "src/application/ingestion/roads.ts",
+        "responsibility": "管线两路分类与降级口径：语义路（提取/翻译/蒸馏/复核）缺模型响亮 blocked/unsupported；非语义增强路（向量化/重排/REM/heat/剪枝）降级可见化；口径外环节不许默认可降级。",
+        "expected_apis": [
+          {
+            "signature": "classifyRoad(step: PipelineStep): RoadKind",
+            "notes": "from:cache.db@1795424267918"
+          },
+          {
+            "signature": "evaluateRoad(step: PipelineStep, available: boolean): RoadEvaluation",
+            "notes": "from:cache.db@1795424267918"
+          }
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_store_ts",
+        "path": "src/application/ingestion/store.ts",
+        "responsibility": "单写者闸控内核：register/parse/adjudicate/commit/archive/通用迁移；committed 闸仅 adjudicated 且回执完整；语义步端口缺席/抛错/空候选落 blocked；非语义降级留痕不改态。",
+        "expected_deps": [
+          "src/application/docs_view/lifecycle.ts",
+          "src/application/ingestion/provenance.ts",
+          "src/application/ingestion/roads.ts"
+        ]
+      },
+      {
+        "id": "file_src_application_ingestion_candidates_ts",
+        "path": "src/application/ingestion/candidates.ts",
+        "responsibility": "批 4 候选受闸吸收登记册：候选 1/2/5/6 走九态 committed（Main 2026-11-23 裁决 + 一手 URL 落 provenance）；3/4/7a/7b 二期观察 blocked；候选 8 移出不登记；附归因枚举/门名常量。",
+        "expected_deps": [
+          "src/application/ingestion/store.ts"
+        ],
+        "expected_apis": [
+          {
+            "signature": "buildBatch4Store(opts?: { writer?: string; now?: () => string }): IngestionStore",
+            "notes": "from:cache.db@1795424267918"
+          }
+        ]
       }
     ]
   },
@@ -85683,13 +85814,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2962,
+  "_dsl_rev": 2969,
   "_sync": {
-    "saved_at": "2026-11-23T06:55:33.269Z",
+    "saved_at": "2026-11-23T09:28:04.573Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2415936132,
+    "age": 2425087436,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },

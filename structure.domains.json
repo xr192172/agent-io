@@ -490,6 +490,13 @@
                   "note": "文档投影视图族（批1-2 docs_view）：适配器注册表 gates/live_cards/tools + authority_sources 权威源登记 + check_doc_blocks 块核三向对账 + render_doc_blocks 确定性渲染 + inject_annotate 取数注入 + lifecycle/markers/read_order/types 契约；从既读读端派生可再生视图，不新写 SQL；完整规范源语义吸收留批4"
             },
             {
+                  "id": "ingestion",
+                  "layer": "application",
+                  "role": "engine",
+                  "dir": "src/application/ingestion",
+                  "note": "吸收管线切片（批4 最小 ingestion 垂直切片）：provenance schema 契约（来源/裁决/时间/写者/模型席位/raw 逐字，M3 行级哈希分期）+ record 记录形状 + roads 两路降级口径（语义路缺模型响亮 blocked/unsupported；非语义增强路降级可见化）+ store 单写者闸控（committed 仅 adjudicated 可落权威）+ candidates 受闸吸收登记册（候选 1/2/5/6 committed，3/4/7 二期观察 blocked，8 移出）；受控表格/状态机，模型是语义翻译不可或缺环节，模型产物不直接成权威；不接跨项目 import_project/未来 RAG/外部 URL 批量抓取。"
+            },
+            {
                   "id": "meta-reconcile",
                   "layer": "application",
                   "role": "engine",
