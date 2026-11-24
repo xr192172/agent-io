@@ -162,6 +162,7 @@ const WRITE_ENDS: Array<{ file: string; via: string; who: string }> = [
   { file: 'src/application/meta/registry/sync_contracts.ts', via: 'tool', who: 'sync_contracts' },
   { file: 'src/application/design/derive/opl.ts', via: 'derived', who: 'opl' },
   { file: 'src/infrastructure/analysis/structure/arch_layer.ts', via: 'derived', who: 'arch_layer' },
+  { file: 'src/infrastructure/analysis/structure/derive_feature_tree.ts', via: 'derived', who: 'feature_tree' },
 ];
 
 test('派生写端 ① · 量具口径：注释里的 saveDSL( 不是调用点（正/反例双向）', () => {

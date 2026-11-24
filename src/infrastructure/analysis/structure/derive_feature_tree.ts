@@ -31,6 +31,7 @@
 
 import { analyzeMonolith } from './analyze_monolith.js';
 import { getDSLByView, getDesignSheet, saveDSL } from '../../storage.js';
+import { runDslWriteScope } from '../../dsl_write_scope.js';
 import { loadLlmConfig, callChat, loadExplainConfig } from '../../llm_focus.js';
 import type {
   DesignDSL,
@@ -288,7 +289,9 @@ function persistFeatureTree(
   const sheet = getDesignSheet(feature) ?? liveDsl;
   if (!sheet) return;
   sheet.feature_tree = tree;
-  saveDSL(sheet, 'feature_tree');
+  // ★ 写授权显式声明：功能树是派生事实，包 derived scope（对齐 monolith/arch_layer/dag_layout 先例）。
+  //   rebuild_feature.mjs 脚本裸调链无外层 tool scope ⇒ 不包会被 saveDSL 写闸拦（"没有写授权"）。
+  runDslWriteScope({ via: 'derived', who: 'feature_tree', feature }, () => saveDSL(sheet, 'feature_tree'));
 }
 
 export async function deriveFeatureTree(
