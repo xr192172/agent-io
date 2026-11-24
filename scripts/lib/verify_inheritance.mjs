@@ -23,7 +23,7 @@
  * 键即"内容寻址"（指纹含 verdict 当时的输入内容）；损坏/版本不符 ⇒ 当空缓存 + 留痕（不静默吞）。
  */
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, statSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, statSync, readdirSync, renameSync } from 'node:fs';
 import path from 'node:path';
 
 export const STORE_REL = '.agent-io/scratch/verify-inheritance.json';
@@ -45,6 +45,57 @@ const norm = (p) => String(p ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 
 function hashOf(buf) {
   return createHash('sha1').update(buf).digest('hex');
+}
+
+// ─────────────────────────────────────────────────────────────
+// S-4 键面闭包化：门脚本的**本地相对依赖**纳入指纹（传递闭包）。
+// 裸模块（node: 内置 / 已安装包）按 L7 归「工具链/环境 → 升级全量触发面」，不进缓存键；
+// 本地相对依赖算不出（读不到 / 解析不到真实文件）⇒ 该门指纹 null（fail-closed 实跑），不进跳过集。
+// ─────────────────────────────────────────────────────────────
+
+/** 从源码提取相对 import/require 说明符（'./x' / '../x'）；node: 内置与裸包忽略。 */
+function localSpecifiersOf(src) {
+  const specs = new Set();
+  const re = /import\(\s*['"]([^'"]+)['"]\)|import\s[^'"]*from\s*['"]([^'"]+)['"]|import\s+['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]\)/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const spec = m[1] ?? m[2] ?? m[3] ?? m[4];
+    if (!spec) continue;
+    if (spec.startsWith('./') || spec.startsWith('../')) specs.add(spec);
+  }
+  return [...specs];
+}
+
+/** 候选真实文件：补 .mjs/.js/.ts 扩展名或目录 index。返回存在的 rel，否则 null。 */
+function resolveLocalRel(root, fromRel, spec) {
+  const base = norm(path.join(path.dirname(fromRel), spec));
+  const candidates = [base, `${base}.mjs`, `${base}.js`, `${base}.ts`, `${base}/index.mjs`, `${base}/index.js`, `${base}/index.ts`];
+  for (const cand of candidates) {
+    if (existsSync(path.join(root, cand))) return cand;
+  }
+  return null;
+}
+
+/**
+ * 递归收集脚本的本地相对依赖闭包。`out` 累积 rel 清单；`visited` 防环。
+ * 任一依赖读不到 ⇒ 返回 false（调用方判指纹不可算，fail-closed）。
+ */
+function collectLocalDeps(root, scriptRel, visited, out) {
+  if (visited.has(scriptRel)) return true;
+  visited.add(scriptRel);
+  let src;
+  try {
+    src = readFileSync(path.join(root, scriptRel), 'utf8');
+  } catch {
+    return false;
+  }
+  for (const spec of localSpecifiersOf(src)) {
+    const dep = resolveLocalRel(root, scriptRel, spec);
+    if (!dep) return false; // 本地相对依赖解析不到 ⇒ 闭包不可静态算清 ⇒ fail-closed
+    if (!out.includes(dep)) out.push(dep);
+    if (!collectLocalDeps(root, dep, visited, out)) return false;
+  }
+  return true;
 }
 
 /** 展开输入：目录 ⇒ 递归取所有文件（跳过 .git/node_modules；这两者不是任何门的判定输入） */
@@ -80,8 +131,14 @@ function expandInput(root, rel, out) {
 export function inputFingerprint(root, gate, extraInputs = DEFAULT_INPUTS) {
   if (!gate || !INHERITABLE.includes(gate.name)) return null;
   const rels = [];
+  const scripts = [];
   for (const a of gate.args ?? []) {
-    if (typeof a === 'string' && /^scripts\//.test(a)) { rels.push(norm(a)); break; }
+    if (typeof a === 'string' && /^scripts\//.test(a)) scripts.push(norm(a));
+  }
+  for (const s of scripts) {
+    if (!rels.includes(s)) rels.push(s);
+    // S-4 键面闭包：脚本本地相对依赖递归纳入；闭包算不清 ⇒ 指纹 null（fail-closed 实跑）。
+    if (!collectLocalDeps(root, s, new Set(), rels)) return null;
   }
   if (/^Go /.test(gate.name)) rels.push('go.mod', 'go.sum'); // 相对 cwd 的 go 输入（cwd 也在指纹里）
   for (const r of extraInputs[gate.name] ?? []) if (!rels.includes(norm(r))) rels.push(norm(r));
@@ -131,12 +188,14 @@ export function planGate(root, gate, store, extraInputs = DEFAULT_INPUTS) {
   return { ...base, decision: 'inherit', reason: `输入未变 + 上次 ${e.verdict}`, prior: e };
 }
 
-/** 写回一道**真跑过**的只读门 verdict（继承条目原样保留，证据时点不刷新） */
+/** 写回一道**真跑过**的只读门 verdict（继承条目原样保留，证据时点不刷新）。
+ *  S-4：写回前重读最新落盘合并（并发双写不丢其他门条目）；tmp + rename 原子替换（不写半截条目）。 */
 export function recordGate(root, gate, store, result, extraInputs = DEFAULT_INPUTS) {
   if (!INHERITABLE.includes(gate.name)) return store;
   const fp = inputFingerprint(root, gate, extraInputs);
   if (!fp) return store; // 指纹不可算 ⇒ 不写（不许把"没钉住输入"的结果固化）
-  const entries = { ...(store.entries ?? {}) };
+  const latest = loadStore(root);
+  const entries = { ...(latest.entries ?? store.entries ?? {}) };
   entries[gate.name] = {
     fingerprint: fp,
     verdict: result.verdict, // 'PASS' | 'FAIL' | 'SKIP'
@@ -149,7 +208,9 @@ export function recordGate(root, gate, store, result, extraInputs = DEFAULT_INPU
   const abs = path.join(root, STORE_REL);
   try {
     mkdirSync(path.dirname(abs), { recursive: true });
-    writeFileSync(abs, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+    const tmp = `${abs}.tmp-${process.pid}`;
+    writeFileSync(tmp, `${JSON.stringify(next, null, 2)}\n`, 'utf8');
+    renameSync(tmp, abs);
     return { ok: true, reason: '', entries };
   } catch (e) {
     return { ok: false, reason: `写入失败：${String(e?.message ?? e).slice(0, 80)}`, entries };
