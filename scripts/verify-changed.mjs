@@ -82,6 +82,7 @@ import { fileURLToPath } from 'node:url';
 import { collectTestFiles } from './lib/test_files.mjs';
 import { changedPathsOf } from './lib/changed_set.mjs';
 import { testNodeId, fileOfTestNodeId } from '../dist/src/domain/scheduling_evidence.js';
+import { javaFqcnOfPath } from '../dist/src/application/verify/verify_project.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = (process.env.AGENT_IO_VERIFY_CHANGED_ROOT || path.resolve(HERE, '..')).replace(/\\/g, '/');
@@ -1197,10 +1198,10 @@ if (!NO_RUN && hitsToJudge.length > 0 && judge) {
   expReport = await judge(ROOT, hitsToJudge.map(({ node_id, node_label, expectation }) => ({ node_id, node_label, expectation })));
 }
 
-/** ★ Java ②：测试文件 → 全限定类名（与 verify_project.ts#javaTestClassOf 同款映射——改一处同步另一处） */
+/** ★ Java ②（O-a 收敛 2026-11-24）：FQCN 映射单一住处 = verify_project.ts#javaFqcnOfPath；
+ *   这里只保留命令串兜底（映射不出 ⇒ 原样 rel 进 -Dtest= 标签，不猜类名）。仅影响命令字符串，不影响归因 verdict。 */
 function javaTestClassOfForBaseline(rel) {
-  const m = rel.replace(/\\/g, '/').match(/^src\/test\/java\/(.+)\.java$/);
-  return m ? m[1].replace(/\//g, '.') : rel;
+  return javaFqcnOfPath(rel) ?? rel;
 }
 
 // ════════════════════════════════════════════════════════════════════

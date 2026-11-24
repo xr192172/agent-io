@@ -7,7 +7,7 @@
 # 生成方式：取 `get_dsl query=digest` 的输出（**同一渲染器**，不另写一份排版）。
 # 不进 Git（随代码改动而变 ⇒ churn 高）；进 Git 的是 MANIFEST.txt（那才是稳定的声明）。
 #
-===feature agent-io=== dsl_rev=2978 sha256=1e6b4344d111149f
+===feature agent-io=== dsl_rev=2979 sha256=693bbba8eb6e2f00
 dogfood/build_cache.mjs[core]: R:dist/src/infrastructure/index/db.js, dist/src/infrastructure/index/symbols.js, dist/src/infrastructure/parse/kernel.js
 dogfood/check_cache.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 dogfood/verify_space_bug.mjs[core]: (语义层无 F/R/A/S 字段可投影)
@@ -29,7 +29,7 @@ observe-lang-py/camprobe.py[core]: F:observe-lang-py · Camprobe 探针 | S:决�
 scripts/check-receipt.mjs[core]: (语义层无 F/R/A/S 字段可投影)
 scripts/clean-dead-functions.mjs[core]: F:clean-dead-functions.mjs —— 用 edit_code 删【文件内私有 + 零调用】的死函数
 scripts/clean_dist.mjs[core]: R:dist/src/application/observe/runtime/stale_check.js | S:决策=clean_dist 是构建清单的生产者：构建成功即写 dist/.build-manifest.json ; 验收=① 构建成功后写 dist/.build-manifest.json（stamp + 每个源文件的产物路径/哈希/mtime/size）；② 清单写入失败不得让构建假成功（显式警告）；③ 清单与 clean_dist 的反向检查同源。
-…共 627 条（截断；完整清单: D:\Projects\ai\agentio\dev\agent-io\.agent-io\scratch\digest-agent-io.txt）
+…共 629 条（截断；完整清单: D:\Projects\ai\agentio\dev\agent-io\.agent-io\scratch\digest-agent-io.txt）
 
 ===feature agent-io-toolface=== dsl_rev=28 sha256=038465f1fcd86ff5
 src/application/meta/registry/capability_map.ts[core]: F:能力线元信息与导航：六条线的 LANE_META（含每线 direct 门名单）、工具→线归属派生、域表投影、以及接法路径的 collectInputPaths | R:src/application/meta/registry/tool_faces.ts, src/domain/b_terms.ts, src/domain/chain_wiring.ts, src/domain/gate_error.ts, src/infrastructure/authority/scan_authorities.ts, src/infrastructure/data_dir.ts, src/infrastructure/storage.ts | A:bindToolDefs(defs: ToolDef[]): void ; listToolDefs(): ToolDef[] ; bindLaneOf(table: Readonly<Record<string, LaneAssign>>): void ; resetLaneOfForTest(): void ; bindDomains(domains: readonly DomainNavView[] | null): void ; listDomains(): readonly DomainNavView[] | null ; resetDomainsForTest(): void ; bindAuthorities(list: readonly AuthorityEntry[] | null, err = ''): void ; listAuthorities(): readonly AuthorityEntry[] | null ; resetAuthoritiesForTest(): void ; staleViasOf(entry: AuthorityEntry, toolNames: ReadonlySet<string>): string[] ; countStaleAuthorities(all: readonly AuthorityEntry[] | null,

@@ -42245,6 +42245,22 @@
           "expectations": [],
           "updated_at": "2026-11-23T11:37:38.529Z"
         }
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_incsel_cron_ts",
+        "label": "incsel_cron.ts",
+        "x": 1560,
+        "y": 590,
+        "type": "file",
+        "path": "src/infrastructure/analysis/facts/incsel_cron.ts"
+      },
+      {
+        "id": "file_scripts_ablation-cron_mjs",
+        "label": "ablation-cron.mjs",
+        "x": 1200,
+        "y": 430,
+        "type": "file",
+        "path": "scripts/ablation-cron.mjs"
       }
     ],
     "edges": [
@@ -85879,6 +85895,20 @@
             "signature": "evaluateAcceptance(items: readonly AcceptanceItem[]): AcceptanceMetrics",
             "notes": "from:cache.db@1795433803060"
           }
+        ]
+      },
+      {
+        "id": "file_src_infrastructure_analysis_facts_incsel_cron_ts",
+        "path": "src/infrastructure/analysis/facts/incsel_cron.ts",
+        "responsibility": "",
+        "expected_deps": []
+      },
+      {
+        "id": "file_scripts_ablation-cron_mjs",
+        "path": "scripts/ablation-cron.mjs",
+        "responsibility": "",
+        "expected_deps": [
+          "src/infrastructure/analysis/facts/incsel_cron.ts"
         ]
       }
     ]
