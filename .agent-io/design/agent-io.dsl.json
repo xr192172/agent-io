@@ -85901,7 +85901,33 @@
         "id": "file_src_infrastructure_analysis_facts_incsel_cron_ts",
         "path": "src/infrastructure/analysis/facts/incsel_cron.ts",
         "responsibility": "",
-        "expected_deps": []
+        "expected_deps": [],
+        "expected_apis": [
+          {
+            "signature": "evaluateTriggers(signal: AblationTriggerSignal): TriggerEvaluation",
+            "notes": "from:cache.db@1795530089053"
+          },
+          {
+            "signature": "validateSamplingQuota(sample: SamplingQuota): QuotaCheck",
+            "notes": "from:cache.db@1795530089053"
+          },
+          {
+            "signature": "coverageOfScenarios(assignments: Partial<Record<AblationScenarioClass, readonly string[]>>,): ScenarioCoverage",
+            "notes": "from:cache.db@1795530089053"
+          },
+          {
+            "signature": "snapshotRefOf(input: {\n  commitSha: string | null;\n  worktreePath: string | null;\n  clean: boolean;\n  liveWorktree: string;\n}): SnapshotRef",
+            "notes": "from:cache.db@1795530089053"
+          },
+          {
+            "signature": "buildAblationRecord(input: AblationRecordInput): AblationRunRecord",
+            "notes": "from:cache.db@1795530089053"
+          },
+          {
+            "signature": "summarizeShadowTrend(records: readonly AblationRunRecord[]): ShadowTrendSummary",
+            "notes": "from:cache.db@1795530089053"
+          }
+        ]
       },
       {
         "id": "file_scripts_ablation-cron_mjs",
@@ -85971,13 +85997,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2979,
+  "_dsl_rev": 2980,
   "_sync": {
-    "saved_at": "2026-11-24T11:07:46.249Z",
+    "saved_at": "2026-11-24T14:24:27.557Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2517469112,
+    "age": 2529270420,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },

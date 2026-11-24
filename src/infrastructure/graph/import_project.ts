@@ -881,6 +881,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
     throw new Error(`project_dir 不存在或不是目录: ${root}`);
   }
+  // ★ O1 根治：扫描目录（source_root）与册归属根（project_root）分离，在入口处一次性 resolve。
+  //   · root / sourceRootAbs = walk 的源码树（可读源码、算 rel、填语义事实）；
+  //   · projectRootAbs = 册 / 侧车 / live / baseline / cache 归属的项目根（仓根）。
+  //   缺省同根（历史兼容）；显式给了才分开。后续所有落盘归属根一律取 projectRootAbs，不再拿扫描目录落盘。
+  const sourceRootAbs = input.source_root ? path.resolve(input.source_root) : root;
+  const projectRootAbs = input.project_root ? path.resolve(input.project_root) : root;
 
   // 摩擦 H 修复：live 快照刷新跟随设计 DSL 的测试包含情况——live_only 且未显式
   // 指定 include_tests 时，若已有设计视图含测试文件，则默认也含测试，避免与设计
@@ -1238,12 +1244,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
   // ⇒ **一个“可选入参”决定了要不要干活** —— 这是最危险的形态（不传 = 静默不解析）。
   //
   // ## 修法
-  // `cache_db` 缺省 ⇒ **自动打开该项目自己的库**（`projectCacheDbPath(root)`，本来就在那里）。
+  // `cache_db` 缺省 ⇒ **自动打开该项目自己的库**（`projectCacheDbPath(projectRootAbs)`，归属根仓根下）。
   // ⇒ 解析**永远执行**；`cache_db` 只剩“用哪个库”的含义。
   {
     // 缓存路径：syncProject 内部按 content_hash 增量——未变更文件不重解析，
     // 随后从 cache.db 读回符号与原始 import（含 Go 包路径 / Python 点分模块）
-    const db = input.cache_db ?? getProjectCacheDb(root);
+    const db = input.cache_db ?? getProjectCacheDb(projectRootAbs);
     // ★ T-#48：分步模式 ⇒ 不跑同步解析，改交后台续建（非阻塞，分小批）
     const sync =
       input.staged === true
@@ -1411,12 +1417,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     // ★★★ 2026-11-01（T-#REG ②）：**写端只落「一次 resolve 的结果」** —— 绝对化只做一次、归一只住 normRoot。
     //   病：DSL.source_root 与注册表都直接落**原始入参**（可能是 "."）⇒ 存进去的是相对路径
     //   ⇒ 同一条登记在不同 cwd 下解析成**不同项目**（读端只能靠 cwd 猜）。
-    //   ⇒ 这里只**取用**本函数已算好的绝对 root（见上方 const root = path.resolve(input.project_dir)）；
-    //     显式给了 source_root 才另算一次 —— 那也是绝对化，不是第二套归一。
-    const sourceRootAbs = input.source_root ? path.resolve(input.source_root) : root;
+    //   ⇒ 这里只**取用**入口已算好的绝对 sourceRootAbs / projectRootAbs（本函数顶部一次性 resolve）。
     // ★ O1 根治：册归属根（project_root）与扫描目录（source_root）分离。缺省同根；显式给了
     //   project_root 才把两者分开（册住仓根、扫描子树）。
-    const projectRootAbs = input.project_root ? path.resolve(input.project_root) : root;
     const dsl: DesignDSL = {
       id: `imported_${feature}`,
       type: 'feature_diagram',
@@ -1554,7 +1557,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     if (!wantsDesign) {
       // 只刷新"实际"：设计被完整保住
       designAction = '（★ 本次**只刷新了"实际"**：设计 DSL 未被触碰 —— 这就是"有设计就不动、只对比"）';
-      saveLiveFeature(layered, root);
+      saveLiveFeature(layered, projectRootAbs);
     } else {
       // ★★★ 2026-10-09（T77 落地）：**重建设计会抹掉"扫描产不出"的节点** ⇒ 先算差集，非空就**拒绝**。
       //   为什么必须拦：实测（2026-10-09）手工 `edit_dsl` 加的节点 `node_manual_1` 一重建就**消失**，
@@ -1704,8 +1707,8 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       // semantic.files 为语义基准做命中率闸门。手动导入的项目若只有设计 DSL 而无
       // live 快照，换项目后聚类会因语义基准为空被判"db 不相关"而拒生成 → 导图平铺。
       // 导入即落一份 live，保证换项目后功能树可稳定聚类。（live_dir 缺省 = 默认 dataHome，
-      // 与 getLiveFeature 默认读取路径一致。）
-      saveLiveFeature(layered, root);
+      // 与 getLiveFeature 默认读取路径一致。）★ O1：落盘归属根取 projectRootAbs（仓根），不再拿扫描目录落盘。
+      saveLiveFeature(layered, projectRootAbs);
     }
     // fork 基线：首次导入（无论 live_only 与否）即锚定契约创立时刻的参考基准，
     // 之后 live 随代码演进更新、设计 DSL 随意图演进，二者都相对 baseline 各自前进，
@@ -1726,7 +1729,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //
     // ## ★ 为什么必须先算 drift 再重建
     // 覆盖写之后旧快照就没了 ⇒ "变了什么"必须在**写之前**算，否则重建 = 把答案一起删掉。
-    const { drift } = rebuildBaseline(layered, root);
+    const { drift } = rebuildBaseline(layered, projectRootAbs);
     {
       const touchedFiles = [...drift.added, ...drift.changed];
       // ★ B3 的判据：变了、但**不在本工具的自写登记**里 ⇒ "被人用工具以外的方式改了"。
@@ -1738,7 +1741,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       //   ⇒ 若照原样报"这 N 个没有自写登记"，会把**工具改的**也一起说成可疑 = 一句精确的假话。
       //   ⇒ 判据加一格：登记本**空着就当它不可用**，此时只报"变了什么"，并**明说分不出来**。
       //   ★ 空 ≠ "它们都是手改"；空 = 这条判据没接线（下一张卡：给 edit_code 接 recordSelfWrite）。
-      const ledger = readSelfWrites(input.project_dir);
+      const ledger = readSelfWrites(projectRootAbs);
       const ledgerLive = ledger.length > 0;
       const selfWritten = new Set(ledger.flatMap((e) => e.files));
       const untracked = touchedFiles.filter((f) => !selfWritten.has(f));
@@ -1816,7 +1819,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     let semanticNote: string | null = null;
     try {
       // ★ 该处 `db`（L961）落在更内层作用域里 ⇒ 这里用同一取法重取一次（同一路径 ⇒ 同一个库句柄）
-      const sf = fillSemanticFacts(input.cache_db ?? getProjectCacheDb(root), input.project_dir);
+      const sf = fillSemanticFacts(input.cache_db ?? getProjectCacheDb(projectRootAbs), input.project_dir);
       semanticNote = sf.ok
         ? sf.signatures > 0 || sf.fields > 0
           ? `语义事实: fields ${sf.fields} 行（${sf.via} · ${sf.packages} 包 / ${sf.files} 文件 / 类型错 ${sf.typeErrors}）`
@@ -1861,7 +1864,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     // ★★ 2026-11-09（接管评估协议）：建档**之前**先判这本册处在什么状态。
     //   fresh / resume / conflict 三种，**冲突时不许写**（`safe_to_write=false`），也不许引擎选边。
     //   放在 return 之前：调用方第一眼就能看到"我接管到了一个什么状态"。
-    const takeover = assessTakeover({ projectRoot: root, feature });
+    const takeover = assessTakeover({ projectRoot: projectRootAbs, feature });
     const takeoverLine =
       `接管评估：${takeover.scenario}` +
       (takeover.scenario === 'conflict'
@@ -1885,7 +1888,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
       scope_files:
         scopeRels.length > 20
           ? (() => {
-              const dump = path.join(root, '.agent-io', 'scratch', `last-import-scope-files-${feature}.txt`);
+              const dump = path.join(projectRootAbs, '.agent-io', 'scratch', `last-import-scope-files-${feature}.txt`);
               try {
                 fs.mkdirSync(path.dirname(dump), { recursive: true });
                 fs.writeFileSync(dump, scopeRels.join('\n') + '\n', 'utf8');
@@ -1894,7 +1897,7 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
               }
               return [
                 ...scopeRels.slice(0, 20),
-                `…共 ${scopeRels.length} 条（截断；完整清单: ${path.relative(root, dump).split(path.sep).join('/')}）`,
+                `…共 ${scopeRels.length} 条（截断；完整清单: ${path.relative(projectRootAbs, dump).split(path.sep).join('/')}）`,
               ];
             })()
           : scopeRels,
