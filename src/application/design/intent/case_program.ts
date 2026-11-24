@@ -399,7 +399,10 @@ export function runCaseWithFakes(input: {
         `"${process.execPath}" --import "${importSpec}" runner.mjs ${JSON.stringify(input.symbol)} spec.json > nul 2>&1\r\n`,
         'utf-8',
       );
-      r = spawnSync('cmd.exe', ['/d', '/c', 'run.cmd'], {
+      // ★ P2-R3worker：cmd 解释器用 ComSpec 绝对路径，不用裸名 `cmd.exe` —— 裸名走 PATH 找，
+      //   裁剪 PATH / 沙盒缺 System32 ⇒ ENOENT。ComSpec 由系统注入为绝对路径，缺省回退 SystemRoot。
+      const comSpec = process.env.ComSpec || path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'cmd.exe');
+      r = spawnSync(comSpec, ['/d', '/c', 'run.cmd'], {
         cwd: tmp,
         encoding: 'utf-8',
         timeout: timeoutMs,

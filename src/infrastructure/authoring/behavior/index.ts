@@ -518,10 +518,15 @@ function toolAvailable(cmd: string): boolean {
  * @returns null = 可用；否则返回可执行的原因说明
  */
 function toolchainIssue(cmd: string, minVersion: string | undefined, probeArgs?: string[]): string | null {
-  // ★ Windows 上必须带 shell：Node 不带 shell **找不到 `.cmd`/`.bat`**（scoop/winget/自建 wrapper 都是这种）
-  const shell = process.platform === 'win32';
+  // ★ P2-R3worker：node 就是当前进程同一可执行文件 —— 直接用 `process.execPath` 去 shell 探测，
+  //   不依赖 PATH 上的裸名 `node`。旧法 `spawnSync('node', …, {shell:true})` 在裁剪 PATH / 沙盒缺
+  //   System32 时：cmd 起来了但按空 PATH 找不到 node ⇒ "node 不是内部命令"，被误判工具链未装。
+  //   其余语言（go/java/python/…）仍是外部工具链，Windows 上照旧带 shell 解析 .cmd/.bat。
+  const isNode = cmd === 'node';
+  const shell = !isNode && process.platform === 'win32';
+  const file = isNode ? process.execPath : cmd;
   const args = probeArgs ?? TOOLCHAIN_PROBE[cmd] ?? ['--version'];
-  const r = spawnSync(cmd, args, { encoding: 'utf-8', timeout: 15_000, windowsHide: true, shell });
+  const r = spawnSync(file, args, { encoding: 'utf-8', timeout: 15_000, windowsHide: true, shell });
   const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
 
   // ① 存在性：**不靠 `r.error`**。带 shell 时 cmd.exe 本身会成功执行、内层命令失败时

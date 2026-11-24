@@ -205,7 +205,9 @@ export function runJourneyCase(input: {
       const resultFile = path.join(tmp, 'result.json');
       const bat = path.join(tmp, 'run.cmd');
       fs.writeFileSync(bat, `"${process.execPath}" runner.mjs spec.json > nul 2>&1\r\n`, 'utf-8');
-      r = spawnSync('cmd.exe', ['/d', '/c', 'run.cmd'], {
+      // ★ P2-R3worker：cmd 解释器用 ComSpec 绝对路径，不用裸名 `cmd.exe`（裁剪 PATH 时裸名 ENOENT）。
+      const comSpec = process.env.ComSpec || path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'cmd.exe');
+      r = spawnSync(comSpec, ['/d', '/c', 'run.cmd'], {
         cwd: tmp, encoding: 'utf-8', timeout: (input.slackMs ?? 250) + 15_000, windowsHide: true, stdio: 'ignore',
         env: { ...baseEnv, FAKES_RESULT_FILE: resultFile },
       });

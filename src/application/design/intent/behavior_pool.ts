@@ -104,9 +104,13 @@ function spawnSlot(): Slot | null {
     job?.resolve({ ok: false, error: `${why}（这条作业没能跑完）` });
     pump();
   };
-  worker.on('error', (e) => die(`worker 报错：${e instanceof Error ? e.message : String(e)}`));
+  // ★ 只认**当前在册**的 worker：closePool/resetPoolForTest terminate 的旧 worker，其 exit/error
+  //   事件可能延迟到池子复位（closed 翻回 false）后才到达 —— 旧 slot 已被 filter 出 slots，
+  //   再记账就会把"旧线程退出"误判成"新 worker 崩溃"⇒ 假降级（结论靠兜底串行没变，却白报降级）。
+  const alive = (): boolean => slots.includes(slot);
+  worker.on('error', (e) => { if (alive()) die(`worker 报错：${e instanceof Error ? e.message : String(e)}`); });
   worker.on('exit', (code) => {
-    if (!closed && code !== 0) die(`worker 退出码 ${code}`);
+    if (!closed && code !== 0 && alive()) die(`worker 退出码 ${code}`);
   });
   return slot;
 }

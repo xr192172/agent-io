@@ -261,3 +261,31 @@ test('并行④ · `judge-all` 判据走 `judgeBookReceipt`（进程内），不
     "judge-all 里不许再有 `runCli('design_line', …)` —— 那是「每册一个 spawnSync」，回退它就又是一册一进程",
   );
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// ⑤ 裁剪 PATH（不含 System32 / node 目录）下 worker spawn 仍成功，并发 4 ≡ 串行
+//    P2-R3worker：worker 链起子进程不得依赖环境 PATH（node 探测走 process.execPath 去 shell；
+//    cmd 兜底走 ComSpec 绝对路径）。env 补 PATH 只是 harness 卫生，不是修复。
+// ══════════════════════════════════════════════════════════════════════════
+test('并行⑤ · 裁剪 PATH（PATH/Path 置空）下：worker spawn 成功、池子不降级，并发 4 与串行逐条一致', async () => {
+  const root = makeTinyProject();
+  const savedPath = process.env.PATH;
+  const savedPathVar = process.env.Path;
+  const pool = await import(pathToFileURL(path.join(ROOT, 'dist/src/application/design/intent/behavior_pool.js')).href);
+  pool.resetPoolForTest();
+  process.env.PATH = '';
+  process.env.Path = '';
+  try {
+    const serial = await judgeAt(root, 1);
+    const parallel = await judgeAt(root, 4);
+    assert.deepEqual(parallel, serial, '裁剪 PATH 下并发与串行的 verdict/detail/顺序必须逐条相同');
+    assert.ok(serial.some((x) => x.verdict === 'pass'), '夹具里必须有判过的（pass）');
+    assert.ok(serial.some((x) => x.verdict === 'fail'), '夹具里必须有判红的（fail）—— 否则这条用例没有鉴别力');
+    assert.equal(pool.poolDegradedReason(), '', `裁剪 PATH 下 worker 池子不该降级：${pool.poolDegradedReason()}`);
+  } finally {
+    process.env.PATH = savedPath;
+    process.env.Path = savedPathVar;
+    process.env.AGENT_IO_JUDGE_CONCURRENCY = '';
+    pool.closePool();
+  }
+});
