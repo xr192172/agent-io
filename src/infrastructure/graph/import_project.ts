@@ -1788,9 +1788,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //     `files` 才是"本 feature 有哪些文件"的权威（`scope_files` 同源，见 `finalizeDsl` 顶部）。
     try {
       const rels = scopeRels;
+      // ★ P2-R2：facts 落盘归属根取 projectRootAbs（仓根），不再拿扫描目录 input.project_dir 落盘
+      //   （P 批 O1 拆分最后一处漏网）；fileFacts 读源码事实仍走扫描根 input.project_dir。
       const res = saveBaselineFactsIfAbsent(
         layered.feature,
-        input.project_dir,
+        projectRootAbs,
         rels,
         (rel) => {
           const facts = fileFacts(input.project_dir, rel);

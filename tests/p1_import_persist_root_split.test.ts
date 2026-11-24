@@ -23,8 +23,10 @@
  * 本证「子树无 `.agent-io` 错位副本」断言红（证明有牙，不是假绿）。
  *
  * ## 排队债务（本证不钉）
- * baseline **facts**（`*.facts.json`）落盘根仍随 `source_root`：读方 `consistency.ts` 按
- * `dsl.source_root` 直取、无根候选链；迁归属根需先改读端口径，另立切片（见 P 批回执）。
+ * `tools/` 抽取器缓存目录与扫描根同参（semantic_facts 根耦合，未拆）。
+ * baseline **facts**（`*.facts.json`）落盘根已在 P2-R2 根治：第 2 参改传归属根
+ * `projectRootAbs`，与 live/baseline-DSL/design/cache 同根；读方 `consistency.ts` 按
+ * `dsl.source_root` 直取、无根候选链的迁移另立切片（本证只钉写根，读端口径不动）。
  */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,6 +39,7 @@ import {
   getLiveFeatureFile,
   getBaselineFeatureFile,
   getDesignSheetFile,
+  getBaselineFactsFile,
 } from '../src/infrastructure/storage.js';
 import { getProjectCacheDb } from '../src/infrastructure/index/db.js';
 
@@ -105,19 +108,21 @@ test('① 分离根导入：live/baseline-DSL/design/cache 落仓根，扫描子
   assert.ok(designFile.startsWith(path.join(pkgRoot, '.agent-io', 'design')), `册必须落仓根：${designFile}`);
   assert.ok(fs.existsSync(cacheDb), `cache.db 必须落仓根：${cacheDb}`);
 
+  // ★ P2-R2：baseline facts 也落归属根（仓根），不再随扫描子树错位。
+  const factsFile = getBaselineFactsFile(feature, pkgRoot);
+  assert.ok(fs.existsSync(factsFile), `baseline facts 必须落仓根：${factsFile}`);
+
   // 同一批索引库在仓根下真的查到那个符号（证明库就是归属根这份，不是子树副本）。
   const db = getProjectCacheDb(pkgRoot);
   const hit = db.prepare("SELECT name FROM nodes WHERE name = 'greet'").all() as Array<{ name: string }>;
   assert.equal(hit.length, 1, `仓根 cache.db 必须含 greet 符号，实得 ${JSON.stringify(hit)}`);
 
-  // ★ 反向牙：扫描子树下**不许**出现归属根派生副本（live/baseline-DSL/design/cache/self-writes/scratch）。
-  //   排队债务（本证放行、另立切片）：baseline/<feature>.facts.json 随 source_root；tools/ 抽取器缓存目录
-  //   与扫描根同参（semantic_facts 根耦合，未拆）。
+  // ★ 反向牙：扫描子树下**不许**出现归属根派生副本（live/baseline-DSL/design/cache/facts/self-writes/scratch）。
+  //   排队债务（本证放行、另立切片）：tools/ 抽取器缓存目录与扫描根同参（semantic_facts 根耦合，未拆）。
   const srcIo = path.join(srcRoot, '.agent-io');
   const rels = fs.existsSync(srcIo) ? walkRel(srcIo, srcIo) : [];
   const forbidden = rels.filter((rel) => {
     if (rel.startsWith('tools/')) return false; // 排队债务：抽取器缓存目录
-    if (rel === `baseline/${feature}.facts.json`) return false; // 排队债务：facts 随 source_root
     return true;
   });
   assert.deepEqual(
