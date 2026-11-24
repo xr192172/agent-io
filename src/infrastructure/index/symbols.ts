@@ -53,6 +53,8 @@ export interface SyncFileResult {
   cross_type_edges?: number;
   /** 符号级 diff 计数（v3）：updated 且非首次导入时给出；undefined=无对比意义 */
   symbol_diff?: { added: number; removed: number; changed: number };
+  /** ★ O3 根治：单文件腿收尾的 scoped 入边对账统计（仅成功同步后给出；见 reconcileResolvedEdges） */
+  reconcile?: ReconcileEdgesStats;
   error?: string;
 }
 
@@ -1299,6 +1301,16 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
   }
 }
 
+/**
+ * ★ O3 根治：单文件腿收尾挂 **scoped** 入边对账——只对账指向本文件的入边，
+ *   不遍历全库引用（性能与本轮文件数成正比）。失败 / 忽略条目不挂（无落库事实可对账）。
+ */
+function attachScopedReconcile(db: Database, projectRoot: string, result: SyncFileResult): void {
+  if (result.status === 'failed' || result.status === 'ignored') return;
+  if (!result.path) return;
+  result.reconcile = reconcileResolvedEdges(db, projectRoot, { targetFiles: [result.path] });
+}
+
 /** 单文件同步（async，经典路径）：parseFileFull 懒加载解析器（首次该语言有一次 import 成本） */
 export async function syncFile(db: Database, projectRoot: string, absPath: string): Promise<SyncFileResult> {
   invalidateProjectView(projectRoot); // ★ 写路径挂钩：磁盘要变了 ⇒ ProjectView 缓存失效
@@ -1309,7 +1321,9 @@ export async function syncFile(db: Database, projectRoot: string, absPath: strin
     // 不写 files 行：下次运行 hash 比对不到记录，自动重试
     return p.pre.fail(parsed.error);
   }
-  return applyParsedToIndex(db, projectRoot, p.pre, parsed);
+  const result = applyParsedToIndex(db, projectRoot, p.pre, parsed);
+  attachScopedReconcile(db, projectRoot, result);
+  return result;
 }
 
 /**
@@ -1323,7 +1337,9 @@ export function syncFileSync(db: Database, projectRoot: string, absPath: string)
   if (!p.ok) return p.early;
   const parsed = parseFileFullSync(absPath, p.pre.content);
   if (parsed.error) return p.pre.fail(parsed.error);
-  return applyParsedToIndex(db, projectRoot, p.pre, parsed);
+  const result = applyParsedToIndex(db, projectRoot, p.pre, parsed);
+  attachScopedReconcile(db, projectRoot, result);
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -1428,17 +1444,56 @@ export interface ReconcileEdgesStats {
   dropped: number;
   /** 重开后二次解析真正解析成功的引用数（读数；含同趟其他 pending，口径见回执） */
   recovered: number;
+  /**
+   * ★ O3 根治：是否 scoped（仅对账本轮被重扫目标文件的入边）模式。
+   * `false`=全库对账（批量 syncProject 收尾）；`true`=单文件腿收尾，只看 target 落在 targetFiles 内的引用。
+   */
+  scoped: boolean;
+  /** scoped 模式下本次对账的目标文件（仓库相对）；全库模式为空数组 */
+  targetFiles: string[];
 }
 
-export function reconcileResolvedEdges(db: Database, projectRoot: string): ReconcileEdgesStats {
+/**
+ * ★★★ O3 根治（G-2 并入，去顺序敏感）：单文件腿也挂 scoped 入边对账。
+ *
+ * ## 背景（G-1 遗留窗口）
+ * G-1 的 `reconcileResolvedEdges` 只挂批量 `syncProject` 收尾；单文件 `syncFile`/`syncFileSync` 腿
+ * 重扫落后文件时，删旧节点 CASCADE 清掉的批量自愈入边无人对账重建 ⇒ 必须靠
+ * 「refresh 保鲜 → 批量 reconcile → judge」的顺序 workaround，顺序一乱（refresh 后再 verify）就复发缺边。
+ *
+ * ## 根治口径
+ * 给本函数加可选 `targetFiles`（scoped）：
+ *   · 不传 ⇒ 全库对账（既有批量收尾行为，一字不变）；
+ *   · 传目标文件 ⇒ **只对账 target 节点落在这些文件内**的已解析入边（不是遍历全库引用），
+ *     重开的引用按其**所在引用方文件**收窄交二次解析。对账面与本轮触碰文件成正比，不全库遍历 ⇒ 无性能回归。
+ *
+ * ## 边界
+ * scoped 模式经 `JOIN nodes` 只取现存目标；目标节点已不在库内的行 join 不上 ⇒ `dropped` 恒 0，
+ * 消失目标的 failed 留痕仍归批量 reconcile 置位（不在单文件腿空转）。
+ */
+export function reconcileResolvedEdges(
+  db: Database,
+  projectRoot: string,
+  opts: { targetFiles?: readonly string[] } = {},
+): ReconcileEdgesStats {
+  const scope = [...new Set((opts.targetFiles ?? []).filter(Boolean))];
+  const scoped = scope.length > 0;
+  const params: Record<string, string> = {};
+  let join = '';
+  let where =
+    "r.status = 'resolved' AND r.resolved_node_id IS NOT NULL AND r.reference_kind IN ('call','type_ref')";
+  if (scoped) {
+    join = ' JOIN nodes t ON t.id = r.resolved_node_id';
+    where += ` AND t.file_path IN (${scope.map((_, i) => `$f${i}`).join(', ')})`;
+    scope.forEach((f, i) => { params[`f${i}`] = f; });
+  }
   const refs = db
     .prepare(
-      `SELECT id, from_node_id, reference_name, reference_kind, resolved_node_id
-         FROM unresolved_refs
-        WHERE status = 'resolved' AND resolved_node_id IS NOT NULL
-          AND reference_kind IN ('call','type_ref')`,
+      `SELECT r.id, r.from_node_id, r.reference_name, r.reference_kind, r.resolved_node_id
+         FROM unresolved_refs r${join}
+        WHERE ${where}`,
     )
-    .all() as Array<{
+    .all(params) as Array<{
     id: number;
     from_node_id: string;
     reference_name: string;
@@ -1458,6 +1513,7 @@ export function reconcileResolvedEdges(db: Database, projectRoot: string): Recon
   let missing = 0;
   let reopened = 0;
   let dropped = 0;
+  const reopenedFrom = new Set<string>();
   const ownTx = !inTransaction(db);
   if (ownTx) db.exec('BEGIN IMMEDIATE');
   try {
@@ -1467,7 +1523,9 @@ export function reconcileResolvedEdges(db: Database, projectRoot: string): Recon
       if (nodeExists.get({ id: r.resolved_node_id })) {
         reopen.run({ id: r.id });
         reopened++;
-      } else {
+        reopenedFrom.add(r.from_node_id.split('#')[0]);
+      } else if (!scoped) {
+        // 全库模式：目标消失 ⇒ 置 failed 留痕；scoped 模式消失目标 join 不上，不落此分支。
         drop.run({
           c: JSON.stringify({
             verdict: 'failed',
@@ -1486,10 +1544,15 @@ export function reconcileResolvedEdges(db: Database, projectRoot: string): Recon
   }
   let recovered = 0;
   if (reopened > 0) {
-    const second = resolveCrossFileCalls(db, projectRoot);
+    // scoped：二次解析只收窄到被重开引用所在的引用方文件；全库：维持既有全库解析。
+    const second = resolveCrossFileCalls(
+      db,
+      projectRoot,
+      scoped ? { scopeFiles: [...reopenedFrom] } : {},
+    );
     recovered = second.resolved;
   }
-  return { checked: refs.length, missing, reopened, dropped, recovered };
+  return { checked: refs.length, missing, reopened, dropped, recovered, scoped, targetFiles: scope };
 }
 
 /**
@@ -1710,13 +1773,7 @@ export async function syncProject(
       // ★ 2026-10-22：跳过多少必须跟连上多少一起报（这张就是 sync 回执）—— 不许只报 resolved
       reexportSkipped: cross.reexportSkipped,
     },
-    reconcile: {
-      checked: reconcile.checked,
-      missing: reconcile.missing,
-      reopened: reconcile.reopened,
-      dropped: reconcile.dropped,
-      recovered: reconcile.recovered,
-    },
+    reconcile,
   };
 }
 

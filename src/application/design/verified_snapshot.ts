@@ -68,6 +68,27 @@ export function derivedObservesOf(root: string, testFile: string): string[] {
       )
       .all(rel, rel) as Array<{ f?: string }>;
     for (const r of calls) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
+    // ★ G-2 mapper_statement 反向观察面：Java 测试经 call/type_ref 到达的接口方法节点，
+    //   沿 mapper_statement（target=方法 ⇒ source=XML 语句文件）反向收集对应 mapper XML，
+    //   使"改 mapper XML"落在该测试的观察面内（与 diff_impact 正向 XML→方法→调用方互补）。
+    if (isJava) {
+      const methodIds = db
+        .prepare(
+          `SELECT DISTINCT t.id AS mid FROM edges e JOIN nodes s ON s.id = e.source JOIN nodes t ON t.id = e.target
+            WHERE e.kind IN ('call','type_ref') AND s.file_path = ?`,
+        )
+        .all(rel) as Array<{ mid: string }>;
+      if (methodIds.length > 0) {
+        const ph = methodIds.map(() => '?').join(',');
+        const xmlRows = db
+          .prepare(
+            `SELECT DISTINCT x.file_path AS f FROM edges e JOIN nodes x ON x.id = e.source
+              WHERE e.kind = 'mapper_statement' AND e.target IN (${ph})`,
+          )
+          .all(...methodIds.map((m) => m.mid)) as Array<{ f?: string }>;
+        for (const r of xmlRows) if (r.f) out.add(String(r.f).replace(/\\/g, '/'));
+      }
+    }
   } catch {
     return [];
   }

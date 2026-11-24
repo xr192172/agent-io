@@ -64,6 +64,20 @@ export interface CoverageMap {
     unreadKinds: string[];
     /** G9① 索引新鲜度是否通过（stale=0 且可探测） */
     fresh: boolean;
+    /**
+     * ★ G1④ 不可静态解析动态入口（`imports.kind='computed'`，路径算出来解析不了）条数。
+     * 事实已登记、目标不可见 ⇒ 覆盖下界含盲区；与清单一起供读端判断覆盖可信度。
+     */
+    computedImports: number;
+    /** ★ G1④ 含 computed 动态入口的源码/脚本文件清单（仓库相对，去重排序） */
+    computedFiles: string[];
+    /**
+     * ★ G1③ 被显式排除出 src 覆盖面的 dist 产物 import 边条数。
+     * 覆盖集只认 `src/` 目标；dist/src/*.js 是构建产物，不回映进 src 覆盖下界——此处单列计数，不静默丢弃。
+     */
+    excludedDistEdges: number;
+    /** ★ G1④ 反射/不可解析调用引用读数（failed/pending；external 仓外不计盲区） */
+    unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number };
   };
 }
 
@@ -75,12 +89,14 @@ function readImportEdges(root: string): EdgeRow[] | null {
     const db = getProjectCacheDb(root) as unknown as {
       prepare: (sql: string) => { all: (...a: unknown[]) => Array<{ source?: string; target?: string }> };
     };
+    // ★ G-2：文件级边数据集 = import 依赖边 ∪ mapper_statement 文件级对（XML 语句文件 ↔ Java 方法文件）。
+    //   mapper 边两端符号 JOIN 回文件后即文件级关联；进同一闭包邻接，口径与 import 一致。
     const rows = db.prepare(
       `SELECT s.file_path AS source, t.file_path AS target
          FROM edges e
          JOIN nodes s ON s.id = e.source
          JOIN nodes t ON t.id = e.target
-        WHERE e.kind = 'import' AND s.file_path IS NOT NULL AND t.file_path IS NOT NULL`,
+        WHERE e.kind IN ('import','mapper_statement') AND s.file_path IS NOT NULL AND t.file_path IS NOT NULL`,
     ).all();
     const out: EdgeRow[] = [];
     for (const r of rows) {
@@ -99,10 +115,11 @@ function readImportEdges(root: string): EdgeRow[] | null {
  * ★ G9③ 边型对账：选材/继承链实际消费的边型清单（唯一权威口径，不另立第二份）。
  * - `import`：文件级依赖（test→src / src→src 闭包、import_graph、locate_feature）；
  * - `call`：符号级调用（diff_impact / chain_tracer / call-exists 判据）；
- * - `type_ref`：符号级类型引用（diff_impact / chain_tracer）。
- * 已建但不在此清单的边型（如 `mapper_statement`）= **已建未读**，作为读数显形，不在本批接入。
+ * - `type_ref`：符号级类型引用（diff_impact / chain_tracer）；
+ * - `mapper_statement`：MyBatis XML 语句 ↔ Java 接口方法（G-2 接入：diff_impact 正向波及 +
+ *   derivedObserves 反向观察面 + 覆盖闭包文件级关联）。
  */
-export const CONSUMED_EDGE_KINDS = ['import', 'call', 'type_ref'] as const;
+export const CONSUMED_EDGE_KINDS = ['import', 'call', 'type_ref', 'mapper_statement'] as const;
 
 interface FreshnessProbe {
   ok: boolean;
@@ -133,6 +150,55 @@ function builtEdgeKinds(root: string): { ok: boolean; built: string[] } {
   }
 }
 
+/** ★ G1③④ 不可解析动态入口 / dist 排除边 / 反射不可解析引用的可信度读数（只读；查不动 ⇒ null）。 */
+function readUnresolvedSignals(root: string): {
+  computedImports: number;
+  computedFiles: string[];
+  excludedDistEdges: number;
+  unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number };
+} | null {
+  try {
+    const db = getProjectCacheDb(root) as unknown as {
+      prepare: (sql: string) => {
+        all: () => Array<Record<string, unknown>>;
+        get: () => Record<string, unknown>;
+      };
+    };
+    const compRows = db
+      .prepare(`SELECT f.path AS file FROM imports i JOIN files f ON f.id = i.file_id WHERE i.kind = 'computed'`)
+      .all();
+    const computedFiles = [...new Set(compRows.map((r) => String(r.file)).filter(Boolean))].sort();
+    const compCount = db.prepare("SELECT COUNT(*) n FROM imports WHERE kind = 'computed'").get();
+    const dist = db
+      .prepare(
+        `SELECT COUNT(*) n FROM edges e JOIN nodes t ON t.id = e.target
+          WHERE e.kind = 'import' AND t.file_path LIKE 'dist/%'`,
+      )
+      .get();
+    const u = db
+      .prepare(
+        `SELECT reference_kind, status, COUNT(*) n FROM unresolved_refs
+          WHERE status IN ('failed','pending') GROUP BY status, reference_kind`,
+      )
+      .all();
+    const unresolvedUnsafe = { failedCall: 0, failedTypeRef: 0, pending: 0 };
+    for (const r of u) {
+      const n = Number(r.n) || 0;
+      if (r.status === 'pending') unresolvedUnsafe.pending += n;
+      else if (r.reference_kind === 'call') unresolvedUnsafe.failedCall += n;
+      else unresolvedUnsafe.failedTypeRef += n;
+    }
+    return {
+      computedImports: Number(compCount.n) || 0,
+      computedFiles,
+      excludedDistEdges: Number(dist.n) || 0,
+      unresolvedUnsafe,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * ① 构造覆盖映射：测试文件 → 源码集合（直接 import + src→src import 传递闭包）。
  *
@@ -146,7 +212,11 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
   const edges = readImportEdges(root);
   const empty = (trusted: boolean, why = ''): CoverageMap => ({
     byTest: new Map(), unknown: new Set(), trusted,
-    stats: { directEdges: 0, closureEdges: 0, srcImportEdges: 0, builtKinds: [], unreadKinds: [], fresh: false },
+    stats: {
+      directEdges: 0, closureEdges: 0, srcImportEdges: 0, builtKinds: [], unreadKinds: [], fresh: false,
+      computedImports: 0, computedFiles: [], excludedDistEdges: 0,
+      unresolvedUnsafe: { failedCall: 0, failedTypeRef: 0, pending: 0 },
+    },
   } as CoverageMap & { why?: string });
   if (edges === null) return empty(false);
 
@@ -157,6 +227,8 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
   const unreadKinds = kinds.ok
     ? kinds.built.filter((k) => !CONSUMED_EDGE_KINDS.includes(k as (typeof CONSUMED_EDGE_KINDS)[number]))
     : [];
+  // ★ G1③④ 不可解析信号是可信度读数（非判据）：读不动给零值，不据此回落全量。
+  const signals = readUnresolvedSignals(root);
   if (!freshness.ok || freshness.stale > 0 || !kinds.ok) {
     return empty(false, freshness.reason ?? 'edge-kind-reconcile-unreadable');
   }
@@ -217,7 +289,13 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
     byTest,
     unknown,
     trusted: true,
-    stats: { directEdges, closureEdges, srcImportEdges, builtKinds: kinds.built, unreadKinds, fresh: true },
+    stats: {
+      directEdges, closureEdges, srcImportEdges, builtKinds: kinds.built, unreadKinds, fresh: true,
+      computedImports: signals?.computedImports ?? 0,
+      computedFiles: signals?.computedFiles ?? [],
+      excludedDistEdges: signals?.excludedDistEdges ?? 0,
+      unresolvedUnsafe: signals?.unresolvedUnsafe ?? { failedCall: 0, failedTypeRef: 0, pending: 0 },
+    },
   };
 }
 

@@ -31,7 +31,7 @@ import { getProjectCacheDb, projectCacheDbPath, type Database } from '../../inde
 import { fileNodeId } from '../../graph/node_id.js';
 
 export type ImpactDirection = 'callers' | 'callees' | 'both';
-export type EdgeKind = 'call' | 'type_ref' | 'import';
+export type EdgeKind = 'call' | 'type_ref' | 'import' | 'mapper_statement';
 
 export interface DiffImpactInput {  /** 可选：提供时用于 DSL 文件节点映射（dsl_node_id）与语义路径基准；缺省纯缓存分析 */
   feature?: string;
@@ -60,8 +60,8 @@ export interface ImpactedSymbol {
   /** 0=直接改动，>0=经边间接波及 */
   depth: number;
   role: 'changed' | 'caller' | 'callee';
-  /** 首达边类：undefined=直接变更源；call=经调用边；type_ref=经类型引用边 */
-  via_edge?: 'call' | 'type_ref';
+  /** 首达边类：undefined=直接变更源；call=经调用边；type_ref=经类型引用边；mapper_statement=经 MyBatis mapper 边 */
+  via_edge?: 'call' | 'type_ref' | 'mapper_statement';
 }
 
 export interface ImpactedFile {
@@ -106,7 +106,7 @@ export interface DiffImpactResult {
   warnings: string[];
   has_call_edges: boolean;
   /** 边类计数（v4：分层追溯数据源规模） */
-  edge_counts: { call: number; type_ref: number; import: number };
+  edge_counts: { call: number; type_ref: number; import: number; mapper_statement: number };
   message: string;
 }
 
@@ -149,7 +149,7 @@ function emptyResult(
     dsl_contract_hits: [],
     warnings,
     has_call_edges: false,
-    edge_counts: { call: 0, type_ref: 0, import: 0 },
+    edge_counts: { call: 0, type_ref: 0, import: 0, mapper_statement: 0 },
     message,
   };
 }
@@ -174,6 +174,7 @@ const EDGE_KIND_LABEL: Record<EdgeKind, string> = {
   call: '调用边',
   type_ref: '类型引用',
   import: 'import 依赖',
+  mapper_statement: 'MyBatis mapper',
 };
 
 export function diffImpact(input: DiffImpactInput): DiffImpactResult {
@@ -228,8 +229,8 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
   // ── 多边类数据源规模 ──
   const countOf = (kind: string): number =>
     (db.prepare('SELECT COUNT(*) c FROM edges WHERE kind = ?').get(kind) as { c: number }).c;
-  const edge_counts = { call: countOf('call'), type_ref: countOf('type_ref'), import: countOf('import') };
-  if (edge_counts.call === 0 && edge_counts.type_ref === 0 && edge_counts.import === 0) {
+  const edge_counts = { call: countOf('call'), type_ref: countOf('type_ref'), import: countOf('import'), mapper_statement: countOf('mapper_statement') };
+  if (edge_counts.call === 0 && edge_counts.type_ref === 0 && edge_counts.import === 0 && edge_counts.mapper_statement === 0) {
     warnings.push(
       '缓存中没有任何边（call/type_ref/import）：该目录下可能没有可解析的源码（或解析器缺失）。' +
         '请先 import_project 建索引（explore_code 自 2026-10-21 起不再提供 action=diff_impact；' +
@@ -332,14 +333,16 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
     }
   }
 
-  // ── 加载符号级边（call + type_ref），建正/反向邻接表（附边类）──
-  // 两类边同构：source 依赖 target → 改 target 波及 source（callers 侧）。
-  interface SymAdjEntry { to: string; kind: 'call' | 'type_ref' }
+  // ── 加载符号级边（call + type_ref + mapper_statement），建正/反向邻接表（附边类）──
+  // call/type_ref：source 依赖 target → 改 target 波及 source（callers 侧）。
+  // mapper_statement：source=XML 语句、target=Java 接口方法；方向同构（XML→方法），
+  //   callees 方向改 XML 波及方法，callers 方向改方法波及 XML 语句。
+  interface SymAdjEntry { to: string; kind: 'call' | 'type_ref' | 'mapper_statement' }
   const symRev = new Map<string, SymAdjEntry[]>(); // target → 依赖它的 source（callers 方向展开）
   const symFwd = new Map<string, SymAdjEntry[]>(); // source → 它依赖的 target（callees 方向展开）
   const symEdgeRows = db
-    .prepare("SELECT source, target, kind FROM edges WHERE kind IN ('call','type_ref')")
-    .all() as Array<{ source: string; target: string; kind: 'call' | 'type_ref' }>;
+    .prepare("SELECT source, target, kind FROM edges WHERE kind IN ('call','type_ref','mapper_statement')")
+    .all() as Array<{ source: string; target: string; kind: 'call' | 'type_ref' | 'mapper_statement' }>;
   for (const e of symEdgeRows) {
     let rs = symRev.get(e.target);
     if (!rs) symRev.set(e.target, (rs = []));
@@ -367,7 +370,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
   //（测试隔离用 closeAllProjectCacheDbs；此处复用，避免与 import_project 缓存路径互踩）
 
   // ── 符号级 BFS（call + type_ref，附首达边类）──
-  const reached = new Map<string, { depth: number; via?: 'call' | 'type_ref' }>();
+  const reached = new Map<string, { depth: number; via?: 'call' | 'type_ref' | 'mapper_statement' }>();
   const roles = new Map<string, ImpactedSymbol['role']>();
   for (const s of direct) {
     reached.set(s.id, { depth: 0 });
@@ -558,7 +561,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
   lines.push(`  项目: ${root}`);
   lines.push(`  变更文件 (${changedRels.length}): ${changedRels.join(', ')}`);
   lines.push(`  方向: ${dirLabel} | 最大深度: ${max_depth}`);
-  lines.push(`  边: 调用 ${edge_counts.call} | 类型引用 ${edge_counts.type_ref} | import ${edge_counts.import}`);
+  lines.push(`  边: 调用 ${edge_counts.call} | 类型引用 ${edge_counts.type_ref} | import ${edge_counts.import} | mapper ${edge_counts.mapper_statement}`);
   lines.push('');
   if (symbol_diffs.length > 0) {
     lines.push('【符号级变更】');
@@ -595,7 +598,7 @@ export function diffImpact(input: DiffImpactInput): DiffImpactResult {
           arr.push(f);
         }
       }
-      for (const kind of ['call', 'type_ref', 'import'] as EdgeKind[]) {
+      for (const kind of ['call', 'type_ref', 'import', 'mapper_statement'] as EdgeKind[]) {
         const arr = byKind.get(kind);
         if (!arr || arr.length === 0) continue;
         lines.push(`  ▸ 经${EDGE_KIND_LABEL[kind]} (${arr.length} 文件):`);
