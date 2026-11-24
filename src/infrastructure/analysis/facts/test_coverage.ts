@@ -28,6 +28,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { getProjectCacheDb } from '../../index/db.js';
+import { detectStaleIndex } from '../../index/index_freshness.js';
 import { impactOfChanged, type ImpactSet } from '../facts/impact_set.js';
 
 export const norm = (p: string): string => String(p ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
@@ -53,7 +54,17 @@ export interface CoverageMap {
   /** 图是不是可信（读不到 cache.db / 查询异常 ⇒ false ⇒ 选择时全量） */
   trusted: boolean;
   /** 直连边 / 闭包新增边的条数（读数，非判据） */
-  stats: { directEdges: number; closureEdges: number; srcImportEdges: number };
+  stats: {
+    directEdges: number;
+    closureEdges: number;
+    srcImportEdges: number;
+    /** G9③ 索引已建边型（读数） */
+    builtKinds: string[];
+    /** G9③ 已建但选材/继承链未消费的边型（已建未读，显形读数） */
+    unreadKinds: string[];
+    /** G9① 索引新鲜度是否通过（stale=0 且可探测） */
+    fresh: boolean;
+  };
 }
 
 type EdgeRow = { source: string; target: string };
@@ -85,6 +96,44 @@ function readImportEdges(root: string): EdgeRow[] | null {
 }
 
 /**
+ * ★ G9③ 边型对账：选材/继承链实际消费的边型清单（唯一权威口径，不另立第二份）。
+ * - `import`：文件级依赖（test→src / src→src 闭包、import_graph、locate_feature）；
+ * - `call`：符号级调用（diff_impact / chain_tracer / call-exists 判据）；
+ * - `type_ref`：符号级类型引用（diff_impact / chain_tracer）。
+ * 已建但不在此清单的边型（如 `mapper_statement`）= **已建未读**，作为读数显形，不在本批接入。
+ */
+export const CONSUMED_EDGE_KINDS = ['import', 'call', 'type_ref'] as const;
+
+interface FreshnessProbe {
+  ok: boolean;
+  stale: number;
+  total: number;
+  reason?: string;
+}
+
+/** ★ G9① 索引新鲜度探测：索引里有 src 比索引磁盘新（陈旧边集）⇒ 不可信，与"DB 打不开"同等 fail-closed。 */
+function probeFreshness(root: string): FreshnessProbe {
+  try {
+    const db = getProjectCacheDb(root);
+    const r = detectStaleIndex(db, root);
+    return { ok: true, stale: r.stale, total: r.total };
+  } catch (e) {
+    return { ok: false, stale: 0, total: 0, reason: String((e as { message?: string }).message ?? e).slice(0, 160) };
+  }
+}
+
+/** ★ G9③ 索引已建边型集合（对账读侧）；查不动 ⇒ ok=false（对账不可判 ⇒ 回落全量）。 */
+function builtEdgeKinds(root: string): { ok: boolean; built: string[] } {
+  try {
+    const db = getProjectCacheDb(root) as unknown as { prepare: (sql: string) => { all: () => Array<{ kind: string }> } };
+    const rows = db.prepare('SELECT DISTINCT kind FROM edges').all();
+    return { ok: true, built: rows.map((r) => r.kind) };
+  } catch {
+    return { ok: false, built: [] };
+  }
+}
+
+/**
  * ① 构造覆盖映射：测试文件 → 源码集合（直接 import + src→src import 传递闭包）。
  *
  * 直接边：`tests/x.test.ts --import--> src/a.ts` ⇒ x covers a。
@@ -97,9 +146,20 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
   const edges = readImportEdges(root);
   const empty = (trusted: boolean, why = ''): CoverageMap => ({
     byTest: new Map(), unknown: new Set(), trusted,
-    stats: { directEdges: 0, closureEdges: 0, srcImportEdges: 0 },
+    stats: { directEdges: 0, closureEdges: 0, srcImportEdges: 0, builtKinds: [], unreadKinds: [], fresh: false },
   } as CoverageMap & { why?: string });
   if (edges === null) return empty(false);
+
+  // ★ G9① 索引新鲜度：陈旧边集（src 比索引新）与 DB 打不开同等 fail-closed；
+  // ★ G9③ 边型对账不可判（读不动边表）⇒ 同样回落全量。
+  const freshness = probeFreshness(root);
+  const kinds = builtEdgeKinds(root);
+  const unreadKinds = kinds.ok
+    ? kinds.built.filter((k) => !CONSUMED_EDGE_KINDS.includes(k as (typeof CONSUMED_EDGE_KINDS)[number]))
+    : [];
+  if (!freshness.ok || freshness.stale > 0 || !kinds.ok) {
+    return empty(false, freshness.reason ?? 'edge-kind-reconcile-unreadable');
+  }
 
   // src→src 邻接表（一次建好，BFS 复用）
   const srcAdj = new Map<string, Set<string>>();
@@ -153,7 +213,12 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
     byTest.set(t, seen);
   }
 
-  return { byTest, unknown, trusted: true, stats: { directEdges, closureEdges, srcImportEdges } };
+  return {
+    byTest,
+    unknown,
+    trusted: true,
+    stats: { directEdges, closureEdges, srcImportEdges, builtKinds: kinds.built, unreadKinds, fresh: true },
+  };
 }
 
 /** 改了 changedFiles，哪些测试**本应**覆盖它们（柱 4 的审计支点：覆盖集 ∩ 改动波及集） */
@@ -167,29 +232,61 @@ export function coveringTestsOf(map: CoverageMap, changedFiles: readonly string[
 }
 
 // ── ③ 源码指纹缓存 ─────────────────────────────────────────────
+/**
+ * ★ G3 缓存口径版本：与索引边型 / 选量口径绑定。口径升级 ⇒ 旧版本条目整体失效重算（不逐条兼容）。
+ */
+export const SEL_CACHE_SCHEME = 2;
+/** 条目 TTL（ms）：过期条目不跳。7 天为默认读数口径，可由条目自带 ttlMs 覆盖。 */
+export const SEL_CACHE_TTL_MS = 7 * 24 * 3600 * 1000;
+/**
+ * ★ G3/L7 进缓存键的 runner/脚本清单。
+ * L7 分面：测试本体 sha / runner 脚本 sha / 口径版本 / TTL → 缓存键；
+ * 工具链 / 环境 / 夹具清单 / dist 新鲜度 → 升级全量触发面（**不进缓存键**）。
+ */
+const RUNNER_SCRIPT_RELS = ['scripts/run-tests.mjs', 'scripts/incsel-select.mjs', 'scripts/incsel-record.mjs'];
+
 export interface SelCacheEntry {
   /** 上次通过时，该测试覆盖的所有源码文件 sha256（相对路径 → sha） */
   sourceShas: Record<string, string>;
+  /** ★ G3 测试文件本体 sha256（键面；测试本体变了 ⇒ 旧指纹不跳） */
+  testSha: string;
+  /** ★ G3 runner/脚本聚合 sha256（键面；runner 脚本变了 ⇒ 旧指纹不跳） */
+  runnerSha: string;
+  /** ★ G3 口径版本（与索引边型/选量口径绑定；不匹配 ⇒ 旧条目整体失效） */
+  scheme: number;
+  /** ★ G3 条目 TTL（ms）；`at` 起算，过期不跳 */
+  ttlMs: number;
   /** 通过时点（ISO） */
   at: string;
   /** 上次选量方式（读数） */
   mode: string;
 }
 export interface SelCache {
-  version: 1;
+  version: 2;
   entries: Record<string, SelCacheEntry>;
 }
 export function cachePath(root: string): string { return path.join(root, CACHE_REL); }
 
-/** 读缓存；坏/缺 ⇒ 空（fail-closed：不跳过任何测试） */
+/** runner/脚本聚合 sha：任一脚本读不到 ⇒ null（fail-closed，键面不全不落/不跳） */
+function runnerSha(root: string): string | null {
+  const parts: string[] = [];
+  for (const rel of RUNNER_SCRIPT_RELS) {
+    const sha = shaOf(root, rel);
+    if (sha === null) return null;
+    parts.push(`${rel}:${sha}`);
+  }
+  return createHash('sha256').update(parts.join('\n')).digest('hex');
+}
+
+/** 读缓存；坏/缺/旧口径版本 ⇒ 空（fail-closed：不跳过任何测试；旧 scheme 条目整体失效） */
 export function readSelCache(root: string): SelCache {
   try {
     const raw = fs.readFileSync(cachePath(root), 'utf8');
     const data = JSON.parse(raw) as Partial<SelCache>;
-    if (data?.version !== 1 || typeof data.entries !== 'object' || data.entries === null) throw new Error('shape');
-    return { version: 1, entries: data.entries as Record<string, SelCacheEntry> };
+    if (data?.version !== 2 || typeof data.entries !== 'object' || data.entries === null) throw new Error('shape');
+    return { version: 2, entries: data.entries as Record<string, SelCacheEntry> };
   } catch {
-    return { version: 1, entries: {} };
+    return { version: 2, entries: {} };
   }
 }
 
@@ -294,6 +391,7 @@ export function selectChangedTests(
   const changedSrc = [...new Set(changed.map(norm).filter((f) => f.startsWith('src/')))];
   const changedShas = new Map<string, string | null>();
   for (const f of changedSrc) changedShas.set(f, shaOf(root, f)); // null = 读不到 ⇒ 不跳过
+  const currentRunnerSha = runnerSha(root); // G3 键面：runner/脚本聚合 sha（读不到 ⇒ null，不跳）
   const skippedByCache: string[] = [];
   const selected: string[] = [];
   if (opts.noCache || cache === null) {
@@ -303,9 +401,18 @@ export function selectChangedTests(
       const entry = cache.entries[t];
       let canSkip = !!entry && changedSrc.length > 0;
       if (canSkip && entry) {
-        for (const [f, now] of changedShas) {
-          // 缓存里没有该文件的 sha，或当前读不到 sha ⇒ 判不了 ⇒ 不跳过（否定保守）
-          if (now === null || entry.sourceShas[f] !== now) { canSkip = false; break; }
+        // ★ G3 键面 fail-closed：口径版本 / 测试本体 sha / runner 脚本 sha / TTL 任一不符或读不到 ⇒ 不跳。
+        const testShaNow = shaOf(root, t);
+        const entryAge = Date.now() - new Date(entry.at).getTime();
+        if (entry.scheme !== SEL_CACHE_SCHEME) canSkip = false;
+        else if (testShaNow === null || entry.testSha !== testShaNow) canSkip = false;
+        else if (currentRunnerSha === null || entry.runnerSha !== currentRunnerSha) canSkip = false;
+        else if (Number.isNaN(entryAge) || entryAge > (entry.ttlMs ?? SEL_CACHE_TTL_MS)) canSkip = false;
+        else {
+          for (const [f, now] of changedShas) {
+            // 缓存里没有该文件的 sha，或当前读不到 sha ⇒ 判不了 ⇒ 不跳过（否定保守）
+            if (now === null || entry.sourceShas[f] !== now) { canSkip = false; break; }
+          }
         }
       }
       if (canSkip) skippedByCache.push(t);
@@ -337,13 +444,27 @@ export function selectChangedTests(
 /**
  * ③ 落盘"测试通过"指纹：把该测试覆盖的所有源码文件当前 sha 记进缓存。
  * ★ 只记覆盖集里的文件（不记全仓）——下次改动只要不碰这些文件，就能安全跳过。
+ * ★ G3 写端不可信不落条目：覆盖映射不可信（trusted=false）⇒ 不固化指纹；
+ *   测试本体 / runner 脚本任一读不到 ⇒ 键面不全 ⇒ 不落（fail-closed）。
  */
 export function recordPass(root: string, testFile: string, coverage: CoverageMap, mode = 'changed'): void {
+  if (!coverage.trusted) return;
   const cover = coverage.byTest.get(norm(testFile)) ?? new Set<string>();
   const sourceShas: Record<string, string> = {};
   for (const f of cover) {
     const sha = shaOf(root, f);
     if (sha !== null) sourceShas[f] = sha;
   }
-  writeSelCacheEntry(root, testFile, { sourceShas, at: new Date().toISOString(), mode });
+  const testSha = shaOf(root, norm(testFile));
+  const rSha = runnerSha(root);
+  if (testSha === null || rSha === null) return;
+  writeSelCacheEntry(root, testFile, {
+    sourceShas,
+    testSha,
+    runnerSha: rSha,
+    scheme: SEL_CACHE_SCHEME,
+    ttlMs: SEL_CACHE_TTL_MS,
+    at: new Date().toISOString(),
+    mode,
+  });
 }

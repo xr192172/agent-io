@@ -42,6 +42,21 @@ export function normChangedPath(p) {
     .trim();
 }
 
+/**
+ * ★★★ 2026-11-24（G-1 · 门11②）：**运行时产物窄模式排除**（fail-closed）。
+ *
+ * 只排除 sqlite 库与其 WAL/-shm 附属：`.agent-io/<name>.db`、`.agent-io/<name>.db-shm`、
+ * `.agent-io/<name>.db-wal`。它们是索引/任务库的运行态产物，不是业务改动；WAL/-shm 由 sqlite
+ * 随库抖动，列进改动集会污染增量选量（夹具实测：反例4 expected `[]` actual 非空，正例2/3 首位多 shm）。
+ *
+ * ★ fail-closed 边界：**仅**这组已知运行时模式；其它任何路径（含 `.agent-io/` 下的 json/jsonl/
+ * design 册/快照）一律保留，不做宽通配。排除名单要扩 ⇒ 先在本谓词加可复核的模式与出处。
+ */
+const RUNTIME_DB_RE = /(^|\/)\.agent-io\/[^/]*\.db(?:-shm|-wal)?$/;
+export function isRuntimeDbArtifact(p) {
+  return RUNTIME_DB_RE.test(normChangedPath(p));
+}
+
 /** 跑 git（argv 数组，不经 shell —— 与 `detect_drift#gitChangedFiles` 同一纪律） */
 function git(root, args) {
   return execFileSync('git', ['-C', root, ...args], {
@@ -158,7 +173,12 @@ export function changedPathsOf(root, opts = {}) {
     git_since_last_judge: { ok: sinceLog.ok, rows: sinceLog.paths.length, reason: sinceLog.reason ?? '', since },
   };
   const set = new Set();
-  for (const src of [scan, work, sinceLog]) for (const p of src.paths) if (p) set.add(p);
+  for (const src of [scan, work, sinceLog]) {
+    for (const p of src.paths) {
+      // ★ 运行时 db/-shm/-wal 产物不进改动集（窄模式 fail-closed，见 isRuntimeDbArtifact）。
+      if (p && !isRuntimeDbArtifact(p)) set.add(p);
+    }
+  }
   // ★ "读不到"的判定：**三条来源全失败**才算不可用（有一条成立就至少有可信的部分）；
   //   全部失败 ⇒ 不许把这当成"没有改动"（0.12）。
   const allFailed = !scan.ok && !work.ok && !sinceLog.ok;

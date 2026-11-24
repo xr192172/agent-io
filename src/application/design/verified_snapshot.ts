@@ -183,6 +183,14 @@ export const WIDEN_PATTERNS: RegExp[] = [
   /^src\/application\/design\/verifier_proof_pack\.ts$/,
   /^src\/domain\/expectation\.ts$/,
   /^src\/domain\/expectation_kinds\.ts$/,
+  // ★ 2026-11-24 G6 / M7（C A7）：选材器与护栏文件此前既不在自证包也不在本名单
+  //   ⇒ 改它们走增量漏网（包可能绿而选材/护栏语义已变）。保守方向登记进白名单：
+  //   改这些 ⇒ no-evidence/空观察面态强制扩大；对账视图见 verifier_proof_pack#reconcileSelectorGuardrail。
+  /^scripts\/incsel-select\.mjs$/,
+  /^scripts\/incsel-record\.mjs$/,
+  /^src\/infrastructure\/analysis\/facts\/test_coverage\.ts$/,
+  /^src\/infrastructure\/analysis\/facts\/impact_set\.ts$/,
+  /^scripts\/design-check\.mjs$/,
   // ★ 2026-11-09 移除：`.agent-io/design/*.dsl.json`（原第 11 条）。
   //   规则依据：`WIDEN_PATTERNS` 的定义是"一变就让**已经录下的测试证据**失效"。
   //   册是**判据与设计的住处**：改册只影响**契约证据**，而契约证据本来每次都由

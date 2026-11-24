@@ -88,19 +88,19 @@ behavior-cases / call-exists / run / domain-independent
 
 下一卡开工前必须给出：项目路径、目标功能、非目标、保持行为、验收反例、serves 哪个阶段出口。缺任一项先侦察，不施工。
 
-<!-- DOC:GEN:dev.live-cards:BEGIN source=dev.live-cards@7aef16768ba2bd2d cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=47e72cc15537a653 -->
+<!-- DOC:GEN:dev.live-cards:BEGIN source=dev.live-cards@9422e502f8418717 cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=9299ebbd258d10f1 -->
 | 卡 | feature | 状态 | 更新时刻 |
 |---|---|---|---|
+| `todo_coverage-g1-g7-g9-g3-g4-g6` | agent-io | candidate | 2026-11-23T17:18:47.921Z |
+| `todo_batch-second-plan-proof-pack-retired-gate` | agent-io | candidate | 2026-11-23T13:38:49.999Z |
+| `todo_batch4-stage2-wiring` | agent-io | candidate | 2026-11-23T11:19:52.284Z |
+| `todo_batch4-ingestion-slice` | agent-io | candidate | 2026-11-23T08:41:12.438Z |
 | `todo_RESP-CONTRACT` | agent-io | candidate | 2026-11-22T16:01:42.981Z |
 | `file_src_application_refactor_edit_remove_dead_imports_ts` | agent-io | candidate | 2026-11-19T16:56:34.996Z |
 | `file_src_application_design_board_pool_ts` | agent-io | candidate | 2026-11-19T16:56:34.664Z |
 | `file_src_domain_overlay_ts` | agent-io | candidate | 2026-11-18T14:05:43.367Z |
 | `file_src_domain_discussion_log_ts` | agent-io | candidate | 2026-11-18T14:05:42.600Z |
 | `file_src_domain_design_sheet_ts` | agent-io | candidate | 2026-11-18T14:05:41.856Z |
-| `file_src_domain_b_terms_ts` | agent-io | candidate | 2026-11-18T14:05:41.114Z |
-| `file_src_application_design_rewrite_symbol_diff_ts` | agent-io | candidate | 2026-11-18T14:05:39.480Z |
-| `todo_处置卡-不是导览-src-application-design-intent-j` | agent-io | candidate | 2026-11-07T03:14:06.798Z |
-| `todo_处置卡-不是导览-src-domain-rejection-kind-ts-那-` | task-system-plan | candidate | 2026-11-07T03:13:58.504Z |
 
 活卡 = open（candidate/claimed）∧ 未被取代（台账 superseded_by 身份 join）；done/void/被取代见台账与归档视图。
-<!-- DOC:GEN:dev.live-cards:END body_sha256=47e72cc15537a653 -->
+<!-- DOC:GEN:dev.live-cards:END body_sha256=9299ebbd258d10f1 -->

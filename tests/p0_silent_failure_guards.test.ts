@@ -52,6 +52,17 @@ test('① verify-changed：git 读不到改动集 ⇒ 非零退出（改前 exit
     //     本证会看到"输出为空"（实测就是这么红的，差点被读成"git 失败没被点名"）。
     fs.mkdirSync(path.join(scriptDir, 'lib'), { recursive: true });
     fs.copyFileSync(path.resolve('scripts/lib/test_files.mjs'), path.join(scriptDir, 'lib', 'test_files.mjs'));
+    // ★★ 2026-11-24（G-1 · 门11①）：G7 后脚本又接了两处外部依赖 ——
+    //   `./lib/changed_set.mjs`（三源并集唯一实现）与 `../dist/src/domain/scheduling_evidence.js`
+    //   （编译产物，纯类型/形状判据、自包含无外部 import）。两处都得在临时根就位，否则脚本加载即 ESM
+    //   解析失败、输出为空。dist 解析口径与既有 dist 处理一致：相对脚本 `../dist/...` ⇒ `<tmp>/dist/...`。
+    //   ★ 只补拷依赖，不改断言。
+    fs.copyFileSync(path.resolve('scripts/lib/changed_set.mjs'), path.join(scriptDir, 'lib', 'changed_set.mjs'));
+    fs.mkdirSync(path.join(tmp, 'dist', 'src', 'domain'), { recursive: true });
+    fs.copyFileSync(
+      path.resolve('dist/src/domain/scheduling_evidence.js'),
+      path.join(tmp, 'dist', 'src', 'domain', 'scheduling_evidence.js'),
+    );
 
     const env: NodeJS.ProcessEnv = { ...process.env };
     delete env.GIT_DIR;

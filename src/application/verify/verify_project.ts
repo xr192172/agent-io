@@ -35,6 +35,7 @@ import {
   writeVerifiedSnapshot,
 } from '../design/verified_snapshot.js';
 import { adjudicateTestObjects, type ExecutionObjectVerdict } from './execution_intents.js';
+import { testNodeId, fileOfTestNodeId } from '../../domain/scheduling_evidence.js';
 
 const norm = (p: string): string => String(p).replace(/\\/g, '/');
 
@@ -466,7 +467,7 @@ export async function verifyProject(input: {
   }
   if (eligibility.unjudgeable.length > 0) {
     base.project.unsupported = 'execution-unjudgeable';
-    base.undetermined = eligibility.unjudgeable.map((u) => ({ id: `test:${u.id}`, reason: u.reason }));
+    base.undetermined = eligibility.unjudgeable.map((u) => ({ id: testNodeId(u.id), reason: u.reason }));
     limitations.push(
       `执行资格不可判（${eligibility.unjudgeable.length} 个测试对象：坏册 / 未知生命周期 / 跨册冲突）` +
         ` ⇒ 本次**不执行、不继承、不写基线**：` +
@@ -615,8 +616,10 @@ export async function verifyProject(input: {
 
   // ★ 当前执行资格是继承面的闸：retired / Node retired 的旧证据不得继承，也不得写回当前基线。
   //   contract 条目不是测试对象，不受这道过滤；测试条目只保留 executable 里的文件。
-  const isExecutableSnapshotId = (id: string): boolean =>
-    !id.startsWith('test:') || executable.has(id.slice('test:'.length));
+  const isExecutableSnapshotId = (id: string): boolean => {
+    const f = fileOfTestNodeId(id);
+    return f === null || executable.has(f);
+  };
   const inheritedEntries = plan.inherit.filter((e) => isExecutableSnapshotId(e.id));
   const planUndetermined = plan.undetermined.filter((u) => isExecutableSnapshotId(u.id));
 
@@ -626,7 +629,9 @@ export async function verifyProject(input: {
   const mustWiden = plan.state === 'no-evidence' || plan.state === 'empty-observes' || !!plan.widen || plan.state === 'widen';
   const rerunFiles = mustWiden
     ? [...executableOnDisk]
-    : plan.rerun.map((r) => r.id.replace(/^test:/, '')).filter((f) => executable.has(f) && onDisk.includes(f));
+    : plan.rerun
+        .map((r) => fileOfTestNodeId(r.id))
+        .filter((f): f is string => !!f && executable.has(f) && onDisk.includes(f));
 
   // ★ 2026-11-09（生命周期的漏洞）：**基线里没有条目的测试对象必须跑** ——
   //   `planInheritance` 只比"基线里的条目"，它看不见"磁盘上刚多出来的一支测试"。
@@ -636,7 +641,7 @@ export async function verifyProject(input: {
     loaded.status === 'ok' ? loaded.snapshot.entries.map((e) => e.id) : [],
   );
   // ★ 新发现也必须先是当前可执行对象：retired 测试不是“新对象”，不得因缺基线被拉回来跑。
-  const newObjects = executableOnDisk.filter((f) => !knownIds.has(`test:${f}`));
+  const newObjects = executableOnDisk.filter((f) => !knownIds.has(testNodeId(f)));
   if (newObjects.length > 0) {
     for (const f of newObjects) if (!rerunFiles.includes(f)) rerunFiles.push(f);
     limitations.push(`基线里没有以下测试对象的证据（新出现）⇒ 本次必须跑：${newObjects.join(', ')}`);
@@ -694,7 +699,7 @@ export async function verifyProject(input: {
         if (!(r.rc === 0 && r.fail === 0)) continue;
         if (unattrFiles.has(r.file)) continue;
         entries.push({
-          id: `test:${r.file}`,
+          id: testNodeId(r.file),
           kind: 'test',
           verdict: 'pass',
           command: `(<runner>) ${r.file}`,
@@ -705,7 +710,7 @@ export async function verifyProject(input: {
       // ★ 2026-11-09：**撤销**失败/未执行项（含不可归因项）的旧通过（不许留旧绿当豁免）
       for (const r of ran) {
         if (r.rc === 0 && r.fail === 0 && !unattrFiles.has(r.file)) continue;
-        const bad = `test:${r.file}`;
+        const bad = testNodeId(r.file);
         for (let idx = entries.length - 1; idx >= 0; idx -= 1) {
           if ((entries[idx] as { id: string }).id === bad) entries.splice(idx, 1);
         }
@@ -720,7 +725,7 @@ export async function verifyProject(input: {
         graph: graphVersion(root),
         entries: finalEntries as never,
         scope: {
-          ran: ran.map((r) => `test:${r.file}`),
+          ran: ran.map((r) => testNodeId(r.file)),
           inherited: inheritedEntries.map((it) => it.id),
           undetermined: planUndetermined.map((u) => ({ id: u.id, reason: u.reason })),
           partial: true,
@@ -741,7 +746,7 @@ export async function verifyProject(input: {
   // ★ 2026-11-12（D4-3）：不可归因的实跑项与账本的 undetermined **并列**（同一口径：判不了 ≠ 通过）
   base.undetermined = [
     ...planUndetermined.map((u) => ({ id: u.id, reason: u.reason })),
-    ...unattributable.map((u) => ({ id: `test:${u.file}`, reason: u.reason })),
+    ...unattributable.map((u) => ({ id: testNodeId(u.file), reason: u.reason })),
   ];
   if (unattributable.length > 0) {
     limitations.push(

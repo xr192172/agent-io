@@ -11,8 +11,8 @@
  *    只有契约，局部契约对上应该就可以了"*
  *
  * ## 三步（★ 次序就是设计里的次序，别调换）
- *   ① **拿改动文件**：`git diff --name-only`（★ 外加**未跟踪**文件 —— 新增的证/脚本在 `git diff` 里
- *      **根本不出现**，若只认 `git diff` 则"这笔新增的入口"永远验不到自己）；也可命令行直接传文件；
+ *   ① **拿改动文件**：`changed_set.mjs` 三源并集（scan_changes ∪ git 工作区 ∪ since 上次全量判据锚点；
+ *      ★ G7 起补 since 腿——提交后干净树里、距上次全量判据之间已提交的改动也可见）；也可命令行直接传文件；
  *   ② ★★ **契约优先（便宜）**：读 `docs/task-system-plan.dsl.json` 的
  *      `geometry.nodes[].decision.expectations[]`，**`path` 命中改动文件**的 ⇒ 列出并**就地判**（复用
  *      `judgeExpectations`，★ 不新造第二把尺）；
@@ -57,7 +57,7 @@
  *
  * ## 用法
  * ```
- * node scripts/verify-changed.mjs                 # 按 git（含未跟踪）算改动
+ * node scripts/verify-changed.mjs                 # 按 changed_set 三源并集算改动（工作区 + since 锚点 + scan_changes）
  * node scripts/verify-changed.mjs src/a.ts b.ts   # 显式点名
  * node scripts/verify-changed.mjs --no-run        # ★ 只算集合、不跑（给 `tests/p0_incremental_verify.test.ts` 断言用；也免得自调用递归）
  * node scripts/verify-changed.mjs --json --no-run src/a.ts
@@ -80,6 +80,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectTestFiles } from './lib/test_files.mjs';
+import { changedPathsOf } from './lib/changed_set.mjs';
+import { testNodeId, fileOfTestNodeId } from '../dist/src/domain/scheduling_evidence.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = (process.env.AGENT_IO_VERIFY_CHANGED_ROOT || path.resolve(HERE, '..')).replace(/\\/g, '/');
@@ -197,55 +199,61 @@ function gitList(args) {
  * 改动文件集 + **取数是否可信**。
  *
  * 三态（★ 三者必须能分开读，不许合并成"空集"）：
- *   · `files`：真取到的改动文件；
- *   · `headMissing`：`git diff HEAD` 失败（全新仓还没 HEAD 是**合法**状态）⇒ 只用裸 diff + 未跟踪；
+ *   · `files`：真取到的改动文件（三源并集，见 {@link changedPathsOf}）；
+ *   · `headMissing`：`git rev-parse --verify HEAD` 失败（全新仓还没 HEAD 是**合法**状态）⇒ 仅读数；
  *   · `errors`：**非空 ⇒ 改动集不可信** ⇒ 调用方必须非零退出（不许落进 `nothingHit` 的通过分支）。
+ *
+ * ★ G7（覆盖证明阶段 1）：改动集接 `changed_set.mjs` 三源权威统一 ——
+ *   `scan_changes` ∪ `git 工作区` ∪ `git log --since=<上次全量判据锚点>`。
+ *   此前本入口只有「工作区 diff + 未跟踪」两腿，**缺 since 锚点腿**：提交后干净树里、
+ *   距上次全量判据之间已提交的改动看不见。三源全失败 ⇒ `unavailable`（不折空集，回落全量/非零退出）；
+ *   部分失败仍出部分并集（保守不缩面）。
  */
 function changedFromGit() {
   // ★ 先判"这里到底是不是 git 仓"：它失败 = 环境级失败（不是仓库 / 没装 git），改动集根本无从谈起
   const probe = gitList(['rev-parse', '--is-inside-work-tree']);
   if (!probe.ok) {
-    return { files: [], headMissing: false, errors: [`git rev-parse --is-inside-work-tree：${probe.error}`] };
+    return { files: [], headMissing: false, errors: [`git rev-parse --is-inside-work-tree：${probe.error}`], sources: null };
   }
-  // ★ `--name-only HEAD` 同时覆盖暂存与未暂存（相对 HEAD）；无 HEAD（全新仓）时退回裸 diff
-  const tracked = gitList(['diff', '--name-only', 'HEAD']);
-  const headMissing = !tracked.ok;
-  const fallback = headMissing || tracked.files.length === 0 ? gitList(['diff', '--name-only']) : { ok: true, files: [] };
-  // ★★ 未跟踪：新增的证/脚本在 `git diff` 里**不出现** —— 不列它，本入口就验不到自己（本次新增即此形状）
-  const untracked = gitList(['ls-files', '--others', '--exclude-standard']);
-  const errors = [];
-  // `diff HEAD` 失败在**仓库里**只可能是"还没有 HEAD"（全新仓）⇒ 单独记 headMissing，不算环境失败；
-  // 但裸 diff 与未跟踪**必须**成功，否则改动集就是残的 ⇒ 进 errors。
-  if (!fallback.ok) errors.push(`git diff --name-only：${fallback.error}`);
-  if (!untracked.ok) errors.push(`git ls-files --others：${untracked.error}`);
-  return { files: [...new Set([...tracked.files, ...fallback.files, ...untracked.files])], headMissing, errors };
+  // ★ HEAD 是否存在（全新仓合法场景；只作读数，不并入环境错误）
+  const headMissing = !gitList(['rev-parse', '--verify', 'HEAD']).ok;
+  let res;
+  try {
+    res = changedPathsOf(ROOT);
+  } catch (e) {
+    return {
+      files: [],
+      headMissing,
+      errors: [`改动集三源读取抛错：${String(e?.message ?? e).slice(0, 160)}`],
+      sources: null,
+    };
+  }
+  // ★ 三源全失败 ⇒ unavailable（改动集不可信）；部分失败仍出部分并集，不许折成"没改"。
+  const errors = res.unavailable ? [res.unavailable] : [];
+  return { files: res.paths, headMissing, errors, sources: res.sources };
 }
 
 /**
  * ★★★ 2026-11-03（「什么变了」只有一处权威）：**改动集的来源必须自报**。
  *
- * 权威（唯一）= `cache.db` 的 `scan_changes` ∪ `symbol_diffs`：文件级 + 符号级，同一份数据。
- * `scan_changes.before_hash / after_hash` 直接取自 `files.content_hash`（同一指纹，不存第二份）。
- *
- * 本脚本**仍然用 git**（显式声明的第二个取数口，不是偷偷并存）：
- *   ① 内环必须能在「没建索引 / 空数据目录 / 没 build」的仓里跑（`cache.db` 可能不存在）；
- *   ② `git diff` 覆盖任何文件（`.md` / `scripts/*.mjs` / 未跟踪新增），而 `scan_changes` 只记进了索引的文件；
- *   ③ 内环要的是「这次改了哪些文件」，不是「索引认为变了哪些文件」。
- * ⇒ 读端拿到 `change_source` 就知道这两套的边界，谁都不用猜。
+ * ★ G7（覆盖证明阶段 1）：权威（唯一）= `scripts/lib/changed_set.mjs` 三源并集 ——
+ *   `cache.db#scan_changes`（索引侧变更窗口）∪ `git status`（工作区，含暂存/未暂存/未跟踪）∪
+ *   `git log --since=<judge-readings.json#at>`（上次全量判据后已提交的改动）。
+ *   三源全失败 ⇒ `unavailable`（不折空集，回落全量/非零退出）；部分失败仍出部分并集。
+ * ⇒ 读端拿到 `change_source` 就知道这三源的边界，谁都不用猜。
  */
 function changeSourceBlock() {
   return {
-    authority: 'cache.db 的 scan_changes ∪ symbol_diffs（两级：文件级 + 符号级）',
-    used: 'git',
+    authority: 'changed_set.mjs 三源并集：scan_changes ∪ git 工作区 ∪ since 上次全量判据锚点（judge-readings.json#at）',
+    used: 'changed_set',
     why:
-      '内环必须能在「没建索引 / 空数据目录 / 没 build」的仓里跑（cache.db 可能不存在）；' +
-      '且 git diff 覆盖任何文件（含 .md / scripts/*.mjs / 未跟踪新增），而 scan_changes 只记已进索引的文件 —— ' +
-      '两者覆盖面不同，内环要的是「这次改了哪些文件」。',
+      '工作区腿覆盖暂存/未暂存/未跟踪；since 腿补上次全量判据之后已提交的改动（旧双腿在提交后干净树里看不见）；' +
+      'scan_changes 腿补索引侧变更窗口。三源全失败 ⇒ unavailable 回落全量，不折空集；部分失败仍出部分并集（保守不缩面）。',
   };
 }
 
 // ★ 0.12：改动集的**来源**必须能读出"取到了 / 取不到" —— 显式点名（`named`）不经过 git ⇒ 恒可信
-const gitInfo = named.length > 0 ? { files: [], headMissing: false, errors: [] } : changedFromGit();
+const gitInfo = named.length > 0 ? { files: [], headMissing: false, errors: [], sources: null } : changedFromGit();
 /** ★ 非空 ⇒ **改动集不可信**（git 跑不起来）⇒ 本次"什么都没验"，必须非零退出（见 ⑤） */
 const gitErrors = gitInfo.errors;
 /**
@@ -654,6 +662,8 @@ const noTouches = [];
 //   ⇒ 拼 `tests/` 会变双前缀（`tests/tests/fixtures/...`）⇒ 永不命中（实测探针：javaInTestFiles=1 但命中 0）。
 //   ⇒ 判定：条目以 `tests/` 开头 ⇒ 已是仓库相对（key=条目原文）；否则拼 `tests/`（node 系条目）。
 const testPrefixFor = (f) => (isJavaProject || f.startsWith('tests/') ? '' : 'tests/');
+const repoRelOf = (f) => `${testPrefixFor(f)}${f}`;
+const relTestsOf = (f) => (isJavaProject || !f.startsWith('tests/') ? f : f.slice('tests/'.length));
 const absPathFor = (f) => (isJavaProject || f.startsWith('tests/') ? path.join(ROOT, f) : `${TESTS}/${f}`);
 for (const f of testFiles) {
   const t = declaredTouches(absPathFor(f));
@@ -682,8 +692,9 @@ for (const f of testFiles) {
 //   —— 比不判更糟：读端会以为"处理过了"，实际悄悄丢失。
 //   ⇒ 两者取**并集**，理由逐条写清（本处只加不减，不改 touches 口径）。
 for (const r of snapPlan?.rerun ?? []) {
-  if (!String(r.id).startsWith('test:tests/')) continue;
-  const f = String(r.id).slice('test:tests/'.length);
+  const fRepo = fileOfTestNodeId(String(r.id));
+  if (fRepo === null) continue;
+  const f = relTestsOf(fRepo);
   if (testHits.some((h) => h.file === f)) continue;
   testHits.push({
     file: f,
@@ -1225,7 +1236,7 @@ const denomLine =
 
 // ★ 先把 scope 算出来：文本与 --json 必须**同源**（两套读数迟早不一致）
 const snapRan = [];
-for (const r of testRuns) snapRan.push(`test:tests/${r.file}`);
+for (const r of testRuns) snapRan.push(testNodeId(repoRelOf(r.file)));
 for (const it of (expReport?.items ?? [])) snapRan.push(`contract:${it.node_id}`);
 const snapInherited = (snapPlan?.inherit ?? []).map((e) => e.id);
 // ★ 去重（id+reason）：账本里"整批不可判"与 widen 那一行常是同一句话，
@@ -1255,9 +1266,9 @@ const savedLine = (() => {
     return '节省：**不适用**（白名单文件变更 ⇒ 无证据/无观察面 ⇒ 本次全跑，没有任何东西被继承）';
   }
   if (snapWiden) return '节省：**无**（本次扩大 = 全跑）';
-  const inhTests = snapInherited.filter((id) => String(id).startsWith('test:tests/')).length;
+  const inhTests = snapInherited.filter((id) => fileOfTestNodeId(String(id)) !== null).length;
   const inhContracts = snapInherited.length - inhTests;
-  const ranTests = snapRan.filter((id) => String(id).startsWith('test:tests/')).length;
+  const ranTests = snapRan.filter((id) => fileOfTestNodeId(String(id)) !== null).length;
   const ranContracts = snapRan.length - ranTests;
   const total = snapInherited.length + snapRan.length;
   if (NO_RUN) {
@@ -1275,7 +1286,7 @@ if (JSON_OUT) {
   console.log(JSON.stringify({
     changed,
     // ★★ 0.12：改动集**怎么来的、可不可信**必须能机读 —— `ok:false` ⇒ 这次什么都没验（非零退出）
-    git: { ok: !gitBroken, errors: gitErrors, head_missing: gitInfo.headMissing, source: named.length > 0 ? 'argv' : 'git' },
+    git: { ok: !gitBroken, errors: gitErrors, head_missing: gitInfo.headMissing, source: named.length > 0 ? 'argv' : 'changed_set', sources: gitInfo.sources ?? null },
     // ★★★ 2026-11-03：改动集「权威是谁 / 本次用的是什么 / 为什么」—— 机读自报，终结「两套并存而无人知道」
     change_source: changeSourceBlock(),
     // ★★ 0.12 硬要求③：分母（验了 / 跳过 / 改动集）
@@ -1604,7 +1615,7 @@ if (VS && snapRan.length > 0) {
     //   `plan.inherit` 恰是**空的** ⇒ 只跑了 3 支就把其余 27 条证据**全丢了**（实测基线 30 → 3）。
     //   正确口径：**本次没重跑的条目一律保留**（它们没被推翻，只是这次没判）；只有
     //   ①本次真跑了的（覆盖/失败撤销）②基线里已被删除的，才动。
-    const rerunIds = new Set(testRuns.map((r) => `test:tests/${r.file}`));
+    const rerunIds = new Set(testRuns.map((r) => testNodeId(repoRelOf(r.file))));
     const kept = [...prevById.values()].filter((e) => !rerunIds.has(e.id));
     const entries = [...kept];
     const dropThenPush = (e) => { const i = entries.findIndex((x) => x.id === e.id); if (i >= 0) entries.splice(i, 1); entries.push(e); };
@@ -1631,7 +1642,7 @@ if (VS && snapRan.length > 0) {
       const isJavaEntry = r.file.endsWith('.java');
       const absForFacts = isJavaProject || isJavaEntry ? path.join(ROOT, r.file) : `${TESTS}/${r.file}`;
       dropThenPush({
-        id: `test:tests/${r.file}`,
+        id: testNodeId(repoRelOf(r.file)),
         kind: 'test',
         verdict,
         command: cmdOf(r.file),

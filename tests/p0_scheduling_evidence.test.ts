@@ -43,6 +43,8 @@ import {
   scopeOfSignal,
   signalShapeError,
   subjectKey,
+  testNodeId,
+  fileOfTestNodeId,
   versionAlignment,
   type EvidenceFrame,
   type EvidenceSignal,
@@ -237,4 +239,24 @@ test('⑧ 帧形状坏必须能被 frameShapeError 抓到（不许被策略层�
 test('⑨ 相对键归一：反斜杠与 ./ 都归一到同一写法', () => {
   assert.equal(relativeKey('.\\src\\a.ts'), 'src/a.ts');
   assert.equal(relativeKey('src/a.ts'), 'src/a.ts');
+});
+
+test('⑩ G4 单一 test id 构造：写端只走 testNodeId，反解只走 fileOfTestNodeId', () => {
+  // 仓库相对路径原样进 id，不再各自手拼 `test:tests/` 前缀。
+  assert.equal(testNodeId('tests/a.test.ts'), 'test:tests/a.test.ts');
+  assert.equal(testNodeId('src/a.ts'), 'test:src/a.ts');
+  // 归一化（反斜杠 / ./）同样作用于 id 构造。
+  assert.equal(testNodeId('.\\tests\\b.test.ts'), 'test:tests/b.test.ts');
+
+  // 往返一致：构造 → 反解回归一化 file。
+  for (const f of ['tests/a.test.ts', 'tests/sub/c.test.ts', 'src/x.ts']) {
+    assert.equal(fileOfTestNodeId(testNodeId(f)), relativeKey(f));
+  }
+
+  // 非 test 条目反解 ⇒ null（contract / other 不被误当测试）。
+  assert.equal(fileOfTestNodeId('contract:src/C.java'), null);
+  assert.equal(fileOfTestNodeId('other:1'), null);
+
+  // 单一构造永不产生重复 `tests/tests/` 双前缀。
+  assert.ok(!testNodeId('tests/a.test.ts').includes('tests/tests/'));
 });

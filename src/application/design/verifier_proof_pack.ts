@@ -32,6 +32,19 @@ export const VERIFIER_FILES = [
   'src/application/design/verifier_proof_pack.ts',
 ] as const;
 
+/**
+ * ★ G6 / M7（C A7）：选材器与护栏文件清单。
+ * 它们不进自证包（包只钉验证器行为面），但必须被 WIDEN 白名单覆盖——改它们 ⇒ 保守扩大，
+ * 不许走增量漏网（包可能绿而选材/护栏语义已变）。覆盖对账见 {@link reconcileAgainstWiden}。
+ */
+export const SELECTOR_GUARDRAIL_FILES = [
+  'scripts/incsel-select.mjs',
+  'scripts/incsel-record.mjs',
+  'src/infrastructure/analysis/facts/test_coverage.ts',
+  'src/infrastructure/analysis/facts/impact_set.ts',
+  'scripts/design-check.mjs',
+] as const;
+
 export type ProofCase = {
   /** 测试文件（仓库相对路径） */
   file: string;
@@ -209,6 +222,47 @@ export function splitVerifierChange(changed: readonly string[]): { verifier: str
   const others: string[] = [];
   for (const c of changed) (set.has(norm(c)) ? verifier : others).push(norm(c));
   return { verifier, others };
+}
+
+/** G6② 清单 ↔ WIDEN 对账视图：本清单内未被任一 WIDEN 正则命中的文件显式点名（漏扩大），不猜、不静默补齐。 */
+export type ListReconcile = {
+  ok: boolean;
+  /** 未被 WIDEN 覆盖 ⇒ 改它会漏扩大，必须显式报 */
+  missing_in_widen: string[];
+  /** 已被 WIDEN 覆盖（对账回环读数） */
+  covered_in_widen: string[];
+};
+
+export function reconcileAgainstWiden(
+  files: readonly string[],
+  widenPatterns: readonly RegExp[],
+): ListReconcile {
+  const missing_in_widen: string[] = [];
+  const covered_in_widen: string[] = [];
+  for (const f of files) {
+    (widenPatterns.some((re) => re.test(f)) ? covered_in_widen : missing_in_widen).push(f);
+  }
+  return { ok: missing_in_widen.length === 0, missing_in_widen, covered_in_widen };
+}
+
+/** G6③ 包面形状读数（"包面只增"的对账支点）：面数 / 去重测试文件数 / 用例片段总数。 */
+export function proofPackShape(): { areas: number; files: number; cases: number } {
+  const files = new Set(VERIFIER_PROOF_PACK.flatMap((a) => a.tests.map((t) => t.file)));
+  const cases = VERIFIER_PROOF_PACK.reduce(
+    (n, a) => n + a.tests.reduce((m, t) => m + t.cases.length, 0),
+    0,
+  );
+  return { areas: VERIFIER_PROOF_PACK.length, files: files.size, cases };
+}
+
+/**
+ * G6④ 包谓词对账：运行结论 `ok` / failed 集合 / 摘要 `note` 三者必须一致——
+ * 不许"failed 非空却记全绿"，也不许"全绿却摘要喊必须扩大"。
+ */
+export function proofRunConsistent(run: ProofRun): boolean {
+  if (run.ok !== (run.failed_files.length === 0)) return false;
+  const noteSaysWiden = /必须扩大/.test(run.note);
+  return run.ok !== noteSaysWiden;
 }
 
 export type ProofRun = {

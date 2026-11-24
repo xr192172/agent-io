@@ -66,6 +66,8 @@ export interface SyncProjectResult {
   results: SyncFileResult[];
   /** 跨文件调用解析统计（收尾步骤，见 resolveCrossFileCalls） */
   cross?: CrossFileResolveStats;
+  /** ★ G9 入边根治对账统计（收尾自愈，见 reconcileResolvedEdges） */
+  reconcile?: ReconcileEdgesStats;
   /**
    * ★ §7（2026-10-23）：这次扫描**逐文件改了什么**的计数。
    * 明细在 `scan_changes`（按 `scan_runs.id`），这里只给三个数当回执。
@@ -1396,6 +1398,101 @@ export function reopenRefsTo(db: Database, names: readonly string[]): ReopenRefs
 }
 
 /**
+ * ★★★ G9（覆盖证明阶段 1，裁决②授权事实抽取侧行为改动）：**已解析引用的入边对账自愈**。
+ *
+ * ## 它治哪个洞（上一批实测，不是设想）
+ * 目标文件被逐文件 `removeFileRel` 重同步时，`edges.target` 的 FK `ON DELETE CASCADE` 随节点删除
+ * 清掉了指向它的入边；引用方文件未变、其 `unresolved_refs` 仍是 `resolved`，而收尾
+ * `resolveCrossFileCalls` **只处理 `pending`** ⇒ 已解析入边不重建，静默缺边。
+ * 旧 workaround：gen-db 之后手工 `reopenRefsTo` + 二趟重解析（顺序 workaround，本批被根治取代）。
+ *
+ * ## 口径（fail-closed、留痕、不猜）
+ * 遍历 `status='resolved' AND resolved_node_id IS NOT NULL` 的 `call/type_ref` 引用，逐条对账边：
+ *   · 边在 ⇒ 跳过；
+ *   · 边缺、**目标节点仍在 `nodes`** ⇒ 重开 `pending`（`resolved_node_id/candidates` 清空），交收尾二次解析重建；
+ *   · 边缺、**目标节点已不在 `nodes`** ⇒ 置 `failed` 留痕（`why=stale-target-dropped`），不重开空转。
+ * 重开数 > 0 ⇒ 紧跟一趟 `resolveCrossFileCalls` 把边重建；`recovered` = 该趟解析成功数（读数口径见回执）。
+ *
+ * ## 边界
+ * 只对账 `call/type_ref`（符号级入边）；`import` 文件级边由 syncFile 的 import 腿重建。
+ * 本函数不新建第二份边口径，只在现役写端收尾做一致性对账。
+ */
+export interface ReconcileEdgesStats {
+  /** 已解析 call/type_ref 引用对账总数（分母） */
+  checked: number;
+  /** 其中边缺失的条数 */
+  missing: number;
+  /** 目标节点仍在 ⇒ 重开 pending 交收尾重建（自愈） */
+  reopened: number;
+  /** 目标节点已不在 ⇒ 置 failed 留痕（入边随节点删除消失，不重开空转） */
+  dropped: number;
+  /** 重开后二次解析真正解析成功的引用数（读数；含同趟其他 pending，口径见回执） */
+  recovered: number;
+}
+
+export function reconcileResolvedEdges(db: Database, projectRoot: string): ReconcileEdgesStats {
+  const refs = db
+    .prepare(
+      `SELECT id, from_node_id, reference_name, reference_kind, resolved_node_id
+         FROM unresolved_refs
+        WHERE status = 'resolved' AND resolved_node_id IS NOT NULL
+          AND reference_kind IN ('call','type_ref')`,
+    )
+    .all() as Array<{
+    id: number;
+    from_node_id: string;
+    reference_name: string;
+    reference_kind: string;
+    resolved_node_id: string;
+  }>;
+  const edgeExists = db.prepare(
+    'SELECT 1 x FROM edges WHERE source = $s AND target = $t AND kind = $k LIMIT 1',
+  );
+  const nodeExists = db.prepare('SELECT 1 x FROM nodes WHERE id = $id LIMIT 1');
+  const reopen = db.prepare(
+    "UPDATE unresolved_refs SET status = 'pending', resolved_node_id = NULL, candidates = NULL WHERE id = $id",
+  );
+  const drop = db.prepare(
+    "UPDATE unresolved_refs SET status = 'failed', resolved_node_id = NULL, candidates = $c WHERE id = $id",
+  );
+  let missing = 0;
+  let reopened = 0;
+  let dropped = 0;
+  const ownTx = !inTransaction(db);
+  if (ownTx) db.exec('BEGIN IMMEDIATE');
+  try {
+    for (const r of refs) {
+      if (edgeExists.get({ s: r.from_node_id, t: r.resolved_node_id, k: r.reference_kind })) continue;
+      missing++;
+      if (nodeExists.get({ id: r.resolved_node_id })) {
+        reopen.run({ id: r.id });
+        reopened++;
+      } else {
+        drop.run({
+          c: JSON.stringify({
+            verdict: 'failed',
+            why: 'stale-target-dropped',
+            detail: `入边随目标节点删除消失；resolved_node_id=${r.resolved_node_id} 已不在 nodes`,
+          }),
+          id: r.id,
+        });
+        dropped++;
+      }
+    }
+    if (ownTx) db.exec('COMMIT');
+  } catch (e) {
+    if (ownTx) db.exec('ROLLBACK');
+    throw e;
+  }
+  let recovered = 0;
+  if (reopened > 0) {
+    const second = resolveCrossFileCalls(db, projectRoot);
+    recovered = second.resolved;
+  }
+  return { checked: refs.length, missing, reopened, dropped, recovered };
+}
+
+/**
  * 索引读取失败的**唯一形状**（AGENTS-RULES 0.12：读失败必须与「没有」可区分）。
  *
  * ## 不变量
@@ -1591,6 +1688,9 @@ export async function syncProject(
   const by = (s: SyncStatus) => results.filter((r) => r.status === s).length;
   // 收尾：跨文件调用解析（同文件未命中的调用沿 imports 解析到目标文件符号；幂等，只处理 pending）
   const cross = resolveCrossFileCalls(db, projectRoot);
+  // ★ G9 入边对账自愈：已解析引用的入边若被目标节点删除级联带走，收尾按事实重开/留痕并二次重建；
+  //   取代「gen-db 之后手工 relink」的顺序 workaround（裁决②授权事实抽取侧行为改动）。
+  const reconcile = reconcileResolvedEdges(db, projectRoot);
   // ★ §7：出去再拍一张，差写进 scan_runs / scan_changes（逐文件）
   const changes = recordScanRun(db, before);
   return {
@@ -1609,6 +1709,13 @@ export async function syncProject(
       failed: cross.failed,
       // ★ 2026-10-22：跳过多少必须跟连上多少一起报（这张就是 sync 回执）—— 不许只报 resolved
       reexportSkipped: cross.reexportSkipped,
+    },
+    reconcile: {
+      checked: reconcile.checked,
+      missing: reconcile.missing,
+      reopened: reconcile.reopened,
+      dropped: reconcile.dropped,
+      recovered: reconcile.recovered,
     },
   };
 }

@@ -23,7 +23,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -38,6 +38,7 @@ import { clearAlertInbox, peekAlerts } from '../src/infrastructure/alert_inbox.j
 //   （保鲜只按 stat 找 pending，不登记就永远读不到那条坏 diff 行）
 import { recordSelfWrite } from '../src/application/write_gate.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
+import { changedPathsOf, lastFullJudgeAt } from '../scripts/lib/changed_set.mjs';
 
 /** 建临时项目根（与 home 分开：cache.db 住 home，源码住 project） */
 function makeProject(): string {
@@ -245,7 +246,7 @@ test('⑤ ensureFreshIndex · 变更集读不出 ⇒ report.error 点名（改�
 // ════════════════════════════════════════════════════════════════════
 // ⑥ 一处权威：verify-changed 必须自报"权威是谁 / 我用的是什么 / 为什么"
 // ════════════════════════════════════════════════════════════════════
-test('⑥ verify-changed.mjs · 改动集来源自报（权威 = scan_changes ∪ symbol_diffs；本次用 git，理由必须写出）', () => {
+test('⑥ verify-changed.mjs · 改动集来源自报（权威 = changed_set 三源并集；本次用 changed_set，理由必须写出）', () => {
   const r = spawnSync(
     process.execPath,
     [path.resolve('scripts/verify-changed.mjs'), '--json', '--no-run', 'scripts/verify-changed.mjs'],
@@ -265,9 +266,10 @@ test('⑥ verify-changed.mjs · 改动集来源自报（权威 = scan_changes �
     '改动集来源必须**机读自报**（`change_source`= {authority, used, why}）—— 否则就是"两套并存而无人知道"',
   );
   assert.match(cs.authority, /scan_changes/, `权威必须点名 scan_changes：${cs.authority}`);
-  assert.match(cs.authority, /symbol_diffs/, `权威必须点名 symbol_diffs：${cs.authority}`);
-  assert.equal(cs.used, 'git', `本次用的是 git（必须与权威分开写清）：${cs.used}`);
-  assert.ok(cs.why.trim().length > 0, '为什么用 git（而不是直接吃权威）必须写出来 —— 空理由 = 没人知道');
+  assert.match(cs.authority, /git 工作区|worktree/, `权威必须点名 git 工作区腿：${cs.authority}`);
+  assert.match(cs.authority, /since/, `权威必须点名 since 上次全量判据锚点腿（G7）：${cs.authority}`);
+  assert.equal(cs.used, 'changed_set', `本次用 changed_set 三源权威（必须与权威分开写清）：${cs.used}`);
+  assert.ok(cs.why.trim().length > 0, '三源边界与回落口径必须写出来 —— 空理由 = 没人知道');
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -483,5 +485,102 @@ test('⑨ 0.16 · 健康保鲜 ⇒ 回执 error=null、无 changeset_unreadable�
   } finally {
     rmRf(home);
     rmRf(project);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════
+// ⑩⑪⑫ G7 since 腿：改动集接 changed_set 三源权威（scan_changes ∪ git 工作区 ∪ since 锚点）
+// ════════════════════════════════════════════════════════════════════
+/** 建临时 git 仓（隔离夹具；不碰真仓） */
+function g7GitRepo(): string {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-g7-'));
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  execFileSync('git', ['config', 'user.email', 'g7@example.com'], { cwd: dir });
+  execFileSync('git', ['config', 'user.name', 'g7'], { cwd: dir });
+  return dir;
+}
+function g7Commit(dir: string, rel: string, content: string): void {
+  fs.mkdirSync(path.join(dir, path.dirname(rel)), { recursive: true });
+  fs.writeFileSync(path.join(dir, rel), content, 'utf8');
+  execFileSync('git', ['add', rel], { cwd: dir });
+  execFileSync('git', ['commit', '-q', '-m', rel], { cwd: dir });
+}
+
+test('⑩ G7 since 腿：干净工作区里，锚点之后已提交的改动必须可见（旧双腿在提交后干净树看不见）', () => {
+  const dir = g7GitRepo();
+  try {
+    g7Commit(dir, 'src/old.ts', 'export const old = 1;\n');
+    // 锚点 = 旧提交之后、新提交之前；judge-readings.json#at 是 since 腿的唯一锚
+    const anchor = new Date(Date.now() - 30_000).toISOString();
+    fs.mkdirSync(path.join(dir, '.agent-io'), { recursive: true });
+    fs.writeFileSync(path.join(dir, '.agent-io', 'judge-readings.json'), JSON.stringify({ at: anchor }), 'utf8');
+    g7Commit(dir, 'src/new.ts', 'export const neu = 2;\n');
+    // 工作区已干净（无未跟踪/未暂存）⇒ new.ts 只能由 since 腿带出来
+    const res = changedPathsOf(dir);
+    assert.ok(
+      res.paths.includes('src/new.ts'),
+      `since 腿必须把锚点后已提交的 new.ts 算进改动集（旧双腿提交后干净树看不见）：${JSON.stringify(res.paths)}`,
+    );
+    assert.equal(res.unavailable, null, 'git 仓可读 ⇒ 不该 unavailable');
+    assert.equal(res.sources.git_since_last_judge.ok, true, 'since 腿必须成功');
+  } finally {
+    rmRf(dir);
+  }
+});
+
+test('⑪ G7：缺上次全量判据锚 ⇒ since 腿缺席并报原因，不猜"刚刚"；worktree 仍可信', () => {
+  const dir = g7GitRepo();
+  try {
+    g7Commit(dir, 'src/x.ts', 'export const x = 1;\n');
+    assert.equal(lastFullJudgeAt(dir), null, '无 judge-readings.json ⇒ 锚点必须为 null（不许瞎猜成刚刚）');
+    const res = changedPathsOf(dir);
+    assert.equal(res.sources.git_since_last_judge.ok, false, '缺锚 ⇒ since 腿缺席');
+    assert.match(String(res.sources.git_since_last_judge.reason), /锚|at|judge-readings/, '缺席必须点名原因');
+    assert.equal(res.sources.git_worktree.ok, true, '工作区腿不受缺锚影响，仍独立可信');
+  } finally {
+    rmRf(dir);
+  }
+});
+
+test('⑫ G7：三源全读不到 ⇒ unavailable 非空，不许折成空集冒充"没改"', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-g7-nongit-'));
+  try {
+    const res = changedPathsOf(dir);
+    assert.ok(res.unavailable, '非 git 仓 + 无索引库 ⇒ unavailable 必须非空（读不到 ≠ 没改动）');
+    assert.equal(res.paths.length, 0, '三源都没读到 ⇒ 并集为空，但 unavailable 必须把"不可信"带出去');
+  } finally {
+    rmRf(dir);
+  }
+});
+
+test('⑬ G-1 门11②：sqlite 运行时产物（.db/-shm/-wal）不进改动集；非 db 产物 fail-closed 保留', () => {
+  const dir = g7GitRepo();
+  try {
+    g7Commit(dir, 'src/a.ts', 'export const a = 1;\n');
+    fs.mkdirSync(path.join(dir, '.agent-io', 'design'), { recursive: true });
+    // 运行时产物：库 + WAL/-shm 附属（未跟踪）。WAL/-shm 由 sqlite 随库抖动，列进改动集会污染增量选量。
+    for (const rel of ['.agent-io/cache.db', '.agent-io/cache.db-shm', '.agent-io/cache.db-wal', '.agent-io/tasks.db']) {
+      fs.writeFileSync(path.join(dir, rel), 'runtime-bytes', 'utf8');
+    }
+    // 非 db 产物：必须保留（fail-closed —— 排除只认已知 db 模式，不许宽通配把册/快照也排掉）。
+    fs.writeFileSync(path.join(dir, '.agent-io/design/agent-io.dsl.json'), '{}', 'utf8');
+    fs.writeFileSync(path.join(dir, '.agent-io/verified-snapshot.json'), '{}', 'utf8');
+    // 业务改动
+    fs.writeFileSync(path.join(dir, 'src/b.ts'), 'export const b = 2;\n', 'utf8');
+
+    const res = changedPathsOf(dir);
+    const paths = res.paths;
+    for (const db of ['.agent-io/cache.db', '.agent-io/cache.db-shm', '.agent-io/cache.db-wal', '.agent-io/tasks.db']) {
+      assert.ok(!paths.includes(db), `运行时产物 ${db} 不许进改动集（去掉 isRuntimeDbArtifact 排除 ⇒ 本断言红）：${JSON.stringify(paths)}`);
+    }
+    assert.ok(paths.includes('src/b.ts'), '业务改动必须保留');
+    assert.ok(
+      paths.includes('.agent-io/design/agent-io.dsl.json'),
+      '非 db 的册产物 fail-closed 必须保留（排除名单不许宽通配）：' + JSON.stringify(paths),
+    );
+    assert.ok(paths.includes('.agent-io/verified-snapshot.json'), '快照 json 必须保留：' + JSON.stringify(paths));
+    assert.equal(res.unavailable, null, 'git 仓可读 ⇒ 不该 unavailable');
+  } finally {
+    rmRf(dir);
   }
 });

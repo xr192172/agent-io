@@ -91,7 +91,9 @@ function makeRepo(): Repo {
   git('init');
   // ★ 基线是**本机证据副本**（不参与版本管理）—— 不 ignore 它，它自己会成为"未跟踪改动"，
   //   把"干净树"这个前提直接破坏掉（第一次跑就踩了）。
-  w('.gitignore', '.agent-io/verified-snapshot.json\nnode_modules\n');
+  // ★★ 2026-11-24（G-1 · 门11②）：对齐真仓 `.gitignore` 的 `**/.agent-io/*.db*` —— cache.db
+  //   及其 -shm/-wal 是 sqlite 运行态产物，不进版本管理；与 changed_set.mjs 的窄模式排除双保险。
+  w('.gitignore', '.agent-io/verified-snapshot.json\n.agent-io/*.db*\nnode_modules\n');
   git('add', '-A');
   git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-m', 'init');
 

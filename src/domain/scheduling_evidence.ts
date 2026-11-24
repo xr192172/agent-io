@@ -380,9 +380,27 @@ export function detectVerdictConflicts(
 
 /** 快照条目 id → 精确对象身份（`test:tests/a.test.mjs` ⇒ `{kind:'test', path:'tests/a.test.mjs'}`）。 */
 export function subjectOfEntryId(entryId: string): { kind: 'test' | 'contract' | 'other'; path?: string } {
-  if (entryId.startsWith('test:')) return { kind: 'test', path: relativeKey(entryId.slice('test:'.length)) };
+  if (entryId.startsWith('test:')) return { kind: 'test', path: fileOfTestNodeId(entryId) ?? undefined };
   if (entryId.startsWith('contract:')) return { kind: 'contract' };
   return { kind: 'other' };
+}
+
+/**
+ * ★ G4 单一 test 节点 id 构造：`test:` + 归一化仓库相对路径。
+ * test / contract / Java 条目同源规则——写端只调本函数拼 id，不再各自手拼前缀字符串。
+ * 归一化见 {@link relativeKey}（`\` → `/`、去 `./`、trim）；调用方负责传仓库相对路径。
+ */
+export function testNodeId(file: string): string {
+  return `test:${relativeKey(file)}`;
+}
+
+/**
+ * ★ G4 从 entry id 反解归一化 file；非 test 条目 ⇒ null。
+ * 匹配侧按归一化 file 比对，不再对 id 做 `test:tests/` 前缀字符串切片。
+ */
+export function fileOfTestNodeId(entryId: string): string | null {
+  if (!entryId.startsWith('test:')) return null;
+  return relativeKey(entryId.slice('test:'.length));
 }
 
 /** 帧级形状判据：只有 `signals` 全部合格且必填段都在，才允许进策略层。 */

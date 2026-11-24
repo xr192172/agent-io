@@ -17,10 +17,12 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import os from 'node:os';
 import { createHash } from 'node:crypto';
 
 import {
-  buildCoverageMap, coveringTestsOf, selectChangedTests, readSelCache, CACHE_REL,
+  buildCoverageMap, coveringTestsOf, selectChangedTests, readSelCache, writeSelCacheEntry, recordPass,
+  shaOf, CACHE_REL, SEL_CACHE_SCHEME,
   type CoverageMap,
 } from '../src/infrastructure/analysis/facts/test_coverage.ts';
 import { ablationCheck, assertAblationTarget } from '../src/infrastructure/analysis/facts/incsel_ablation.ts';
@@ -37,7 +39,7 @@ function fakeMap(): CoverageMap {
     ]),
     unknown: new Set(['tests/unknown.test.ts']),
     trusted: true,
-    stats: { directEdges: 4, closureEdges: 1, srcImportEdges: 2 },
+    stats: { directEdges: 4, closureEdges: 1, srcImportEdges: 2, builtKinds: [], unreadKinds: [], fresh: true },
   };
 }
 /** 造一个 impact 函数（模拟 impactOfChanged 的返回形状） */
@@ -122,7 +124,7 @@ test('② 覆盖图不可信 ⇒ 全量回落', () => {
 // ── ③ 源码指纹缓存 ───────────────────────────────────────────
 test('③ 缓存坏/缺 ⇒ 不跳过任何测试（fail-closed）', () => {
   const cache = readSelCache(path.join(REPO, '__no_such_dir_incsel__'));
-  assert.equal(cache.version, 1);
+  assert.equal(cache.version, 2);
   assert.deepEqual(cache.entries, {}, '读不到缓存 ⇒ 空 entries ⇒ 一个都不跳过');
 });
 
@@ -131,9 +133,17 @@ test('③ 改动源码 sha 全在缓存 ⇒ 跳过；不在 ⇒ 跑（缓存路�
   const rel = 'src/domain/expectation.ts';
   const sha = createHash('sha256').update(fs.readFileSync(path.join(REPO, rel))).digest('hex');
   const cache = {
-    version: 1 as const,
+    version: 2 as const,
     entries: {
-      'tests/translate_book_go_ts.test.ts': { sourceShas: { [rel]: sha }, at: '2026-11-19T00:00:00Z', mode: 'changed' },
+      'tests/translate_book_go_ts.test.ts': {
+        sourceShas: { [rel]: sha },
+        testSha: '0'.repeat(64),
+        runnerSha: '1'.repeat(64),
+        scheme: 2,
+        ttlMs: 7 * 24 * 3600 * 1000,
+        at: '2026-11-19T00:00:00Z',
+        mode: 'changed',
+      },
     },
   };
   const map = fakeMap();
@@ -149,6 +159,61 @@ test('③ 改动源码 sha 全在缓存 ⇒ 跳过；不在 ⇒ 跑（缓存路�
 test('③ CACHE_REL 落在 .agent-io/scratch（derived，不进 git）', () => {
   assert.match(CACHE_REL, /^\.agent-io\/scratch\//);
   assert.ok(CACHE_REL.endsWith('test-sel-cache.json'));
+});
+
+// ── ③b G3 缓存键面 fail-closed：口径版本 / 测试本体 sha / runner 脚本 sha / TTL ──
+const FAKE_SHA = '0'.repeat(64);
+function g3Entry(over: Partial<{ scheme: number; testSha: string; runnerSha: string; ttlMs: number; at: string }>) {
+  return {
+    sourceShas: {},
+    testSha: FAKE_SHA,
+    runnerSha: '1'.repeat(64),
+    scheme: SEL_CACHE_SCHEME,
+    ttlMs: 7 * 24 * 3600 * 1000,
+    at: new Date().toISOString(),
+    mode: 'changed' as const,
+    ...over,
+  };
+}
+function g3Select(entry: ReturnType<typeof g3Entry>) {
+  const map = fakeMap();
+  return selectChangedTests(REPO, ['src/a.ts'], {
+    testFiles: [...map.byTest.keys()],
+    coverage: map,
+    cache: { version: 2, entries: { 'tests/a.test.ts': entry } },
+    impactFn: fakeImpact(['src/a.ts']),
+  });
+}
+
+test('③b G3 口径升级：旧 scheme 条目整体失效 ⇒ 不跳过', () => {
+  const sel = g3Select(g3Entry({ scheme: 1 }));
+  assert.ok(sel.selected.includes('tests/a.test.ts'), '旧口径条目必须不被信任 ⇒ 跑');
+  assert.equal(sel.skippedByCache.length, 0);
+});
+
+test('③b G3 测试本体 / runner 脚本 sha 不符 ⇒ 不跳过（键面 fail-closed）', () => {
+  const selTest = g3Select(g3Entry({ testSha: '2'.repeat(64) }));
+  assert.ok(selTest.selected.includes('tests/a.test.ts'), '测试本体 sha 不符 ⇒ 不跳');
+  const selRunner = g3Select(g3Entry({ runnerSha: '3'.repeat(64) }));
+  assert.ok(selRunner.selected.includes('tests/a.test.ts'), 'runner 脚本 sha 不符 ⇒ 不跳');
+});
+
+test('③b G3 TTL 过期 ⇒ 不跳过', () => {
+  const old = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  const sel = g3Select(g3Entry({ at: old, ttlMs: 7 * 24 * 3600 * 1000 }));
+  assert.ok(sel.selected.includes('tests/a.test.ts'), '过期条目 ⇒ 不跳');
+});
+
+test('③b G3 写端不可信不落条目：coverage.trusted=false ⇒ recordPass 不写缓存', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-g3-'));
+  try {
+    const bad: CoverageMap = { ...fakeMap(), trusted: false };
+    recordPass(tmp, 'tests/a.test.ts', bad, 'changed');
+    const cache = readSelCache(tmp);
+    assert.deepEqual(cache.entries, {}, '不可信覆盖映射 ⇒ 不许固化指纹');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 // ── ④ 消融：选择自身也有判据 ─────────────────────────────────

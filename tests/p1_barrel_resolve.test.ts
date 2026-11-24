@@ -31,8 +31,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { getProjectCacheDb, closeProjectCacheDb } from '../src/infrastructure/index/db.js';
-import { syncFileSync, resolveCrossFileCalls } from '../src/infrastructure/index/symbols.js';
+import { syncFileSync, resolveCrossFileCalls, reconcileResolvedEdges } from '../src/infrastructure/index/symbols.js';
 import { prewarmKernel } from '../src/infrastructure/parse/kernel.js';
+import { buildCoverageMap, CONSUMED_EDGE_KINDS } from '../src/infrastructure/analysis/facts/test_coverage.js';
 
 interface Fixture {
   root: string;
@@ -40,6 +41,9 @@ interface Fixture {
   write(rel: string, content: string): void;
   sync(rel: string): void;
   resolve(): ReturnType<typeof resolveCrossFileCalls>;
+  reconcile(): ReturnType<typeof reconcileResolvedEdges>;
+  dropCallEdge(target: string): void;
+  dropTargetNode(rel: string): void;
   refsFrom(rel: string): Array<{ name: string; status: string; resolved: string | null; candidates: string | null }>;
   edgesFrom(rel: string): Array<{ target: string; kind: string; line: number | null }>;
   cleanup(): void;
@@ -70,6 +74,10 @@ async function makeFixture(files: Record<string, string>, syncOrder?: string[]):
     write,
     sync,
     resolve: () => resolveCrossFileCalls(db, root),
+    reconcile: () => reconcileResolvedEdges(db, root),
+    dropCallEdge: (target) =>
+      db.prepare("DELETE FROM edges WHERE kind='call' AND target = ?").run(target),
+    dropTargetNode: (rel) => db.prepare('DELETE FROM nodes WHERE file_path = ?').run(rel),
     refsFrom: (rel) =>
       (
         db
@@ -260,6 +268,124 @@ test('⑥ A2 回归：`file.ts + file.js`（TS+产物同目录）⇒ 仍认 `fil
       `★ "file.js" 是产物，不是"第二个落点" —— 把它算进歧义会让最常见的 TS 布局永远落不到；实际=` +
         JSON.stringify(targets),
     );
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑦ G9 入边根治·自愈正例：resolved 入边被级联带走后，收尾对账重建 ──────────
+test('⑦ G9 入边根治：resolved 引用的 call 入边被删后，对账自愈重建（不靠 gen-db 后手工 relink 顺序 workaround）', async () => {
+  const fx = await makeFixture({
+    'src/lib/b.ts': 'export function callee() { return 1; }\n',
+    'src/app/a.ts': "import { callee } from '../lib/b.js';\n\nexport function useIt() { return callee(); }\n",
+  });
+  try {
+    fx.resolve();
+    const target = 'src/lib/b.ts#callee';
+    let edges = fx.edgesFrom('src/app/a.ts').filter((e) => e.kind === 'call');
+    assert.ok(edges.some((e) => e.target === target), '建边阶段：A→B call 边必须在');
+    // 反向夹具前置：模拟目标节点重同步、FK CASCADE 带走入边（引用方 ref 仍 resolved）
+    fx.dropCallEdge(target);
+    edges = fx.edgesFrom('src/app/a.ts').filter((e) => e.kind === 'call');
+    assert.equal(edges.length, 0, '夹具必须先复现「入边缺失」，否则这条反向用例没钉住洞');
+
+    const recon = fx.reconcile();
+    assert.equal(recon.missing, 1, '对账必须认出这 1 条缺边（不许静默丢已解析入边）');
+    assert.equal(recon.reopened, 1, '目标节点仍在 ⇒ 重开 pending 交收尾重建');
+    assert.equal(recon.dropped, 0, '目标节点在 ⇒ 不许置 failed');
+
+    edges = fx.edgesFrom('src/app/a.ts').filter((e) => e.kind === 'call');
+    assert.ok(edges.some((e) => e.target === target), '二次解析后入边必须重建回来（自愈）');
+    const ref = fx.refsFrom('src/app/a.ts').find((r) => r.name === 'callee');
+    assert.equal(ref?.status, 'resolved', '重建后引用回到 resolved');
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑧ G9 入边根治·留痕反例：目标节点已不存在 ⇒ failed 留痕，不重开空转 ───────
+test('⑧ G9 入边根治：目标节点已不在 nodes ⇒ 引用置 failed 留痕（why=stale-target-dropped），不重开空转', async () => {
+  const fx = await makeFixture({
+    'src/lib/b.ts': 'export function callee() { return 1; }\n',
+    'src/app/a.ts': "import { callee } from '../lib/b.js';\n\nexport function useIt() { return callee(); }\n",
+  });
+  try {
+    fx.resolve();
+    // 删目标文件节点（模拟文件被删）；入边随节点 FK CASCADE 消失，引用方 ref 行仍 resolved
+    fx.dropTargetNode('src/lib/b.ts');
+    const recon = fx.reconcile();
+    assert.equal(recon.missing, 1, '缺边必须被认出');
+    assert.equal(recon.reopened, 0, '目标节点已不在 ⇒ 不许重开 pending 空转');
+    assert.equal(recon.dropped, 1, '置 failed 留痕 1 条');
+    const ref = fx.refsFrom('src/app/a.ts').find((r) => r.name === 'callee');
+    assert.equal(ref?.status, 'failed', '引用必须落 failed（不是 resolved 假绿）');
+    const v = verdictOf(ref?.candidates ?? null);
+    assert.equal(v.why, 'stale-target-dropped', '留痕 why 必须说清目标节点已消失');
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑨ G9① 新鲜度正例：索引与磁盘一致 ⇒ trusted / fresh=true ───────────────
+test('⑨ G9① 新鲜度正例：同步后未再改盘 ⇒ 覆盖映射 trusted=true、stats.fresh=true', async () => {
+  const fx = await makeFixture({
+    'src/a.ts': 'export const A = 1;\n',
+    'src/b.ts': "import { A } from './a.js';\nexport const B = A + 1;\n",
+    'tests/a.test.ts': "import { A } from '../src/a.js';\n",
+  });
+  try {
+    fx.resolve();
+    fx.reconcile();
+    const map = buildCoverageMap(fx.root);
+    assert.equal(map.trusted, true, '索引新鲜 ⇒ 必须可信');
+    assert.equal(map.stats.fresh, true, 'fresh 读数必须为真');
+    assert.ok(map.stats.builtKinds.includes('import'), 'builtKinds 必须显形已建边型 import');
+    assert.ok(map.byTest.has('tests/a.test.ts'), '测试必须进覆盖映射');
+    for (const k of map.stats.unreadKinds) {
+      assert.ok(!CONSUMED_EDGE_KINDS.includes(k as (typeof CONSUMED_EDGE_KINDS)[number]), `未读边型 ${k} 不得出现在消费清单内`);
+    }
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑩ G9① 新鲜度反例：改盘未重同步 ⇒ fail-closed 回落全量（trusted=false） ──
+test('⑩ G9① 新鲜度反例：src 改盘未重同步 ⇒ trusted=false、fresh=false（不拿陈旧边集当可信）', async () => {
+  const fx = await makeFixture({
+    'src/a.ts': 'export const A = 1;\n',
+    'tests/a.test.ts': "import { A } from '../src/a.js';\n",
+  });
+  try {
+    fx.resolve();
+    fx.reconcile();
+    // 改盘但不重新同步 ⇒ files 表陈旧（size/mtime 与磁盘不符）
+    fx.write('src/a.ts', 'export const A = 1;\nexport const C = 2;\n');
+    const map = buildCoverageMap(fx.root);
+    assert.equal(map.trusted, false, '陈旧边集必须不可信（fail-closed，不许当当前覆盖）');
+    assert.equal(map.stats.fresh, false, 'fresh 读数必须为假');
+    assert.equal(map.byTest.size, 0, '不可信 ⇒ 回落空映射（全量触发面），不出伪覆盖');
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑪ G9③ 边型对账：已建未读边型显形，且与消费清单不混 ───────────────────
+test('⑪ G9③ 边型对账：builtKinds 全量显形；unreadKinds 只收已建未读，与消费清单不交', async () => {
+  const fx = await makeFixture({
+    'src/a.ts': 'export const A = 1;\n',
+    'src/b.ts': "import { A } from './a.js';\nexport const B = A + 1;\n",
+    'tests/a.test.ts': "import { A } from '../src/a.js';\n",
+  });
+  try {
+    fx.resolve();
+    fx.reconcile();
+    const map = buildCoverageMap(fx.root);
+    assert.ok(Array.isArray(map.stats.builtKinds), 'builtKinds 必须是边型数组读数');
+    const consumed = new Set<string>(CONSUMED_EDGE_KINDS);
+    for (const k of map.stats.unreadKinds) {
+      assert.ok(!consumed.has(k), `unreadKinds 混入了已消费边型 ${k}`);
+      assert.ok(map.stats.builtKinds.includes(k), `unreadKinds 的 ${k} 必须在已建集合 builtKinds 内`);
+    }
   } finally {
     fx.cleanup();
   }

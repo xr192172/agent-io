@@ -203,3 +203,51 @@ test('⑫ T-P1 端到端：临时仓点名验证器文件 ⇒ 包证据缺失 �
   const scopeB = b.json?.verified_scope as { widen: string | null } | undefined;
   assert.ok(scopeB?.widen, '验证器 + runner 底座混合改动 ⇒ 仍全量');
 });
+
+test('⑬ G6② 清单对账：VERIFIER_FILES 与选量/护栏清单全部被 WIDEN 覆盖，missing 为空', async () => {
+  const { WIDEN_PATTERNS } = await import(pathToFileURL(path.join(ROOT, 'src', 'application', 'design', 'verified_snapshot.ts')).href);
+  const v = PACK.reconcileAgainstWiden(PACK.VERIFIER_FILES, WIDEN_PATTERNS);
+  assert.equal(v.ok, true, `验证器清单有文件漏在 WIDEN 外：${JSON.stringify(v.missing_in_widen)}`);
+  assert.deepEqual(v.missing_in_widen, []);
+  const g = PACK.reconcileAgainstWiden(PACK.SELECTOR_GUARDRAIL_FILES, WIDEN_PATTERNS);
+  assert.equal(g.ok, true, `选量/护栏清单有文件漏在 WIDEN 外：${JSON.stringify(g.missing_in_widen)}`);
+  assert.deepEqual(g.missing_in_widen, []);
+  // 五份 C A7 点名文件必须在册
+  for (const f of PACK.SELECTOR_GUARDRAIL_FILES) assert.ok(f.length > 0);
+});
+
+test('⑭ G6② 对账反例：某文件未被任何正则覆盖 ⇒ missing_in_widen 点名到份（不漏报）', () => {
+  const loose = [/^src\/application\/design\/verified_snapshot\.ts$/];
+  const recon = PACK.reconcileAgainstWiden(PACK.VERIFIER_FILES, loose);
+  assert.equal(recon.ok, false);
+  assert.ok(recon.missing_in_widen.includes('scripts/verify-changed.mjs'), '漏网文件必须进 missing_in_widen');
+  assert.ok(recon.covered_in_widen.includes('src/application/design/verified_snapshot.ts'));
+});
+
+test('⑮ G6③ 包面只增：面数/文件数/用例片段数不低于既有下界（不许静默减面）', () => {
+  const shape = PACK.proofPackShape();
+  assert.ok(shape.areas >= 9, `面数 ${shape.areas} 低于既有下界 9（包面只增）`);
+  assert.ok(shape.files >= 8, `证据文件数 ${shape.files} 低于既有下界 8`);
+  assert.ok(shape.cases >= 10, `用例片段数 ${shape.cases} 低于既有下界 10`);
+  // 形状自洽：files 是去重计数，cases 是片段总数
+  const files = new Set(PACK.VERIFIER_PROOF_PACK.flatMap((a) => a.tests.map((t) => t.file)));
+  assert.equal(shape.files, files.size);
+});
+
+test('⑯ G6④ 包谓词一致：ok / failed 集合 / 摘要三者一致；矛盾构造必须被对账判不一致', () => {
+  const files = [...new Set(PACK.VERIFIER_PROOF_PACK.flatMap((a) => a.tests.map((t) => t.file)))];
+  const green = new Map(files.map((f) => [f, { code: 0, out: '' }]));
+  const greenRun = PACK.runVerifierProofPack(() => green);
+  assert.equal(PACK.proofRunConsistent(greenRun), true, '全绿回执谓词必须一致');
+
+  const oneRed = new Map(files.map((f) => [f, { code: f === files[0] ? 1 : 0, out: 'tail' }]));
+  const redRun = PACK.runVerifierProofPack(() => oneRed);
+  assert.equal(PACK.proofRunConsistent(redRun), true, '有红回执谓词必须一致');
+
+  // 矛盾构造：failed 非空却 ok=true ⇒ 对账必须抓出
+  const contradictory = { ...redRun, ok: true };
+  assert.equal(PACK.proofRunConsistent(contradictory), false, 'ok 与 failed 集合矛盾 ⇒ 不一致');
+  // 矛盾构造：全绿却摘要喊必须扩大 ⇒ 不一致
+  const noteMismatch = { ...greenRun, note: '自证包有 1 支测试红 ⇒ 验证器可信度不足，必须扩大（全跑）' };
+  assert.equal(PACK.proofRunConsistent(noteMismatch), false, '摘要与结论矛盾 ⇒ 不一致');
+});
