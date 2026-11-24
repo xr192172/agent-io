@@ -187,6 +187,14 @@ export interface ImportProjectInput {
    * 浏览器上传导入时由 serve 指定为 .agent-io/projects/<feature>/。
    */
   source_root?: string;
+  /**
+   * ★★★ 2026-11-24（G-1 · O1 根治）：**项目根（册归属根）**，与 `project_dir`（扫描目录）分离。
+   * · `project_dir` = 被 walk 的源码树（可只是仓内子目录，如 `src/`）；
+   * · `project_root` = 册 / 侧车 / live 归属的项目根（仓根）。
+   * 缺省 = `project_dir`（历史同根场景，向后兼容）。rebuild_feature 这类"扫子树、册住仓根"的
+   * 调用方必须显式传 `project_root`，否则注册表又会把扫描子树错当成册归属根（O1 病史）。
+   */
+  project_root?: string;
 }
 
 export interface ImportProjectResult {
@@ -1406,6 +1414,9 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //   ⇒ 这里只**取用**本函数已算好的绝对 root（见上方 const root = path.resolve(input.project_dir)）；
     //     显式给了 source_root 才另算一次 —— 那也是绝对化，不是第二套归一。
     const sourceRootAbs = input.source_root ? path.resolve(input.source_root) : root;
+    // ★ O1 根治：册归属根（project_root）与扫描目录（source_root）分离。缺省同根；显式给了
+    //   project_root 才把两者分开（册住仓根、扫描子树）。
+    const projectRootAbs = input.project_root ? path.resolve(input.project_root) : root;
     const dsl: DesignDSL = {
       id: `imported_${feature}`,
       type: 'feature_diagram',
@@ -1438,10 +1449,11 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
     //     模块缓存保证只加载一次。
     try {
       const { registerFeature } = await import('../project_registry.js');
-      // ★ T-#REG ②：传**同一个** sourceRootAbs（不再传原始入参、也不在注册表里再 resolve 一遍）
-      const reg = registerFeature(feature, sourceRootAbs, 'import_project');
+      // ★ T-#REG ②：传**同一个** sourceRootAbs（不再传原始入参、也不在注册表里再 resolve 一遍）。
+      // ★ O1 根治：第四参 = 扫描目录 source_root；第二参 = 册归属根 project_root（可与扫描目录不同）。
+      const reg = registerFeature(feature, projectRootAbs, 'import_project', sourceRootAbs);
       if (reg.changed) {
-        console.warn(`[project_registry] 已登记 ${feature} → ${reg.entry.project_root}`);
+        console.warn(`[project_registry] 已登记 ${feature} → ${reg.entry.project_root}（扫描 ${reg.entry.source_root ?? reg.entry.project_root}）`);
       }
     } catch (e) {
       console.warn(

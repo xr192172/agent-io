@@ -23,10 +23,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getStorageRoot } from './storage.js';
 
-/** 注册表里的一条：项目根 + 登记痕迹（谁、何时 —— 登记是可考古的事实，不是配置） */
+/**
+ * 注册表里的一条：项目根 + 扫描目录 + 登记痕迹（谁、何时 —— 登记是可考古的事实，不是配置）
+ *
+ * ★★★ 2026-11-24（G-1 · O1 根错位根治）：**两口径显式分离**，不再混用同一个根。
+ *   · `project_root` = **项目根（册归属根）**：册 / 侧车 / live / baseline 住 `<project_root>/.agent-io/`。
+ *     读端 `getDesignSheetFile` / `projectRootOf` 用它定位"册住谁家"。
+ *   · `source_root` = **扫描源码目录**：importProject 实际 walk 的那棵源码树（可与 project_root
+ *     不同 —— 册住仓根、源码扫 `src/` 子树即是一例）。供读源文件 / 影响面定位；缺省 = project_root
+ *     （历史同根场景，向后兼容，不落该字段）。
+ *   病史：此前两者被填成同一个 `project_dir`，而 rebuild_feature 把 `src/` 子树当 project_root
+ *     登记 ⇒ 册目录被解析到 `src/.agent-io/design/`（错位派生副本 + 0B 侧车），真册侧车读 0 行。
+ */
 export interface RegistryEntry {
-  /** 项目根（绝对路径，`/` 分隔、无尾斜杠） */
+  /** 项目根（册归属根，绝对路径，`/` 分隔、无尾斜杠） */
   project_root: string;
+  /** 扫描源码目录（绝对路径；缺省 = project_root）。与 project_root 分离：册归属 ≠ 扫描树。 */
+  source_root?: string;
   /** ISO 时间戳 */
   registered_at: string;
   /** 谁登记的（目前只有 `import_project`） */
@@ -236,6 +249,17 @@ export function projectRootOf(feature: string): string | null {
 }
 
 /**
+ * 查某个 feature 的**扫描源码目录**（与 `projectRootOf` 分离）。
+ * ★ 条目未单列 `source_root`（历史同根）⇒ 回退到 `project_root`；都取不到 ⇒ `null`。
+ */
+export function sourceRootOf(feature: string): string | null {
+  const e = readRegistry().features[feature];
+  if (!e || typeof e.project_root !== 'string' || !e.project_root) return null;
+  const sr = typeof e.source_root === 'string' && e.source_root.trim() ? e.source_root : e.project_root;
+  return normRoot(sr);
+}
+
+/**
  * ★★★ 2026-11-02（subagent:canvas-db）：`projectRootOf` 的**反方向** —— 一个根下登记了哪几个 feature。
  *
  * ## 为什么要它
@@ -261,25 +285,33 @@ export function featuresOfRoot(root: string): string[] {
  * ★ **绝对的化只在这里做一次**（`path.resolve` + `normRoot`）：
  *   写端是唯一知道"这是哪个目录"的地方；把原始入参（可能是 `.`）原样落盘，读端就只能靠 cwd 猜
  *   —— 实测后果：`registerFeature('f_rel','.')` 落盘 `.` ⇒ 下一次读即判坏 ⇒ 登记等于没登记。
- * ★ 幂等：根没变就**不写盘**（避免无谓 churn 与 mtime 抖动）。
+ * ★ 幂等：项目根与扫描目录都没变就**不写盘**（避免无谓 churn 与 mtime 抖动）。
  * ★ 根**变了** ⇒ 覆盖并保留 `registered_by`，但 `registered_at` 更新（那是"何时改成这样的"）。
  * ★ 本函数**不剪别人**：删除只走 `unregisterFeature`（删除不许藏在写路径里）。
+ *
+ * @param sourceRoot 扫描源码目录（可选；缺省 = projectRoot）。与 projectRoot 分离：册归属根 ≠ 扫描树。
  */
 export function registerFeature(
   feature: string,
   projectRoot: string,
   by: string,
+  sourceRoot?: string,
 ): { changed: boolean; entry: RegistryEntry } {
   if (!feature) throw new Error('[project_registry] feature 必填。');
   if (!projectRoot) throw new Error('[project_registry] projectRoot 必填。');
   const root = normRoot(path.resolve(projectRoot));
+  const srcRoot = sourceRoot ? normRoot(path.resolve(sourceRoot)) : root;
   const reg = readRegistry();
   const prev = reg.features[feature];
-  if (prev && normRoot(prev.project_root) === root) {
+  const prevRoot = prev ? normRoot(prev.project_root) : '';
+  const prevSrc = prev ? normRoot(prev.source_root ?? prev.project_root) : '';
+  if (prev && prevRoot === root && prevSrc === srcRoot) {
     return { changed: false, entry: prev };
   }
   const entry: RegistryEntry = {
     project_root: root,
+    // 同根历史形态不落 source_root 字段（保持旧册形状，避免存量条目膨胀）。
+    ...(srcRoot === root ? {} : { source_root: srcRoot }),
     registered_at: new Date().toISOString(),
     registered_by: by,
   };

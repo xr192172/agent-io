@@ -7,6 +7,12 @@
  * 本 feature 的 DSL 与导图（"146 条 flows 污染"）。storage.ts 已修复为自省包根
  * 锚定；本命令提供配套的一键全链重建入口。
  *
+ * ★★★ 2026-11-24（G-1 · O1 根治）：**册归属根与扫描目录分离**。
+ *   · `project_root` = `pkgRoot`（包根 / 仓根）—— 册、侧车、live、baseline 住 `<pkgRoot>/.agent-io/`；
+ *   · `project_dir`（扫描目录）= `src` 子树（`--src` 可覆盖）—— walk 哪棵源码树。
+ *   病史：此前只传 `project_dir=src`，注册表把 `src/` 错当册归属根 ⇒ 册解析到 `src/.agent-io/design/`
+ *   （错位派生副本 + 0B 侧车，真册侧车读 0 行）。现在显式把 pkgRoot 作为 project_root 登记。
+ *
  * 聚类的原理：结构导图是否按**目录分组**（★ 按 T105 定的口径：这一层不叫「功能」，「功能」留给人写的标记），
  * 取决于 DSL 里有没有 feature_tree。
  * feature_tree 由 derive_feature_tree 基于 cache.db（analyze_monolith）计算；
@@ -22,7 +28,7 @@
  *
  * 用法：
  *   node scripts/rebuild_feature.mjs [feature] [--src=<路径>]
- *   默认 feature=agent-io，src=agent-io 包根/src
+ *   默认 feature=agent-io，扫描目录=agent-io 包根/src，册归属根=包根
  */
 import path from 'node:path';
 import { importProject } from '../dist/src/infrastructure/graph/import_project.js';
@@ -51,7 +57,8 @@ try {
 }
 
 try {
-  const imp = await importProject({ project_dir: src, feature, cache_db: db });
+  // ★ O1 根治：project_root=pkgRoot（册归属根）；project_dir=src（扫描目录）。两者分离登记。
+  const imp = await importProject({ project_dir: src, project_root: pkgRoot, feature, cache_db: db });
   console.log(`① importProject: ${imp.message.split('\n')[0]} | files=${imp.files_parsed} deps=${imp.dep_edges} cache=${imp.cache ? `${imp.cache.hits}hit/${imp.cache.reparsed}rep` : '-'}`);
 } catch (e) {
   console.error(`importProject 失败: ${e.message}`);
