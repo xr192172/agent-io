@@ -77,7 +77,7 @@ export interface CoverageMap {
      */
     excludedDistEdges: number;
     /** ★ G1④ 反射/不可解析调用引用读数（failed/pending；external 仓外不计盲区） */
-    unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number };
+    unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number; unknownKind: number };
   };
 }
 
@@ -155,7 +155,7 @@ function readUnresolvedSignals(root: string): {
   computedImports: number;
   computedFiles: string[];
   excludedDistEdges: number;
-  unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number };
+  unresolvedUnsafe: { failedCall: number; failedTypeRef: number; pending: number; unknownKind: number };
 } | null {
   try {
     const db = getProjectCacheDb(root) as unknown as {
@@ -181,7 +181,14 @@ function readUnresolvedSignals(root: string): {
           WHERE status IN ('failed','pending') GROUP BY status, reference_kind`,
       )
       .all();
-    const unresolvedUnsafe = { failedCall: 0, failedTypeRef: 0, pending: 0 };
+    // ★ D1：未知 kind resolved 坏行单列计数（与 index_integrity 同一把白名单尺 call/type_ref）。
+    const unknown = db
+      .prepare(
+        `SELECT COUNT(*) n FROM unresolved_refs
+          WHERE status = 'resolved' AND reference_kind NOT IN ('call','type_ref')`,
+      )
+      .get();
+    const unresolvedUnsafe = { failedCall: 0, failedTypeRef: 0, pending: 0, unknownKind: Number(unknown?.n) || 0 };
     for (const r of u) {
       const n = Number(r.n) || 0;
       if (r.status === 'pending') unresolvedUnsafe.pending += n;
@@ -215,7 +222,7 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
     stats: {
       directEdges: 0, closureEdges: 0, srcImportEdges: 0, builtKinds: [], unreadKinds: [], fresh: false,
       computedImports: 0, computedFiles: [], excludedDistEdges: 0,
-      unresolvedUnsafe: { failedCall: 0, failedTypeRef: 0, pending: 0 },
+      unresolvedUnsafe: { failedCall: 0, failedTypeRef: 0, pending: 0, unknownKind: 0 },
     },
   } as CoverageMap & { why?: string });
   if (edges === null) return empty(false);
@@ -294,7 +301,7 @@ export function buildCoverageMap(root: string, opts: { maxDepth?: number; testFi
       computedImports: signals?.computedImports ?? 0,
       computedFiles: signals?.computedFiles ?? [],
       excludedDistEdges: signals?.excludedDistEdges ?? 0,
-      unresolvedUnsafe: signals?.unresolvedUnsafe ?? { failedCall: 0, failedTypeRef: 0, pending: 0 },
+      unresolvedUnsafe: signals?.unresolvedUnsafe ?? { failedCall: 0, failedTypeRef: 0, pending: 0, unknownKind: 0 },
     },
   };
 }

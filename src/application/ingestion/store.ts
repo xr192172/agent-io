@@ -278,14 +278,46 @@ export class IngestionStore {
   }
 
   /** 全表行指纹对账（门 / 复跑批量核查）：任一记录指纹不符 ⇒ `ok=false`，逐条点名记录 id。 */
-  verifyAllFingerprints(): { ok: boolean; reasons: string[] } {
-    const reasons: string[] = [];
-    for (const rec of this.records.values()) {
-      const check = this.verifyFingerprint(rec.id);
-      if (!check.ok) reasons.push(`记录 ${rec.id}：${check.reasons.join('；')}`);
-    }
-    return { ok: reasons.length === 0, reasons };
+  verifyAllFingerprints(): FingerprintBatchCheck {
+    return verifyRecordsFingerprints(this.list());
   }
+}
+
+/**
+ * 一批记录的行指纹对账读数（H-a · C-a 消费闭环：门 / 复跑批量核查出口）。
+ *
+ * 纯函数、不绑内存 store 实例：调用方把在册记录集喂进来即可对账；失配记录 id 作为
+ * 一等清单 `failed_ids` 带出，不许被汇总成一个数消失（对齐 acceptance_metrics 的
+ * `failed_criteria_ids` 口径）。任一不符 ⇒ `ok=false`，fail-closed 不静默。
+ */
+export interface FingerprintBatchCheck {
+  /** 对账记录总数（分母）。 */
+  checked: number;
+  /** 全部一致 ⇒ `true`；任一不符 ⇒ `false`。 */
+  ok: boolean;
+  /** 失配记录 id 一等清单。 */
+  failed_ids: string[];
+  /** 逐条点名理由。 */
+  reasons: string[];
+}
+
+/** 批量行指纹对账（唯一判据住处；`verifyAllFingerprints` 委托本函数）。 */
+export function verifyRecordsFingerprints(records: readonly AbsorbedRecord[]): FingerprintBatchCheck {
+  const failedIds: string[] = [];
+  const reasons: string[] = [];
+  for (const rec of records) {
+    const check = verifyRowFingerprint({
+      provenance: rec.provenance,
+      claim: rec.payload.claim,
+      absorbed_as: rec.payload.absorbed_as,
+      row_fingerprint: rec.row_fingerprint,
+    });
+    if (!check.ok) {
+      failedIds.push(rec.id);
+      reasons.push(`记录 ${rec.id}：${check.reasons.join('；')}`);
+    }
+  }
+  return { checked: records.length, ok: failedIds.length === 0, failed_ids: failedIds, reasons };
 }
 
 /** 环节类型守卫导出（供调用方归类）。 */

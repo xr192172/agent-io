@@ -18,6 +18,7 @@ import {
   dslContentHash,
   verifyBaselineContentHash,
   diffBaselineFiles,
+  describeBaselineHashCheck,
 } from '../src/infrastructure/storage.js';
 import type { DesignDSL } from '../src/domain/types.js';
 
@@ -92,4 +93,19 @@ test('diffBaselineFiles 透出 hash_check：旧基线被改 ⇒ hash_check.ok=fa
   const prevGood = withHash(makeDsl());
   const driftGood = diffBaselineFiles(prevGood, next);
   assert.equal(driftGood.hash_check.ok, true);
+});
+
+test('H-a · 回执透出文案：校验通过 ⇒ 空串；未过 ⇒ warn 段逐条点名 reasons（不阻断重建）', () => {
+  const good = verifyBaselineContentHash(withHash(makeDsl()));
+  assert.equal(describeBaselineHashCheck(good), '');
+
+  const bad = verifyBaselineContentHash(withHash(makeDsl(), 'deadbeefdeadbeefdeadbeefdeadbeef'));
+  const note = describeBaselineHashCheck(bad);
+  assert.ok(note.length > 0, '未过必须透出非空 warn 段');
+  assert.match(note, /基线内容指纹校验未过/);
+  assert.ok(note.includes('不符'), '文案必须点名前后值理由');
+
+  const missing = verifyBaselineContentHash(makeDsl());
+  const noteMissing = describeBaselineHashCheck(missing);
+  assert.match(noteMissing, /content_hash 缺失/);
 });

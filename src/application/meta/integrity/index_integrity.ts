@@ -190,6 +190,12 @@ export interface IndexIntegrityResult {
      * 可信度报告里这是**唯一一个 blocker 级**的指标。
      */
     stale_resolved: number;
+    /**
+     * ★★ D1：**未知 kind 的 resolved 坏行**。现役写端只发 `call`/`type_ref`；resolved 却带
+     * 其它 `reference_kind`（`mapper_statement` / `weird_kind` …）= 非标准行，边对账 remit
+     * 只审 call/type_ref ⇒ 这类行两侧都不点名、不入对账。计数 = 这类坏行总数（fail-closed 记账）。
+     */
+    unknown_kind: number;
   };
 
   /**
@@ -198,6 +204,11 @@ export interface IndexIntegrityResult {
    * 报 blocker 的诊断必须**自带可行动信息**。与 `refs.stale_resolved` 同一把 WHERE 尺。
    */
   stale_names: StaleRefSite[];
+  /**
+   * ★★ D1：**未知 kind resolved 坏行名单**（最多 20 条，`file:line` + 名字 + kind）。
+   * 与 `refs.unknown_kind` 同一把 WHERE 尺；让 warn 级点名自带可行动信息（对齐 stale_names 先例）。
+   */
+  unknown_kind_names: UnknownKindRefSite[];
   /**
    * ★★ 2026-10-26（T-#5）：**本项目下偏离 `rootsOf` 期望的数据目录**（最多扫 4 层）。
    * 实测由来：同一台机器上曾有 4 个 `.agent-io`，其中 `<pkg>/src/application/.agent-io`（18MB）
@@ -378,6 +389,58 @@ export function listStaleResolvedRefs(
       name: String(r.name ?? ''),
       file: String(r.file ?? ''),
       line: Number(r.line ?? 0),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * ★★ D1：`unresolved_refs.reference_kind` 现役白名单（唯一住处）。
+ * 现役写端（symbols.ts 调用腿 / 类型引用腿）只发 `call` / `type_ref`；`mapper_statement`
+ * 进 `edges` 表（G-2），**不进** `unresolved_refs`。不在白名单内的 resolved 行 = 非标准坏行。
+ */
+const KNOWN_REF_KINDS = ['call', 'type_ref'] as const;
+const UNKNOWN_KIND_WHERE = `u.status = 'resolved' AND u.reference_kind NOT IN (${KNOWN_REF_KINDS.map((k) => `'${k}'`).join(', ')})`;
+
+/** D1：未知 kind resolved 坏行计数（查不动 ⇒ 0，不假阳性；与名单共用同一把 WHERE 尺）。 */
+export function countUnknownKindResolvedRefs(db: ReturnType<typeof getProjectCacheDb>): number {
+  try {
+    const row = db.prepare(`SELECT COUNT(*) c FROM unresolved_refs u WHERE ${UNKNOWN_KIND_WHERE}`).get() as { c: number } | undefined;
+    return row?.c ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** 一条未知 kind 坏行的定位信息（`file:line` + 名字 + kind）。 */
+export interface UnknownKindRefSite {
+  name: string;
+  file: string;
+  line: number;
+  kind: string;
+}
+
+/** D1：未知 kind resolved 坏行名单（与计数同一把 WHERE 尺；查不动 ⇒ []）。 */
+export function listUnknownKindResolvedRefs(
+  db: ReturnType<typeof getProjectCacheDb>,
+  limit = 20,
+): UnknownKindRefSite[] {
+  try {
+    const rows = db
+      .prepare(
+        `SELECT u.reference_name AS name, u.reference_kind AS kind, u.file_path AS file, u.line AS line
+         FROM v_unresolved_refs u
+         WHERE ${UNKNOWN_KIND_WHERE}
+         ORDER BY u.file_path, u.line
+         LIMIT ?`,
+      )
+      .all(limit) as Array<{ name: string; file: string; line: number; kind: string }>;
+    return rows.map((r) => ({
+      name: String(r.name ?? ''),
+      file: String(r.file ?? ''),
+      line: Number(r.line ?? 0),
+      kind: String(r.kind ?? ''),
     }));
   } catch {
     return [];
@@ -570,6 +633,7 @@ async function indexIntegrityCore(opts: {
     return {
       // 无可用索引 ⇒ 没有陈旧断言可列（空数组，不是 undefined：类型要求它始终在场）
       stale_names: [],
+      unknown_kind_names: [],
       stray_data_dirs: [],
       roots_report: '',
       absolute_path_literals: [],
@@ -589,7 +653,7 @@ async function indexIntegrityCore(opts: {
         // ★ 索引为空也要如实报磁盘侧：测试文件在盘上存在 ⇒ "扫到 N 个、索引可见 0 个"本身就是漏扫信号
         test_objects: (() => { const v = testObjectVisibility(root, []); return { on_disk: v.objects_on_disk, indexed: 0, missing: v.missing.slice(0, 20) }; })(),
       },
-      refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
+      refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0, unknown_kind: 0 },
       freshness: {
         not_fresh: 0,
         not_fresh_sample: [],
@@ -637,6 +701,7 @@ async function indexIntegrityCore(opts: {
   if (!db) {
     return {
       stale_names: [],
+      unknown_kind_names: [],
       stray_data_dirs: [],
       roots_report: '',
       absolute_path_literals: [],
@@ -656,7 +721,7 @@ async function indexIntegrityCore(opts: {
         // ★ 索引为空也要如实报磁盘侧：测试文件在盘上存在 ⇒ "扫到 N 个、索引可见 0 个"本身就是漏扫信号
         test_objects: (() => { const v = testObjectVisibility(root, []); return { on_disk: v.objects_on_disk, indexed: 0, missing: v.missing.slice(0, 20) }; })(),
       },
-      refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0 },
+      refs: { pending: 0, resolved: 0, external: 0, failed: 0, stale_resolved: 0, unknown_kind: 0 },
       freshness: {
         not_fresh: 0,
         not_fresh_sample: [],
@@ -747,6 +812,8 @@ async function indexIntegrityCore(opts: {
   // ★★★ P0 保鲜链（2026-10-26）：SQL 收口到 `countStaleResolvedRefs`（唯一住处；
   //   claim 前置提醒 `indexTrustReminderForClaim` 用的是同一份 —— 不再各写一遍）。
   let stale_resolved = countStaleResolvedRefs(db);
+  // ★ D1：未知 kind resolved 坏行计数（只读一次；repair 重开的是 stale，不动 kind 分布）。
+  const unknown_kind = countUnknownKindResolvedRefs(db);
 
   // refresh:true ⇒ 顺手**修复陈旧引用**（保鲜路径看不见它们：那些文件内容根本没变，
   // `symbol_diffs` 是空的，所以只有靠"这些行本身"当线索）。报告的是修完之后的现状。
@@ -873,6 +940,25 @@ async function indexIntegrityCore(opts: {
     });
   } else if (repair) {
     issues.push({ code: 'stale_refs_repaired', severity: 'info', message: repair });
+  }
+  // ★ D1：未知 kind resolved 坏行分叉点名（warn；现役无坏行来源，先记账显形，不直接拉 untrusted）。
+  if (unknown_kind > 0) {
+    const kindRows = db
+      .prepare(`SELECT reference_kind AS kind, COUNT(*) n FROM unresolved_refs u WHERE ${UNKNOWN_KIND_WHERE} GROUP BY reference_kind`)
+      .all() as Array<{ kind: string; n: number }>;
+    const kindBreakdown = kindRows.map((r) => `${String(r.kind)}×${Number(r.n) || 0}`).join(' · ');
+    const unknownSites = listUnknownKindResolvedRefs(db, 20);
+    issues.push({
+      code: 'unknown_kind_resolved',
+      severity: 'warn',
+      message:
+        `${unknown_kind} 条已解析引用的 reference_kind 不在现役白名单（call/type_ref）内 —— ` +
+        `边对账 / 波及链不审这类行，可能静默漏报；kind 分布：${kindBreakdown}` +
+        (unknownSites.length > 0
+          ? `；样例：${unknownSites.slice(0, 6).map((s) => `${s.file}:${s.line} ${s.name}`).join(' · ')}`
+          : ''),
+      fix: '核对写端是否落了非标准 kind；确认是合法边型 ⇒ 补进白名单与对账 remit，否则置 failed/external 留痕',
+    });
   }
   if (notFreshInScopeCount > 0) {
     // ★ 真信号：这些文件**在保鲜重解析范围内**，索引确实落后（改它们会让符号图变旧）。
@@ -1110,6 +1196,7 @@ async function indexIntegrityCore(opts: {
       external: byStatus('external'),
       failed: byStatus('failed'),
       stale_resolved,
+      unknown_kind,
     },
     freshness: {
       not_fresh: notFreshCount,
@@ -1127,6 +1214,8 @@ async function indexIntegrityCore(opts: {
     summary,
     // ★ 2026-10-26：与 refs.stale_resolved 同一把尺的名单（让 blocker 可行动）
     stale_names: listStaleResolvedRefs(db, 20),
+    // ★ D1：与 refs.unknown_kind 同一把尺的坏行名单（warn 级点名可行动信息）
+    unknown_kind_names: listUnknownKindResolvedRefs(db, 20),
     // ★ 2026-10-26（T-#5）：根偏离 + 根清单（让「根」在工具面上可见）
     stray_data_dirs: strayDataDirs,
     roots_report: formatRootsReport(root),
@@ -1199,6 +1288,7 @@ export function renderIntegrity(r: IndexIntegrityResult): string {
       ` ｜ 节点 ${r.counts.nodes} ｜ 边 ${r.counts.edges}`,
     `  引用：resolved ${r.refs.resolved} ｜ pending ${r.refs.pending} ｜ external ${r.refs.external} ｜ failed ${r.refs.failed}`,
     `  ★ 陈旧断言（resolved 但目标名已不在索引）：${r.refs.stale_resolved}`,
+    `  ★ 未知 kind 坏行（resolved 且 kind 不在 call/type_ref 白名单）：${r.refs.unknown_kind}`,
     // ★ 2026-11-05：**分母拆开给**（0.12③）——「不一致 20」里只有"保鲜范围内"的那部分算索引落后。
     `  新鲜度：不一致 ${r.freshness.not_fresh}` +
       `（保鲜范围内 ${inScopeFresh} ｜ 范围外 ${r.freshness.not_fresh_out_of_scope.length}）` +

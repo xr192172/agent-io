@@ -20,7 +20,7 @@ import {
   SEMANTIC_STEPS,
   NONSEMANTIC_STEPS,
 } from '../src/application/ingestion/roads.js';
-import { IngestionStore, type SemanticPort } from '../src/application/ingestion/store.js';
+import { IngestionStore, verifyRecordsFingerprints, type SemanticPort } from '../src/application/ingestion/store.js';
 import type { Provenance, Adjudication } from '../src/application/ingestion/provenance.js';
 import { verifyRowFingerprint } from '../src/application/ingestion/provenance.js';
 import type { AbsorbedPayload } from '../src/application/ingestion/record.js';
@@ -310,4 +310,28 @@ test('⑨ 行指纹读端：在册记录重算比对通过；字段漂移后失�
   });
   assert.equal(empty.ok, false);
   assert.ok(empty.reasons.some((x) => x.includes('row_fingerprint 为空')));
+});
+
+test('⑩ H-a · 批量对账出口：纯函数按记录集对账，失配 id 进 failed_ids 一等清单；verifyAll 委托同口径', () => {
+  const store = makeStore();
+  const okRec = store.register({ id: 't-fp-ok', category: 'fact', payload: payload(), provenance: prov() });
+
+  // 一致记录集 ⇒ ok=true，分母 checked=1，failed_ids 空
+  const good = verifyRecordsFingerprints(store.list());
+  assert.equal(good.ok, true, good.reasons.join('；'));
+  assert.equal(good.checked, 1);
+  assert.deepEqual(good.failed_ids, []);
+
+  // 一条记录稳定字段被改（claim 漂移）⇒ 纯函数 ok=false，failed_ids 点名该 id
+  const mutated: typeof okRec = { ...okRec, payload: { ...okRec.payload, claim: '被手改的主张' } };
+  const bad = verifyRecordsFingerprints([mutated]);
+  assert.equal(bad.ok, false);
+  assert.equal(bad.checked, 1);
+  assert.deepEqual(bad.failed_ids, ['t-fp-ok']);
+  assert.ok(bad.reasons.some((x) => x.includes('t-fp-ok') && x.includes('行指纹不符')));
+
+  // 实例方法委托同一纯函数：一致 ⇒ ok，failed_ids 空
+  const all = store.verifyAllFingerprints();
+  assert.equal(all.ok, true, all.reasons.join('；'));
+  assert.deepEqual(all.failed_ids, []);
 });

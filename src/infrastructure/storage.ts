@@ -1095,6 +1095,19 @@ export function verifyBaselineContentHash(baseline: DesignDSL | null): BaselineH
 }
 
 /**
+ * 基线内容指纹比对结果 → 回执透出文案（H-a · O6 出口透出，消 C-a 孤儿消费）。
+ *
+ * · `ok=true` ⇒ 空串（不污染回执）；`ok=false` ⇒ 一段 warn 把 `reasons` 逐条点名透出到用户可见出口；
+ * · 本函数**只透出信号、不阻断重建**：是否升级硬阻断重建 / 拒绝覆盖由调用侧 / 主裁按严格度冻结裁，
+ *   阻断档留给既有 `safe_to_write=false` / conflict 判定路径（本阶段不升硬阻断重建）。
+ */
+export function describeBaselineHashCheck(check: BaselineHashCheck): string {
+  if (check.ok) return '';
+  const detail = check.reasons.length > 0 ? check.reasons.join('；') : '基线内容指纹未通过重算比对（理由缺失）';
+  return `⚠ 基线内容指纹校验未过：${detail}`;
+}
+
+/**
  * **重建 baseline = 实际侧"上次扫描"的快照**（B1 的**唯一覆盖写入口**）。
  *
  * ★ 顺序是判据：**先算 drift，再覆盖** —— 覆盖之后旧的"上次扫描"就不存在了，

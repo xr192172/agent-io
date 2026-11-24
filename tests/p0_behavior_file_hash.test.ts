@@ -67,3 +67,12 @@ test('进程级 error 早退：不进 hash 比对，verdict=error', () => {
   assert.equal(diff.details.length, 0);
   assert.match(diff.message, /进程级失败/);
 });
+
+test('H-a 同源守卫：跨目标文件（Go 原函数 vs TS 翻译，file_abs 不同）hash 不等 ⇒ 不产生 (file_hash) 条目', () => {
+  // 跨实现对拍：落不同临时文件（calc.go / calc.ts），两侧本就不是同一源码，file_hash 恒不等；
+  // 纳入比对会把正常的跨语言对拍误报成源码漂移 ⇒ 跨 file_abs 不比同源指纹。
+  const before = run({ file_abs: '/proj/src/calc.go', file_hash: 'aaa111aaa111' });
+  const after = run({ file_abs: '/proj/src/calc.ts', file_hash: 'bbb222bbb222' });
+  const diff = diffRuns(before, after);
+  assert.equal(diff.details.some((d) => d.case === '(file_hash)'), false, '跨 file_abs 不得比对 file_hash');
+});

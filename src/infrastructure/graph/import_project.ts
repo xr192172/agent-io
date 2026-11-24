@@ -32,7 +32,7 @@ import type { DesignDSL, Node, Edge, SemanticFile, ExpectedApi, Symbol } from '.
 // ★★★ 2026-10-20（`docs/certs-4-ways.md` 裁决 ③）：`gate`（写闸豁免声明）是**设计侧裁定**，
 //   重扫只重建“结构”，**不许把它抹掉**（见下面 `carryOverNodeGates`）。
 import type { NodeGate } from '../../domain/geometry.js';
-import { saveDSL, saveLiveFeature, getDSL, getDesignSheet, saveBaselineFactsIfAbsent, rebuildBaseline } from '../storage.js';
+import { saveDSL, saveLiveFeature, getDSL, getDesignSheet, saveBaselineFactsIfAbsent, rebuildBaseline, describeBaselineHashCheck } from '../storage.js';
 // ★★★ 2026-11-06（R54-history）：建册即建历史侧车（见落盘块里的注释）。
 import { ensureHistoryLog } from '../decision_history.js';
 // ★★ 2026-10-22（A1）：扫描产物写 DSL 必须**声明自己是谁**（`import`），否则 `saveDSL` 会抛。
@@ -1756,6 +1756,12 @@ export async function importProject(input: ImportProjectInput): Promise<ImportPr
                   (untracked.length > 10 ? `\n  … 另 ${untracked.length - 10} 个` : '')
                 : '\n  ✓ 变更全部落在自写登记里（本工具改的）')
         : '基线已建立（首次锚定：上一份不存在 ⇒ 没有"变了什么"可比）';
+      // ★ H-a · O6 出口透出：旧基线内容指纹重算比对未过 ⇒ 把 hash_check reasons 点名透出到回执。
+      //   只透出信号、不阻断重建；阻断档留既有 conflict / safe_to_write=false 路径（本阶段不升硬阻断）。
+      const hashCheckNote = describeBaselineHashCheck(drift.hash_check);
+      if (hashCheckNote) {
+        baselineDriftNote = baselineDriftNote ? `${baselineDriftNote}\n  ${hashCheckNote}` : hashCheckNote;
+      }
     }
     // ★★★ 2026-10-09（T85/D2）：**同时锚定「基线事实」—— 对拍的第二份产物**。
     //   规则：**对拍的「期望侧」与「被比的事实」必须是两份分开的产物** ——

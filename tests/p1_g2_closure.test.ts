@@ -26,7 +26,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getProjectCacheDb, closeProjectCacheDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db.js';
+import { getProjectCacheDb, closeProjectCacheDb, closeAllProjectCacheDbs, projectCacheDbPath } from '../src/infrastructure/index/db.js';
 import { syncFileSync, resolveCrossFileCalls, reconcileResolvedEdges } from '../src/infrastructure/index/symbols.js';
 import { prewarmKernel } from '../src/infrastructure/parse/kernel.js';
 import { buildCoverageMap, CONSUMED_EDGE_KINDS } from '../src/infrastructure/analysis/facts/test_coverage.js';
@@ -227,6 +227,61 @@ test('⑥ G1：buildCoverageMap.stats 含 computed/dist/unresolved 读数字段�
     assert.ok(typeof s.excludedDistEdges === 'number' && s.excludedDistEdges >= 0, 'excludedDistEdges 非负计数');
     assert.ok(s.unresolvedUnsafe, 'unresolvedUnsafe 读数对象必须存在');
     assert.ok(s.unresolvedUnsafe.failedCall >= 0 && s.unresolvedUnsafe.failedTypeRef >= 0 && s.unresolvedUnsafe.pending >= 0);
+    assert.ok(typeof s.unresolvedUnsafe.unknownKind === 'number' && s.unresolvedUnsafe.unknownKind >= 0, 'D1 未知 kind 计数在场非负');
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑦ H-b D2：scope 入口 target-side 校验（absolute / `..` 剔除，算不出回退全库，不静默空命中）──
+test('⑦ H-b D2：非法 scope 剔除进 rejected_target_files；全被剔 ⇒ 回退全库并标 rejected；合法条目保留收窄', async () => {
+  const fx = await makeFixture({
+    'src/lib/b.ts': 'export function callee() { return 1; }\n',
+    'src/app/a.ts': "import { callee } from '../lib/b.js';\n\nexport function useIt() { return callee(); }\n",
+  });
+  try {
+    fx.resolve();
+    const db = getProjectCacheDb(fx.root);
+
+    // 全非法：盘符绝对路径 + 前导 `/` + `..` 父级混入 ⇒ 校验后空 ⇒ 回退全库，标 rejected
+    const rejectedAll = reconcileResolvedEdges(db, fx.root, {
+      targetFiles: ['D:/proj/src/lib/b.ts', '/abs/src/lib/b.ts', '../outside/b.ts'],
+    });
+    assert.equal(rejectedAll.scoped, false, '全被剔 ⇒ 回退全库对账（不静默空命中）');
+    assert.equal(rejectedAll.scope_fallback, 'rejected');
+    assert.deepEqual(rejectedAll.targetFiles, []);
+    assert.equal(rejectedAll.rejected_target_files.length, 3);
+
+    // 部分非法：合法 rel 保留收窄，非法项进 rejected 清单，不标回退
+    const mixed = reconcileResolvedEdges(db, fx.root, {
+      targetFiles: ['src/lib/b.ts', 'D:/proj/src/lib/b.ts'],
+    });
+    assert.equal(mixed.scoped, true);
+    assert.deepEqual(mixed.targetFiles, ['src/lib/b.ts']);
+    assert.deepEqual(mixed.rejected_target_files, ['D:/proj/src/lib/b.ts']);
+    assert.equal(mixed.scope_fallback, null);
+  } finally {
+    fx.cleanup();
+  }
+});
+
+// ── ⑧ H-b D3：reconcile stats 带索引库路径锚点 + 候选/二次解析两时点 ──────────────────
+test('⑧ H-b D3：stats.snapshot 锚定 db_file 路径，候选集时点不晚于二次解析时点', async () => {
+  const fx = await makeFixture({
+    'src/lib/b.ts': 'export function callee() { return 1; }\n',
+    'src/app/a.ts': "import { callee } from '../lib/b.js';\n\nexport function useIt() { return callee(); }\n",
+  });
+  try {
+    fx.resolve();
+    const db = getProjectCacheDb(fx.root);
+    const stats = reconcileResolvedEdges(db, fx.root);
+    assert.equal(stats.snapshot.db_file, projectCacheDbPath(fx.root), '索引库路径锚点必须是 projectCacheDbPath(root)');
+    assert.ok(stats.snapshot.captured_at, '候选集事务外 SELECT 时点在场');
+    assert.ok(stats.snapshot.resolved_at, '二次解析时点在场');
+    assert.ok(
+      stats.snapshot.captured_at <= stats.snapshot.resolved_at,
+      '候选快照时点不得晚于二次解析时点',
+    );
   } finally {
     fx.cleanup();
   }

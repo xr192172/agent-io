@@ -905,8 +905,14 @@ export function diffRuns(before: BehaviorRun, after: BehaviorRun): BehaviorDiff 
   if (before.stdout !== after.stdout) {
     details.push({ case: '(stdout)', status: 'changed', before: before.stdout, after: after.stdout });
   }
-  // 目标文件同源指纹（C14 · O5 接线）：基线快照记的 file_hash vs 当前磁盘重算值不等 ⇒ 显式基线源码漂移信号，不静默
-  if (before.file_hash && after.file_hash && before.file_hash !== after.file_hash) {
+  // 目标文件同源指纹（C14 · O5 接线）：基线快照记的 file_hash vs 当前磁盘重算值不等 ⇒ 显式基线源码漂移信号，不静默。
+  // ★ H-a 同源守卫：file_hash 只对**同一目标文件**比对（`file_abs` 相同）。跨实现对拍
+  //   （Go 原函数 vs TS 翻译函数，落不同临时文件 calc.go / calc.ts）两侧本就不是同一源码，
+  //   file_hash 恒不等，纳入比对会把正常的跨语言对拍误报成源码漂移 ⇒ 跨 `file_abs` 不比对指纹。
+  if (
+    before.file_abs && after.file_abs && before.file_abs === after.file_abs &&
+    before.file_hash && after.file_hash && before.file_hash !== after.file_hash
+  ) {
     details.push({ case: '(file_hash)', status: 'changed', before: before.file_hash, after: after.file_hash });
   }
   const changed = details.filter((d) => d.status === 'changed').length;

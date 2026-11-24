@@ -35,7 +35,7 @@ import { COMMON_GLOBALS, mergeGlobals } from '../parse/globals.js';
 //   syncFile/syncFileSync 是**全部 15 个写工具**的公共落点 ⇒ 挂这一处即覆盖所有写入，
 //   不必让每个写工具自己记得调 —— 「靠自觉的接线」正是本项目反复踩的坑。
 import { invalidateProjectView } from '../project_view.js';
-import { inTransaction } from './db.js';
+import { inTransaction, projectCacheDbPath } from './db.js';
 
 // ─────────────────────────────────────────────────────────────
 // 类型
@@ -1307,7 +1307,13 @@ function applyParsedToIndex(db: Database, projectRoot: string, pre: SyncPrelude,
  */
 function attachScopedReconcile(db: Database, projectRoot: string, result: SyncFileResult): void {
   if (result.status === 'failed' || result.status === 'ignored') return;
-  if (!result.path) return;
+  // ★ D2：解析成功但拿不到 rel path（scope 映射算不出）⇒ 不静默跳过；按 6.5「算不出 ⇒ 回退全量」
+  //   显式回退全库对账，并在 stats 标注 `path-unavailable`，留痕供读数点名。
+  if (!result.path) {
+    result.reconcile = reconcileResolvedEdges(db, projectRoot, {});
+    if (result.reconcile) result.reconcile.scope_fallback = 'path-unavailable';
+    return;
+  }
   result.reconcile = reconcileResolvedEdges(db, projectRoot, { targetFiles: [result.path] });
 }
 
@@ -1451,6 +1457,27 @@ export interface ReconcileEdgesStats {
   scoped: boolean;
   /** scoped 模式下本次对账的目标文件（仓库相对）；全库模式为空数组 */
   targetFiles: string[];
+  /**
+   * ★ D2：scope 回退标注。`null`=正常；
+   * · `'path-unavailable'`=挂载点拿不到 rel path（解析成功但无落点）⇒ 按 6.5「算不出 ⇒ 回退全量」
+   *   显式回退全库对账，不再静默跳过；
+   * · `'rejected'`=入口传入的 scope 经 target-side 校验后全被剔除（absolute / `..` 混入）⇒ 回落全库。
+   */
+  scope_fallback: 'path-unavailable' | 'rejected' | null;
+  /** D2：入口校验剔除的非法 scope 条目（absolute 路径 / `..` 父级混入；target-side 口径，不静默收窄）。 */
+  rejected_target_files: string[];
+  /**
+   * ★ D3：对账快照锚点（对齐 S-11 快照口径）——区分「候选集快照时点」与「二次解析时点」，
+   * 事后可对账这条 reopened/recovered 基于哪一版索引状态。
+   */
+  snapshot: {
+    /** 索引库文件路径锚点（projectCacheDbPath(root)）。 */
+    db_file: string;
+    /** 候选集事务外 SELECT 的时点（ISO）。 */
+    captured_at: string;
+    /** 二次 `resolveCrossFileCalls` 完成后的时点（ISO）；未跑二次解析则同 captured_at。 */
+    resolved_at: string;
+  };
 }
 
 /**
@@ -1476,8 +1503,30 @@ export function reconcileResolvedEdges(
   projectRoot: string,
   opts: { targetFiles?: readonly string[] } = {},
 ): ReconcileEdgesStats {
-  const scope = [...new Set((opts.targetFiles ?? []).filter(Boolean))];
+  // ★ D2 · target-side 校验：scope 键钉死**目标节点文件**（仓根相对路径）。
+  //   归一与 `changed_set.mjs#normChangedPath` 同一份口径（`\`→`/`、去前导 `./`、trim）；
+  //   拒绝 absolute（盘符 / 前导 `/`）与 `..` 父级混入——源侧文件误传、绝对路径混入不得静默收窄成空命中。
+  const rawScope = opts.targetFiles ?? [];
+  const rejected: string[] = [];
+  const normalized: string[] = [];
+  for (const raw of rawScope) {
+    const norm = String(raw ?? '').replace(/\\/g, '/').replace(/^\.\//, '').trim();
+    if (!norm) continue;
+    const absolute = /^[A-Za-z]:/.test(norm) || norm.startsWith('/');
+    const parentTraversal = norm.split('/').includes('..');
+    if (absolute || parentTraversal) {
+      rejected.push(String(raw));
+      continue;
+    }
+    normalized.push(norm);
+  }
+  const scope = [...new Set(normalized)];
   const scoped = scope.length > 0;
+  // 校验后全空 ⇒ 回退全库（6.5「算不出 ⇒ 回退全量」），并标注回退原因；无参全库调用不标回退。
+  const scopeFallback: ReconcileEdgesStats['scope_fallback'] = scoped ? null : rawScope.length > 0 ? 'rejected' : null;
+  // ★ D3：候选集快照时点（事务外 SELECT 前）+ 索引库路径锚点。
+  const capturedAt = new Date().toISOString();
+  const dbFile = projectCacheDbPath(projectRoot);
   const params: Record<string, string> = {};
   let join = '';
   let where =
@@ -1552,7 +1601,20 @@ export function reconcileResolvedEdges(
     );
     recovered = second.resolved;
   }
-  return { checked: refs.length, missing, reopened, dropped, recovered, scoped, targetFiles: scope };
+  // ★ D3：二次解析时点（未跑二次解析则同候选集快照时点）。
+  const resolvedAt = new Date().toISOString();
+  return {
+    checked: refs.length,
+    missing,
+    reopened,
+    dropped,
+    recovered,
+    scoped,
+    targetFiles: scope,
+    scope_fallback: scopeFallback,
+    rejected_target_files: rejected,
+    snapshot: { db_file: dbFile, captured_at: capturedAt, resolved_at: resolvedAt },
+  };
 }
 
 /**
