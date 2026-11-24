@@ -40,35 +40,21 @@ import { lineReport } from '../src/application/design/line/design_line.js';
 test('① verify-changed：git 读不到改动集 ⇒ 非零退出（改前 exit 0 = 假绿）', () => {
   const tmp = makeTempHome(); // ★ 不是 git 仓库
   try {
-    const scriptDir = path.join(tmp, 'scripts');
-    fs.mkdirSync(scriptDir, { recursive: true });
-    // 脚本要读同级的 `certs/`（空目录即可：本证只关心"改动集取不到"这一条）
-    fs.mkdirSync(path.join(tmp, 'certs'), { recursive: true });
-    const script = path.join(scriptDir, 'verify-changed.mjs');
-    fs.copyFileSync(path.resolve('scripts/verify-changed.mjs'), script);
-    // ★★ 2026-11-05：脚本现在 `import { collectTestFiles } from './lib/test_files.mjs'`
-    //   （测试清单收集的唯一实现，与 `run-tests.mjs` 共用 —— 0.9.1）。
-    //   ⇒ 拷脚本时必须**连依赖一起拷**，否则临时根里模块解析失败、脚本一加载就崩，
-    //     本证会看到"输出为空"（实测就是这么红的，差点被读成"git 失败没被点名"）。
-    fs.mkdirSync(path.join(scriptDir, 'lib'), { recursive: true });
-    fs.copyFileSync(path.resolve('scripts/lib/test_files.mjs'), path.join(scriptDir, 'lib', 'test_files.mjs'));
-    // ★★ 2026-11-24（G-1 · 门11①）：G7 后脚本又接了两处外部依赖 ——
-    //   `./lib/changed_set.mjs`（三源并集唯一实现）与 `../dist/src/domain/scheduling_evidence.js`
-    //   （编译产物，纯类型/形状判据、自包含无外部 import）。两处都得在临时根就位，否则脚本加载即 ESM
-    //   解析失败、输出为空。dist 解析口径与既有 dist 处理一致：相对脚本 `../dist/...` ⇒ `<tmp>/dist/...`。
-    //   ★ 只补拷依赖，不改断言。
-    fs.copyFileSync(path.resolve('scripts/lib/changed_set.mjs'), path.join(scriptDir, 'lib', 'changed_set.mjs'));
-    fs.mkdirSync(path.join(tmp, 'dist', 'src', 'domain'), { recursive: true });
-    fs.copyFileSync(
-      path.resolve('dist/src/domain/scheduling_evidence.js'),
-      path.join(tmp, 'dist', 'src', 'domain', 'scheduling_evidence.js'),
-    );
+    // ★★ 2026-11-24（阶段1 全量收口 · 门11①）：脚本本体与 dist / node_modules 留仓根解析。
+    //   G-3 后脚本顶层静态链拖进 verify_project → import_project / db / impact_set / verified_snapshot 等
+    //   重依赖，再连带裸包 ignore / tree-sitter / typescript；把脚本拷进临时根自包含补拷既漏传递 dist、
+    //   又解析不到裸包 ⇒ 加载即崩（本证看到输出为空）。改用脚本既有测试缝 `AGENT_IO_VERIFY_CHANGED_ROOT`：
+    //   脚本留仓根（dist 与 node_modules 按脚本位置解析），仅把"被验证项目根"指到非 git 临时根 ⇒
+    //   git 探测在 tmp 失败，与脚本在仓根加载依赖互不影响。★ 只调测试缝指根，不改断言。
+    const script = path.resolve('scripts/verify-changed.mjs');
 
     const env: NodeJS.ProcessEnv = { ...process.env };
     delete env.GIT_DIR;
     delete env.GIT_WORK_TREE;
     // ★ 钉住上溯边界：否则 tmp 若恰好落在某个 git 仓库里，git 会"找到"父仓库并成功 ⇒ 这条证失去意义
     env.GIT_CEILING_DIRECTORIES = tmp;
+    // 测试缝：被验证项目根指到非 git 临时根（脚本自身仍从仓根解析 dist / node_modules）
+    env.AGENT_IO_VERIFY_CHANGED_ROOT = tmp;
 
     const r = spawnSync(process.execPath, [script], { cwd: tmp, encoding: 'utf8', env });
     const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
