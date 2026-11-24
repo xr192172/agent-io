@@ -57,7 +57,7 @@ import { DatabaseSync } from 'node:sqlite';
 import os from 'node:os';
 import path from 'node:path';
 import { getProjectCacheDb, beginBatch, endBatch, projectCacheDbPath, type Database } from '../infrastructure/index/db.js';
-import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveCrossFileCalls, contentHash, type SyncStatus, type CrossFileResolveStats , toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
+import { syncFile, syncFileSync, removeFile, changedSymbolNames, reopenRefsTo, resolveIncrementalBatch, contentHash, type SyncStatus, type CrossFileResolveStats, toIndexKey, toRelPath } from '../infrastructure/index/symbols.js';
 import { canParseFileSync } from '../infrastructure/parse/index.js';
 import { snapshotBeforeWrite, type FileSnapshotMeta } from './refactor/snapshot/file_snapshot.js';
 import { indexCoversDisk } from '../infrastructure/index/index_freshness.js';
@@ -424,7 +424,7 @@ function resolveRefsAfterWrite(
   root: string,
   rels: readonly string[],
   keepPending: boolean,
-): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats } {
+): { refsReopened: number; refsReopenedFiles: number; cross: CrossFileResolveStats; stranded: CrossFileResolveStats | null } {
   const names = new Set<string>();
   for (const rel of rels) {
     for (const nm of changedSymbolNames(db, rel)) names.add(nm);
@@ -438,11 +438,12 @@ function resolveRefsAfterWrite(
     refsReopenedFiles = r.files.length;
     for (const f of r.files) scope.add(f);
   }
-  const cross = resolveCrossFileCalls(db, root, {
+  // ★ R4：索引完整时第二趟全库兜底捞回 scope 外滞留 pending；不完整保持 keepPending。
+  const batch = resolveIncrementalBatch(db, root, {
     scopeFiles: [...scope],
     keepUnresolvedPending: keepPending,
   });
-  return { refsReopened, refsReopenedFiles, cross };
+  return { refsReopened, refsReopenedFiles, cross: batch.scoped, stranded: batch.stranded };
 }
 
 /**

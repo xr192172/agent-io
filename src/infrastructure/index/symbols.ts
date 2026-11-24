@@ -3345,7 +3345,56 @@ export function resolveCrossFileCalls(
   return stats;
 }
 
-// ★ T-#96：本表已迁到 `parse/globals.ts`（BUILTIN_TYPES → 适配器 `globals` 字段），此处不再重复
+/**
+ * ★★★ R4 根治（S-4 验收判据）：**增量收尾的滞留 pending 兜底**。
+ *
+ * ## 它治哪个洞（阶段 1 实证，非设想）
+ * 增量 `resolveCrossFileCalls(scopeFiles)` 只解析本轮变更 ∪ 重开引用方文件内的 pending；
+ * `keepUnresolvedPending:true`（索引不完整）时未变文件的旧 pending 一直滞留。实测门 8 两条
+ * 跨文件调用边在两次 verify 间被增量刷新置 pending 未捞回，手动全量二趟才补回 81 条边。
+ *
+ * ## 口径（fail-closed、幂等、一处权威）
+ * ① 先按 scope 解析本轮文件（既有增量口径，成本与本轮文件数成正比）；
+ * ② **索引完整**（`keepUnresolvedPending !== true`）且第一趟后仍有滞留 pending ⇒ 补一趟全库
+ *    兜底解析，把 scope 外可连的跨文件引用捞回 resolved；已 resolved/external/failed 不在选行内，
+ *    第二趟幂等不重复定论；
+ * ③ **索引不完整**（keepPending=true）⇒ 不补全库、不判 failed，留 pending 等补完再定论
+ *    （与既有「目标只是还没索引到」口径一致）。
+ *
+ * ## 边界
+ * · 挂在**批量增量收尾**（保鲜 / 写穿批量腿），不挂单文件 `syncFile` 腿（单文件腿走 scoped reconcile，
+ *   全库遍历的性能回归归后续批探针标定）。
+ * · 第二趟只处理仍 `pending` 的 call/type_ref；不重判 external，不改已定论行。
+ */
+export interface IncrementalResolveResult {
+  /** 第一趟：scope 内增量解析读数。 */
+  scoped: CrossFileResolveStats;
+  /** 第二趟：索引完整时的全库兜底读数；索引不完整为 null（未跑）。 */
+  stranded: CrossFileResolveStats | null;
+}
+
+/** 仍滞留的 call/type_ref pending 计数（第二趟是否值得跑的轻量判据）。 */
+function strandedPendingCount(db: Database): number {
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM unresolved_refs WHERE status='pending' AND reference_kind IN ('call','type_ref')")
+    .get() as { n: number };
+  return Number(row?.n ?? 0);
+}
+
+export function resolveIncrementalBatch(
+  db: Database,
+  projectRoot: string,
+  opts: { scopeFiles?: readonly string[]; keepUnresolvedPending?: boolean } = {},
+): IncrementalResolveResult {
+  const scoped = resolveCrossFileCalls(db, projectRoot, opts);
+  let stranded: CrossFileResolveStats | null = null;
+  const indexComplete = opts.keepUnresolvedPending !== true;
+  if (indexComplete && strandedPendingCount(db) > 0) {
+    stranded = resolveCrossFileCalls(db, projectRoot, { keepUnresolvedPending: false });
+  }
+  return { scoped, stranded };
+}
+
 
 /**
  * ★★★ 2026-10-27（T-#44）：**Go 的内置类型 / 内置函数单独一张表**。

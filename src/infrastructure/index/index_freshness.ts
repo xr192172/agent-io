@@ -32,6 +32,7 @@ import {
   syncFile,
   removeFile,
   resolveCrossFileCalls,
+  resolveIncrementalBatch,
   syncProject,
   reopenRefsTo,
   changedSymbolNames,
@@ -924,7 +925,9 @@ export async function ensureFreshIndex(
         absFiles.map((a) => path.relative(root, a).split(path.sep).join('/')),
       );
       try {
-        resolveCrossFileCalls(db, root, { scopeFiles: [...scopeFiles], keepUnresolvedPending: !indexComplete });
+        // ★ R4：索引完整时第二趟全库兜底捞回 scope 外滞留 pending（增量刷新不把可连边刷回 pending）；
+        //   索引不完整保持 keepPending，不判 failed。
+        resolveIncrementalBatch(db, root, { scopeFiles: [...scopeFiles], keepUnresolvedPending: !indexComplete });
       } catch {
         /* 解析失败不阻断：pending 留待下轮 */
       }
