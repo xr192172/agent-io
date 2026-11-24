@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ★ G10 ③ 嵌套子项目夹具（聚合工程）：
+    主仓视角下，本夹具位于 `tests/fixtures/java-multi/`，真实子项目在 `modules/foo/`。
+    委托路径形如 `tests/fixtures/java-multi/modules/foo/src/test/java/com/foo/FooNestedTest.java`
+    —— FQCN 映射必须能剥掉 subRoot 之上的任意目录前缀（旧实现锚定 `^src/test/java/` 会映射失败）。
+    本夹具只作结构清单 + 只读路径探针；不要求在本仓真跑 mvn（真跑由 p1_java_maven_runner 临时工程覆盖）。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>java-multi-fixture</artifactId>
+  <version>0.0.1</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>modules/foo</module>
+  </modules>
+</project>

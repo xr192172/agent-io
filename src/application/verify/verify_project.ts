@@ -54,6 +54,16 @@ export type RunnerRunResult = {
    * 不传 = 按老口径（`rc`/`fail` 判）——node 系 runner 不区分。
    */
   verdict?: 'pass' | 'fail' | 'unsupported';
+  /**
+   * ★ G10：归因桥接三字段（仅 Java runner 填；node 系省略）。
+   * `fqcn` = 由测试文件路径映射的全限定类名（映射不出 = null）；
+   * `xml_path` = 本次归因所读（或应读）的 surefire XML 绝对路径；
+   * `report_dir` = 该 runner 用的报告目录（repo 相对，maven/gradle/自定义目录不同）。
+   * 三字段并列给出：读端能同时看到"类名 / XML 路径 / 报告目录"，不靠反推。
+   */
+  fqcn?: string | null;
+  xml_path?: string;
+  report_dir?: string;
 };
 
 export type ProjectRunner = {
@@ -204,9 +214,18 @@ export function detectRunner(root: string): { runner: ProjectRunner | null; why:
 //   （剥 `src/test/java/` 前缀、`.java` 后缀、`/`→`.`）。类名进 -Dtest / --tests；结果从
 //   surefire XML（`TEST-<全限定类名>.xml`）读回——**类名是文件与结果的桥**。
 
-/** 测试文件 → 全限定类名（Maven 约定：src/test/java/ 下的 .java） */
-function javaTestClassOf(rel: string): string | null {
-  const m = rel.replace(/\\/g, '/').match(/^src\/test\/java\/(.+)\.java$/);
+/**
+ * 测试文件 → 全限定类名（Maven 约定：`src/test/java/` 下的 .java）。
+ *
+ * ★ G10（2026-11-24）：原正则锚定仓根前缀 `^src/test/java/`，只认仓根级路径；
+ *   子项目委托传入的是 **repo-relative**（如 `tests/fixtures/java-proj/src/test/java/…`、
+ *   `modules/foo/src/test/java/…`），前缀不匹配 ⇒ 返回 null ⇒ unsupported。
+ *   现改为在路径中**定位任意位置**的 `src/test/java/` 段（子项目根之上可有任意目录前缀），
+ *   剥段前缀 + `.java` 后缀、`/`→`.` 得 FQCN。纯函数、不碰磁盘，供回归单点钉住。
+ */
+export function javaFqcnOfPath(rel: string): string | null {
+  const r = norm(rel);
+  const m = r.match(/(?:^|\/)src\/test\/java\/(.+)\.java$/);
   return m ? m[1].replace(/\//g, '.') : null;
 }
 
@@ -256,6 +275,10 @@ type SurefireAttribution =
  * 读一个类的 surefire 结果，并判它是不是**本次**产物（正则抽属性，不拉 XML 库）。
  * ★ 导出是**为回归可见**：`tests/p1_java_maven_runner.test.ts` 直接钉三态（fresh/stale/missing）——
  *   否则"陈旧产物不得冒充本次结果"这条判据只能靠"跑一次真 mvn 再改 mtime"间接观察。
+ *
+ * ★ G10 ④（2026-11-24）：鲜度闸在 mtime 之外，再比 XML 内 `timestamp` 属性（绝对时刻，
+ *   吸收文件系统 mtime 的时钟粒度问题）。timestamp 缺失/不可解析 ⇒ 不据此判（mtime 闸兜底），
+ *   也**不放宽** fresh；可解析且早于本次启动 − 容差 ⇒ 同样 stale。
  */
 export function readSurefireAttribution(
   root: string,
@@ -270,9 +293,15 @@ export function readSurefireAttribution(
   } catch {
     return { kind: 'missing' };
   }
-  // ★ 闸②：陈旧产物的 mtime 早于本次启动 ⇒ 不是本次结果
+  // ★ 闸②-a：陈旧产物的 mtime 早于本次启动 ⇒ 不是本次结果
   if (st.mtimeMs < startedAtMs - SUREFIRE_FRESH_SLACK_MS) return { kind: 'stale' };
   const head = fs.readFileSync(xmlPath, 'utf8').slice(0, 2000); // testsuite 行在文件头
+  // ★ 闸②-b：XML 内绝对时刻（gradle test-results 的 testsuite `timestamp`；部分 surefire 版本也带）
+  const stampM = head.match(/timestamp="([^"]+)"/);
+  if (stampM) {
+    const stampMs = Date.parse(stampM[1]);
+    if (Number.isFinite(stampMs) && stampMs < startedAtMs - SUREFIRE_FRESH_SLACK_MS) return { kind: 'stale' };
+  }
   const m = head.match(/<testsuite[^>]*tests="(\d+)"[^>]*>/);
   if (!m) return { kind: 'missing' }; // 读不出计数 ⇒ 不能当结果
   const f = head.match(/failures="(\d+)"/);
@@ -297,8 +326,11 @@ function attributeSurefire(
 ): RunnerRunResult[] {
   const tail = out.split('\n').filter((l) => tailRe.test(l)).slice(-2).join(' | ') || `${exitLabel} exit=${exitCode}`;
   return files.map((f) => {
-    const fqcn = javaTestClassOf(f);
+    const fqcn = javaFqcnOfPath(f);
+    const xmlPath = fqcn ? surefireXmlPath(root, fqcn, reportDir) : '';
     const got: SurefireAttribution = fqcn ? readSurefireAttribution(root, fqcn, startedAtMs, reportDir) : { kind: 'missing' };
+    // ★ G10 ②：归因三字段并列给出（fqcn / XML 路径 / 报告目录）；映射不出 fqcn=null 也如实带。
+    const attribution = { fqcn, xml_path: xmlPath || undefined, report_dir: norm(reportDir) };
     if (got.kind === 'fresh') {
       const failures = got.failures;
       return {
@@ -309,6 +341,7 @@ function attributeSurefire(
         ms,
         tail,
         verdict: failures > 0 ? 'fail' : 'pass',
+        ...attribution,
       };
     }
     const why =
@@ -325,13 +358,14 @@ function attributeSurefire(
       ms,
       tail: `${tail} | ⚠ ${why}`,
       verdict: 'unsupported',
+      ...attribution,
     };
   });
 }
 
 /** mvn test -Dtest=C1,C2 — 一次 spawn 跑全部目标类，XML 归因到各文件 */
 function runMavenTests(root: string, files: readonly string[]): RunnerRunResult[] {
-  const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
+  const classes = files.map(javaFqcnOfPath).filter((c): c is string => !!c);
   const childEnv: NodeJS.ProcessEnv = { ...process.env };
   const mvnBin2 = process.platform === 'win32' ? 'mvn.cmd' : 'mvn';
   // ★ 闸①：跑前清掉本次目标类的旧 XML（必须在 spawn 之前的同一毫秒口径取 startedAt）
@@ -353,7 +387,7 @@ function runMavenTests(root: string, files: readonly string[]): RunnerRunResult[
 
 /** gradle test --tests=C1,C2 — wrapper 跑（不要求全局 gradle）；归因同样走 surefire XML */
 function runGradleTests(root: string, gradlew: string, files: readonly string[]): RunnerRunResult[] {
-  const classes = files.map(javaTestClassOf).filter((c): c is string => !!c);
+  const classes = files.map(javaFqcnOfPath).filter((c): c is string => !!c);
   clearStaleSurefireXml(root, classes, GRADLE_REPORT_DIR);
   const startedAt = Date.now();
   const r = spawnSync(gradlew, ['test', ...classes.map((c) => `--tests=${c}`), '--console=plain'], {
@@ -717,7 +751,14 @@ export async function verifyProject(input: {
       }
       const uniq = new Map<string, { id: string }>();
       for (const it of entries) uniq.set(it.id, it);
-      const finalEntries = [...uniq.values()];
+      // ★ G5 ① 双保险：写回前再剔一道盘上已不存在的测试对象残留（孤儿条目不得留旧 pass）。
+      //   入口 inheritedEntries 已按 executable 过滤；这道防止过滤口径变更后孤儿漏网。
+      //   contract 条目不随本门撤销（归 judge-all 写端，pruneOrphanContractEntries 管）。
+      const finalEntries = [...uniq.values()].filter((it) => {
+        if (!it.id.startsWith('test:')) return true;
+        const f = fileOfTestNodeId(it.id);
+        return f !== null && executable.has(f);
+      });
       writeVerifiedSnapshot(root, {
         schema: SNAPSHOT_SCHEMA,
         at: new Date().toISOString(),

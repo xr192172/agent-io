@@ -189,6 +189,27 @@ export function contentDrift(
   return { changed: changed.sort(), added: added.sort(), removed: removed.sort() };
 }
 
+/**
+ * ★ G5 ①（2026-11-24）：**撤销孤儿契约条目**——当前册节点集合里已不存在的 contract 旧条目，
+ *   不留旧 pass 当豁免。
+ *
+ * 背景：judge-all 全量写回时，旧实现把"本次未判到"的 contract 条目整批保留；节点从册上删除后，
+ *   它的旧 pass 条目永久残留（孤儿），读端仍可能读到一条对象已不存在的绿证据。
+ *
+ * 口径：
+ * · `test` 条目不归契约门管，原样保留（双写端各管各的 kind）；
+ * · `currentContractIds` 为空（册读不到 / 回执不可信）⇒ **fail-closed 不删**（宁留不误删，
+ *   等下一轮可读时再清；删错会把有效证据抹掉）；
+ * · 仅当当前册节点集合非空时，剔出不在集合内的 contract 条目。
+ */
+export function pruneOrphanContractEntries(
+  entries: readonly SnapshotEntry[],
+  currentContractIds: ReadonlySet<string>,
+): SnapshotEntry[] {
+  if (currentContractIds.size === 0) return entries.map((e) => ({ ...e }));
+  return entries.filter((e) => e.kind !== 'contract' || currentContractIds.has(e.id));
+}
+
 /** 哪些文件一变就必须**扩大范围**（公共底座 / 验证规则 / 共享配置） */
 export const WIDEN_PATTERNS: RegExp[] = [
   /^scripts\/verify\.mjs$/,

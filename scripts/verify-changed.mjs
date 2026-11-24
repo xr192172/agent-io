@@ -1038,10 +1038,16 @@ if (!NO_RUN && !isJavaProject && subProjectJavaFiles.length > 0) {
         testRuns.push({ file: `(子项目 ${path.basename(subRoot)})`, rc: 1, tests: null, pass: null, fail: null, hasSummary: false, ms: 0, kind: 'crash', out: `子项目 Java runner 不可用：${why}` });
         continue;
       }
-      const results = runner.run(files);
-      for (const r of results) {
+      // ★ G10 ①（2026-11-24）：委托前把 ROOT-relative 路径 **relativize 到 subRoot**，
+      //   runner 闭包 root 已绑 subRoot，FQCN 映射按 subRoot-relative 剥 `src/test/java/` 段；
+      //   旧实现直接传 repo-relative ⇒ 前缀不匹配 ⇒ fqcn=null ⇒ unsupported（证据面长期不可写）。
+      const subFiles = files.map((f) => path.relative(subRoot, path.join(ROOT, f)).replace(/\\/g, '/'));
+      const results = runner.run(subFiles);
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        const orig = files[i] ?? r.file; // 归因结果回填原 ROOT-relative 身份（id 归一由 G4 收口）
         testRuns.push({
-          file: r.file,
+          file: orig,
           rc: r.rc,
           tests: r.pass + r.fail || null,
           pass: r.pass || null,

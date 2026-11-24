@@ -1023,8 +1023,11 @@ if (repo.selection) {
 
   const thisRun = repo.items ?? [];
   const ranIds = new Set(thisRun.map((it) => `contract:${it.node_id}`));
-  // ① 保留未判过的旧 contract 条目（test 条目原样保留 —— 它们不归本门管，也不许被冲掉）
-  const kept = (prev?.entries ?? []).filter((e) => !(e.kind === 'contract' && ranIds.has(e.id)));
+  // ① 保留未判过的旧 contract 条目（test 条目原样保留 —— 它们不归本门管，也不许被冲掉）。
+  //    ★ G5 ①：先剔"册上已删除"的孤儿 contract 条目（对象不存在 ⇒ 不留旧绿）；
+  //      再排除本次判过的 id（下面 dropThenPush 用本次 verdict 覆盖重写）。
+  const kept = VS.pruneOrphanContractEntries(prev?.entries ?? [], ranIds)
+    .filter((e) => !(e.kind === 'contract' && ranIds.has(e.id)));
   // ③ 撤旧绿：本次非 pass 的 id，把它**上次的 pass 条目**扔掉（上面 kept 已按 id 排除了本次判过的 ⇒
   //    这里只需保证本次条目按实际 verdict 写，不 pass 的自然不产生绿）
   const entries = [...kept];
