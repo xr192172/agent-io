@@ -993,6 +993,18 @@ export interface BaselineDrift {
   added: string[];
   changed: string[];
   removed: string[];
+  /** 上一份 baseline 的 `_sync.content_hash` 重算比对结果（C14 · O6 读端接线；不等 ⇒ 显式 stale/drift 信号，不静默） */
+  hash_check: BaselineHashCheck;
+}
+
+/** 基线内容指纹重算比对结果：`ok=false` 时 `reasons` 逐条点名，不折成通过。 */
+export interface BaselineHashCheck {
+  ok: boolean;
+  reasons: string[];
+  /** 落账指纹（基线 `_sync.content_hash`） */
+  recorded?: string;
+  /** 按当前基线 DSL 重算的指纹 */
+  recomputed?: string;
 }
 
 /**
@@ -1033,7 +1045,8 @@ export function diffBaselineFiles(prev: DesignDSL | null, next: DesignDSL): Base
   }
   for (const p of before.keys()) if (!after.has(p)) removed.push(p);
   const savedAt = (prev as unknown as { _sync?: { saved_at?: string } } | null)?._sync?.saved_at;
-  return { from: savedAt ?? null, added: added.sort(), changed: changed.sort(), removed: removed.sort() };
+  const hash_check = verifyBaselineContentHash(prev);
+  return { from: savedAt ?? null, added: added.sort(), changed: changed.sort(), removed: removed.sort(), hash_check };
 }
 
 /**
@@ -1047,6 +1060,38 @@ export function dslContentHash(dsl: DesignDSL): string {
     .map((f) => `${f.path}:${fileFingerprint(f)}`);
   const nodes = [...(dsl.geometry?.nodes ?? [])].map((n) => n.id).sort();
   return createHash('sha1').update(JSON.stringify({ files, nodes })).digest('hex');
+}
+
+/**
+ * 基线 `_sync.content_hash` 读端完整性闸（C14 · O6 接线，兑现 B2 读端承诺）：
+ * 按基线 DSL 重算 `dslContentHash`，与落账 `_sync.content_hash` 比对。
+ *
+ * · 不等 ⇒ `ok=false` 逐条点名（基线被手改 / 快照损坏 / stale），fail-closed 不静默；
+ * · 缺落账 hash ⇒ 同样 `ok=false`（B2 写入未兑现或旧格式基线）；
+ * · `null`（之前没有 baseline，首次锚定）⇒ `ok=true` 空理由，无可比对象。
+ *
+ * 纯函数只读比对，不抛错；是否升级为阻断重建由调用侧 / 主裁决定严格度。
+ */
+export function verifyBaselineContentHash(baseline: DesignDSL | null): BaselineHashCheck {
+  if (!baseline) return { ok: true, reasons: [] };
+  const recorded = (baseline as unknown as { _sync?: { content_hash?: string } } | null)?._sync?.content_hash;
+  const recomputed = dslContentHash(baseline);
+  if (!recorded) {
+    return {
+      ok: false,
+      reasons: ['基线 _sync.content_hash 缺失（B2 写入未兑现或基线为旧格式）'],
+      recomputed,
+    };
+  }
+  if (recorded !== recomputed) {
+    return {
+      ok: false,
+      reasons: [`基线内容指纹不符：落账 ${recorded} ≠ 重算 ${recomputed}（基线被手改或快照损坏 / stale）`],
+      recorded,
+      recomputed,
+    };
+  }
+  return { ok: true, reasons: [], recorded, recomputed };
 }
 
 /**

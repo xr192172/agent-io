@@ -156,3 +156,49 @@ export function rowFingerprint(input: {
 }): string {
   return sha16Hex(canonicalJson(input));
 }
+
+/** 行指纹重算比对结果：`ok=false` 时 `reasons` 逐条点名，不折成通过。 */
+export interface RowFingerprintCheck {
+  ok: boolean;
+  reasons: string[];
+  /** 落账指纹（读端记录上记的值） */
+  recorded: string;
+  /** 按当前稳定字段重算的指纹 */
+  recomputed: string;
+}
+
+/**
+ * 行级指纹读端完整性闸（C14 · O2 接线）：按落账 provenance / claim / absorbed_as 重算
+ * `rowFingerprint`，与记录上落账的 `row_fingerprint` 比对。
+ *
+ * · 不等 ⇒ `ok=false` 逐条点名（稳定字段被改 / 指纹失配），fail-closed，不静默；
+ * · 空落账指纹 ⇒ 同样 `ok=false`（未落账不算接线）；
+ * · 与 M3 行级哈希方向一致：只盖稳定字段，raw 逐字片段另由 `rawSha256` 单列。
+ *
+ * 入参用结构化形状而非 `AbsorbedRecord`，避免本模块反向依赖 record.ts（record.ts 已 import 本模块）。
+ */
+export function verifyRowFingerprint(input: {
+  provenance: Provenance;
+  claim: string;
+  absorbed_as: string;
+  row_fingerprint: string;
+}): RowFingerprintCheck {
+  const recomputed = rowFingerprint({
+    provenance: input.provenance,
+    claim: input.claim,
+    absorbed_as: input.absorbed_as,
+  });
+  const recorded = input.row_fingerprint ?? '';
+  if (!recorded) {
+    return { ok: false, reasons: ['row_fingerprint 为空（未落账行指纹）'], recorded, recomputed };
+  }
+  if (recorded !== recomputed) {
+    return {
+      ok: false,
+      reasons: [`行指纹不符：落账 ${recorded} ≠ 重算 ${recomputed}（稳定字段被改或指纹失配）`],
+      recorded,
+      recomputed,
+    };
+  }
+  return { ok: true, reasons: [], recorded, recomputed };
+}

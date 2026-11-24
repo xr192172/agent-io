@@ -97,7 +97,7 @@ export interface BehaviorSampleResult {
 /** 一次 harness 运行（capture 与 verify 共用的可对比载体） */
 export interface BehaviorRun {
   file_abs: string;
-  /** 目标文件 sha256 前 12 位（信息性：哪个版本产出本快照） */
+  /** 目标文件 sha256 前 12 位（同源完整性指纹；diffRuns 会比对基线快照与当前磁盘重算值） */
   file_hash: string;
   /** 目标函数源码快照（python: inspect.getsource；node: Function.prototype.toString） */
   source: string;
@@ -905,11 +905,18 @@ export function diffRuns(before: BehaviorRun, after: BehaviorRun): BehaviorDiff 
   if (before.stdout !== after.stdout) {
     details.push({ case: '(stdout)', status: 'changed', before: before.stdout, after: after.stdout });
   }
+  // 目标文件同源指纹（C14 · O5 接线）：基线快照记的 file_hash vs 当前磁盘重算值不等 ⇒ 显式基线源码漂移信号，不静默
+  if (before.file_hash && after.file_hash && before.file_hash !== after.file_hash) {
+    details.push({ case: '(file_hash)', status: 'changed', before: before.file_hash, after: after.file_hash });
+  }
   const changed = details.filter((d) => d.status === 'changed').length;
   const matched = before.results.length;
   const verdict: BehaviorVerdict = changed > 0 ? 'diff' : 'same';
+  const hashDrift = details.some((d) => d.case === '(file_hash)');
   const message =
-    verdict === 'same' ? `行为一致：${matched} 个 case 全部 same（含 stdout）` : `行为差异：${changed}/${matched} 个 case 变化`;
+    verdict === 'same'
+      ? `行为一致：${matched} 个 case 全部 same（含 stdout / file_hash）`
+      : `行为差异：${changed}/${matched} 个 case 变化${hashDrift ? '（含目标文件源码同源漂移 file_hash）' : ''}`;
   return { verdict, matched, changed, details, message };
 }
 

@@ -22,6 +22,7 @@ import {
 } from '../src/application/ingestion/roads.js';
 import { IngestionStore, type SemanticPort } from '../src/application/ingestion/store.js';
 import type { Provenance, Adjudication } from '../src/application/ingestion/provenance.js';
+import { verifyRowFingerprint } from '../src/application/ingestion/provenance.js';
 import type { AbsorbedPayload } from '../src/application/ingestion/record.js';
 import {
   buildBatch4Store,
@@ -34,7 +35,6 @@ import {
   CONTENT_PLACEBO_ABLATION,
   INCSEL_ABLATION,
 } from '../src/application/ingestion/candidates.js';
-
 const NOW = '2026-11-23T00:00:00.000Z';
 const WRITER = 'engine:test';
 
@@ -277,4 +277,37 @@ test('⑧ 写者署名与登记册写者一致；行指纹非空', () => {
     assert.equal(rec.provenance.writer, BATCH4_WRITER);
     assert.ok(rec.row_fingerprint.length > 0);
   }
+});
+
+test('⑨ 行指纹读端：在册记录重算比对通过；字段漂移后失配 fail-closed 点名（C14 · O2）', () => {
+  const store = makeStore();
+  const r = store.register({ id: 't-fp', category: 'fact', payload: payload(), provenance: prov() });
+
+  // 读端闸：在册记录落账指纹与重算一致 ⇒ ok，recorded == recomputed
+  const okCheck = store.verifyFingerprint(r.id);
+  assert.equal(okCheck.ok, true, okCheck.reasons.join('；'));
+  assert.equal(okCheck.recorded, okCheck.recomputed);
+  const all = store.verifyAllFingerprints();
+  assert.equal(all.ok, true, all.reasons.join('；'));
+
+  // 纯函数层：稳定字段被改（claim 漂移）⇒ 重算值变，比对红且逐条点名
+  const bad = verifyRowFingerprint({
+    provenance: r.provenance,
+    claim: '被手改的主张',
+    absorbed_as: r.payload.absorbed_as,
+    row_fingerprint: r.row_fingerprint,
+  });
+  assert.equal(bad.ok, false);
+  assert.ok(bad.reasons.some((x) => x.includes('行指纹不符')));
+  assert.notEqual(bad.recorded, bad.recomputed);
+
+  // 空落账指纹 ⇒ 同样红（未落账不算接线）
+  const empty = verifyRowFingerprint({
+    provenance: r.provenance,
+    claim: r.payload.claim,
+    absorbed_as: r.payload.absorbed_as,
+    row_fingerprint: '',
+  });
+  assert.equal(empty.ok, false);
+  assert.ok(empty.reasons.some((x) => x.includes('row_fingerprint 为空')));
 });

@@ -24,8 +24,10 @@ import {
   validateProvenance,
   validateAdjudication,
   rowFingerprint,
+  verifyRowFingerprint,
   type Provenance,
   type Adjudication,
+  type RowFingerprintCheck,
 } from './provenance.js';
 import type {
   AbsorbedRecord,
@@ -258,6 +260,31 @@ export class IngestionStore {
 
   list(): readonly AbsorbedRecord[] {
     return [...this.records.values()];
+  }
+
+  /**
+   * 读端完整性闸（C14 · O2 接线）：按该记录落账的 provenance / claim / absorbed_as 重算
+   * 行指纹，与落账 `row_fingerprint` 比对；不等即 `ok=false` 逐条点名，fail-closed 不静默。
+   * 记录不在册仍走 `requireRecord` 抛错（与其余读端同口径）。
+   */
+  verifyFingerprint(id: string): RowFingerprintCheck {
+    const rec = this.requireRecord(id);
+    return verifyRowFingerprint({
+      provenance: rec.provenance,
+      claim: rec.payload.claim,
+      absorbed_as: rec.payload.absorbed_as,
+      row_fingerprint: rec.row_fingerprint,
+    });
+  }
+
+  /** 全表行指纹对账（门 / 复跑批量核查）：任一记录指纹不符 ⇒ `ok=false`，逐条点名记录 id。 */
+  verifyAllFingerprints(): { ok: boolean; reasons: string[] } {
+    const reasons: string[] = [];
+    for (const rec of this.records.values()) {
+      const check = this.verifyFingerprint(rec.id);
+      if (!check.ok) reasons.push(`记录 ${rec.id}：${check.reasons.join('；')}`);
+    }
+    return { ok: reasons.length === 0, reasons };
   }
 }
 
