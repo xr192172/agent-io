@@ -45,6 +45,35 @@ const artifactArg = val('--artifact');
 
 const LEDGER_REL = path.join('.agent-io', 'ablation-runs.jsonl');
 const LEDGER_ABS = path.join(ROOT, LEDGER_REL);
+const LOCK_ABS = LEDGER_ABS + '.lock';
+
+/**
+ * 跨进程互斥锁（单写者护栏）：台账「读既有 → 判重 → 追加」必须在同一把锁内完成，
+ * 否则两个并发 ingest 会同时读到无该 run_id、双双追加（重复记账竞态）。
+ * 用 `wx` 原子创建排他锁文件；拿不到则自旋等待，超时即 fail-closed 退出（不强占残留锁）。
+ */
+function acquireLock(timeoutMs = 30_000, pollMs = 50) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      const fd = fs.openSync(LOCK_ABS, 'wx');
+      fs.writeSync(fd, JSON.stringify({ pid: process.pid, ts: Date.now() }) + '\n');
+      return fd;
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+      if (Date.now() > deadline) {
+        process.stderr.write(`ablation-ingest: 等待台账锁超时（${LOCK_ABS}）；不强制覆盖，退出请人工核查残留锁\n`);
+        process.exit(3);
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, pollMs);
+    }
+  }
+}
+
+function releaseLock(fd) {
+  try { fs.closeSync(fd); } catch { /* 已关 */ }
+  try { fs.unlinkSync(LOCK_ABS); } catch { /* 已释放 */ }
+}
 
 /** record 必填字段闭集（与 incsel_cron.ts `AblationRunRecord` 对齐；只校验落盘合法性）。 */
 const REQUIRED = ['run_id', 'triggered_by', 'started_at', 'finished_at', 'snapshot', 'mode', 'reading_only'];
@@ -118,28 +147,37 @@ if (record.run_class == null) {
   });
 }
 
-const { records: existing, bad } = readLedgerRecords();
-const seenRunIds = new Set(existing.map((r) => r?.run_id).filter(Boolean));
-const distinctBases = new Set(existing.map((r) => r?.snapshot?.commit_sha).filter((v) => v != null));
+// ── 临界区：读台账 → 判重 → 追加，全程持锁（防并发重复追加） ──
+const lockFd = acquireLock();
+let existing;
+let bad;
+try {
+  ({ records: existing, bad } = readLedgerRecords());
+  const seenRunIds = new Set(existing.map((r) => r?.run_id).filter(Boolean));
+  const distinctBases = new Set(existing.map((r) => r?.snapshot?.commit_sha).filter((v) => v != null));
 
-const skipped = seenRunIds.has(record.run_id);
-if (skipped) {
-  const out = {
-    ingested: false,
-    skipped: true,
-    reason: `run_id=${record.run_id} 已在台账（幂等）`,
-    ledger: LEDGER_REL,
-    records: existing.length,
-    base_sha_rounds: distinctBases.size,
-  };
-  if (jsonOut) process.stdout.write(JSON.stringify(out, null, 2) + '\n');
-  else console.log(`ablation-ingest: ${out.reason}；台账 ${existing.length} 条，底座轮数 ${distinctBases.size}`);
-  process.exit(0);
+  const skipped = seenRunIds.has(record.run_id);
+  if (skipped) {
+    releaseLock(lockFd);
+    const out = {
+      ingested: false,
+      skipped: true,
+      reason: `run_id=${record.run_id} 已在台账（幂等）`,
+      ledger: LEDGER_REL,
+      records: existing.length,
+      base_sha_rounds: distinctBases.size,
+    };
+    if (jsonOut) process.stdout.write(JSON.stringify(out, null, 2) + '\n');
+    else console.log(`ablation-ingest: ${out.reason}；台账 ${existing.length} 条，底座轮数 ${distinctBases.size}`);
+    process.exit(0);
+  }
+
+  // ── append-only：只追加，不改旧行；目录不存在则建 ──
+  fs.mkdirSync(path.dirname(LEDGER_ABS), { recursive: true });
+  fs.appendFileSync(LEDGER_ABS, JSON.stringify(record) + '\n', 'utf8');
+} finally {
+  releaseLock(lockFd);
 }
-
-// ── append-only：只追加，不改旧行；目录不存在则建 ──
-fs.mkdirSync(path.dirname(LEDGER_ABS), { recursive: true });
-fs.appendFileSync(LEDGER_ABS, JSON.stringify(record) + '\n', 'utf8');
 
 const after = [...existing, record];
 const afterBases = new Set(after.map((r) => r?.snapshot?.commit_sha).filter((v) => v != null));
