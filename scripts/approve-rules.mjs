@@ -12,15 +12,22 @@
  * · 册 JSON：各册工作树 blob SHA 记入 `books`，tag 前移后与 tag 内 blob 一致。
  *
  * ## 用法
- *   node scripts/approve-rules.mjs [--approver <名字>] [--note <说明>]
+ *   node scripts/approve-rules.mjs --approver <名字> [--note <说明>] [--tested-commit <源码 commit sha>]
  *
  * ## 退出码
  *   0 = entry 已写、tag 已前移、回读校验一致；
  *   1 = 回读校验不一致（指纹/册/tag 对不上）⇒ 不冒充批准成功；
- *   2 = 前置不满足（非 git 仓 / 规则源码缺文件 / git 不可用）。
+ *   2 = 前置不满足（非 git 仓 / 规则源码缺文件 / git 不可用 / --approver 缺失 / tested-commit 非法）。
  *
  * ★ 本脚本是单写者执行的审批动作；entry 的 approver/note 记录批准依据。首次引导的 note
  *   记「H3 初始引导 Main 裁示」。
+ *
+ * ## 防误跑（2026-11-26）
+ * · `--approver` **必填**：缺省拒绝执行，不再回落 `git config user.name` / `main` 默认——
+ *   否则误跑会落一条 approver=本地用户名（非 main）的非授权 entry。
+ * · `tested_commit` 钉**源码 commit**：本脚本必须在「源码已 commit、ledger entry 尚未 commit」
+ *   的时点跑；逆行到纯台账 entry commit 之后重跑会把 tested_commit 错钉到 entry commit。
+ *   必要时用 `--tested-commit <sha>` 显式指源码 commit。
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -67,9 +74,17 @@ async function main() {
     books[rel] = blob;
   }
 
-  const approver =
-    parseArg('--approver', '') || git(['config', 'user.name']).out || 'main';
+  const approver = parseArg('--approver', '');
+  if (!approver) {
+    fail('--approver 必填：显式批准人；不再回落 git config user.name / main 默认（防误跑落非 main 审批 entry）', 2);
+  }
   const note = parseArg('--note', 'H3 规则版本批准');
+  // tested_commit 钉被审批的源码 commit：缺省取当前 HEAD（须在源码 commit 后、entry commit 前跑）；
+  // 逆行重跑时用 --tested-commit <sha> 显式指源码 commit，避免错钉纯台账 entry commit。
+  const testedCommit = parseArg('--tested-commit', '') || head.out;
+  if (!/^[0-9a-f]{40}$/i.test(testedCommit)) {
+    fail(`--tested-commit 非合法 40 位 sha：${testedCommit}`, 2);
+  }
 
   const entry = {
     schema: 1,
@@ -79,7 +94,7 @@ async function main() {
     rules_sha: fp.sha,
     books,
     book_ref: rules.PROTECTED_TAG,
-    tested_commit: head.out,
+    tested_commit: testedCommit,
   };
 
   // ── 写 ledger（append-only：只追加一行，不改写历史） ──
@@ -87,8 +102,8 @@ async function main() {
   fs.mkdirSync(path.dirname(ledgerAbs), { recursive: true });
   fs.appendFileSync(ledgerAbs, JSON.stringify(entry) + '\n', 'utf-8');
 
-  // ── 前移受保护 tag 到当前 HEAD（-f：审批动作允许前移，前提是上面有新 entry） ──
-  const tag = git(['tag', '-f', rules.PROTECTED_TAG, head.out]);
+  // ── 前移受保护 tag 到源码 commit（-f：审批动作允许前移，前提是上面有新 entry） ──
+  const tag = git(['tag', '-f', rules.PROTECTED_TAG, testedCommit]);
   if (!tag.ok) fail(`打 tag ${rules.PROTECTED_TAG} 失败：${tag.err}`);
 
   // ── 回读校验：当前指纹/册/tag 必须与刚写的 entry 一致 ──
