@@ -42317,6 +42317,22 @@
         "y": 1150,
         "type": "file",
         "path": "scripts/lib/env_contract.mjs"
+      },
+      {
+        "id": "file_scripts_debug-index-dump_mjs",
+        "label": "debug-index-dump.mjs",
+        "x": 780,
+        "y": 13360,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "path": "scripts/debug-index-dump.mjs"
       }
     ],
     "edges": [
@@ -86182,6 +86198,97 @@
             "notes": "from:cache.db@1795592056416"
           }
         ]
+      },
+      {
+        "id": "file_scripts_debug-index-dump_mjs",
+        "responsibility": "debug-index-dump —— #188 索引收录取证（只读诊断）：在 CI runner 侧采走查集合 / files·nodes 表收录集合 / 差集与目标命中，落 verify-last/index-debug/ artifact；readOnly 开库、不建库、不改判定。",
+        "symbols": [
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 25,
+            "end_line": 25,
+            "signature": "const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')"
+          },
+          {
+            "name": "OUT_DIR",
+            "kind": "const",
+            "line": 26,
+            "end_line": 26,
+            "signature": "const OUT_DIR = path.join(ROOT, '.agent-io', 'scratch', 'verify-last', 'index-debug')"
+          },
+          {
+            "name": "rel",
+            "kind": "const",
+            "line": 28,
+            "end_line": 28,
+            "signature": "const rel = (abs) => path.relative(ROOT, abs).split(path.sep).join('/')"
+          },
+          {
+            "name": "extOf",
+            "kind": "const",
+            "line": 29,
+            "end_line": 29,
+            "signature": "const extOf = (p) => path.extname(p).toLowerCase()"
+          },
+          {
+            "name": "topOf",
+            "kind": "const",
+            "line": 30,
+            "end_line": 30,
+            "signature": "const topOf = (p) => p.split('/')[0] ?? ''"
+          },
+          {
+            "name": "tryExec",
+            "kind": "function",
+            "line": 32,
+            "end_line": 38,
+            "signature": "function tryExec(label, fn)"
+          },
+          {
+            "name": "distImport",
+            "kind": "const",
+            "line": 41,
+            "end_line": 42,
+            "signature": "const distImport = async (relPath) => import(pathToFileURL(path.join(ROOT, 'dist', relPath)).href)"
+          },
+          {
+            "name": "report",
+            "kind": "const",
+            "line": 44,
+            "end_line": 54,
+            "signature": "const report = { schema, at, env, git, grammar, walk, db, diff, errors }"
+          },
+          {
+            "name": "recordError",
+            "kind": "function",
+            "line": 56,
+            "end_line": 58,
+            "signature": "function recordError(where, e)"
+          },
+          {
+            "name": "git",
+            "kind": "function",
+            "line": 71,
+            "end_line": 74,
+            "signature": "function git(args)"
+          },
+          {
+            "name": "bucket",
+            "kind": "function",
+            "line": 174,
+            "end_line": 181,
+            "signature": "function bucket(list, keyOf)"
+          }
+        ],
+        "lines": 204,
+        "layer": "core",
+        "expected_deps": [
+          "dist/src/infrastructure/graph/import_project.js",
+          "dist/src/infrastructure/parse/source_exts.js",
+          "dist/src/infrastructure/parse/kernel.js"
+        ],
+        "path": "scripts/debug-index-dump.mjs"
       }
     ]
   },
