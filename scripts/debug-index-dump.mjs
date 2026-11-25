@@ -50,6 +50,7 @@ const report = {
   walk: {},
   db: {},
   diff: {},
+  coverage: {},
   errors: [],
 };
 
@@ -84,6 +85,7 @@ report.git.checkIgnoreMutate = tryExec('git check-ignore', () => {
 let walkFiles = null;
 let codeSourceExtSet = null;
 let listSupportedExtensions = null;
+let indexCoversDiskEx = null;
 try {
   const imp = await distImport('src/infrastructure/graph/import_project.js');
   walkFiles = imp.walkFiles;
@@ -91,6 +93,8 @@ try {
   codeSourceExtSet = se.codeSourceExtSet;
   const k = await distImport('src/infrastructure/parse/kernel.js');
   listSupportedExtensions = k.listSupportedExtensions;
+  const fr = await distImport('src/infrastructure/index/index_freshness.js');
+  indexCoversDiskEx = fr.indexCoversDiskEx;
 } catch (e) {
   recordError('dist import', e);
 }
@@ -171,6 +175,38 @@ report.diff.dbMinusWalk = {
   sample: extraInDb.slice(0, 60),
 };
 
+// ── 7b. 终态覆盖复核（indexCoversDiskEx 双出口） ──
+//   注意：本脚本在门后跑，索引已被后续保鲜补齐 ⇒ 这是**终态**覆盖，不是判定时点；
+//   判定时点读数对照 verify-last/coverage-snapshot.json（judge-all 落）。两相对照区分：
+//   终态覆盖而判定时点未覆盖 = 冷启慢·时序（A）；终态仍未覆盖 / 校验读不出 = wiring 缺陷（B）。
+if (indexCoversDiskEx && report.db.exists) {
+  let db2 = null;
+  try {
+    db2 = new DatabaseSync(dbPath, { readOnly: true });
+    const cov = indexCoversDiskEx(db2, ROOT);
+    report.coverage = {
+      ok: cov.ok,
+      covers: cov.covers,
+      error: cov.error,
+      walkCount: report.walk.count ?? null,
+      filesCount: report.db.filesCount ?? null,
+    };
+  } catch (e) {
+    recordError('coverage check', e);
+    report.coverage = { ok: false, covers: false, error: e instanceof Error ? e.message : String(e) };
+  } finally {
+    try { db2?.close(); } catch { /* noop */ }
+  }
+} else {
+  report.coverage = {
+    ok: false,
+    covers: false,
+    error: indexCoversDiskEx ? 'db 不存在' : 'indexCoversDiskEx 未载入',
+    walkCount: report.walk.count ?? null,
+    filesCount: report.db.filesCount ?? null,
+  };
+}
+
 function bucket(list, keyOf) {
   const m = new Map();
   for (const p of list) {
@@ -192,6 +228,7 @@ const sum = [
   `[debug-index] target ${TARGET}: walk=${report.walk.targetInWalk} files=${report.db.targetInFiles} nodes=${report.db.targetInNodes} fs=${report.fs?.value?.exists}`,
   `[debug-index] walk−db=${report.diff.walkMinusDb.count} (${JSON.stringify(report.diff.walkMinusDb.byTop)})`,
   `[debug-index] db−walk=${report.diff.dbMinusWalk.count} (${JSON.stringify(report.diff.dbMinusWalk.byTop)})`,
+  `[debug-index] 终态覆盖 ok=${report.coverage.ok} covers=${report.coverage.covers} error=${JSON.stringify(report.coverage.error)}`,
   `[debug-index] codeExts=${JSON.stringify(report.grammar.codeExts.value ?? report.grammar.codeExts.error)}`,
   `[debug-index] parseable=${JSON.stringify(report.grammar.parseableExts.value ?? report.grammar.parseableExts.error)}`,
   `[debug-index] dump=${rel(dumpPath)}`,

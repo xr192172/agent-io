@@ -320,6 +320,9 @@ async function judgeOne(feature, target, changed = null) {
     rules_sha: rec.rules_sha ?? null,
     tested_commit: rec.tested_commit ?? null,
     protected: rec.protected ?? false,
+    // ★ H3 补：校验提示性 warning；#188 补观测：索引覆盖校验取证（三态 + backfill 读数）。
+    warnings: Array.isArray(rec.warnings) ? rec.warnings : [],
+    coverage: rec.coverage ?? null,
     // ★ 2026-11-17：执行核在**本进程内**跑（不再经 CLI 退出码）—— 走到这里就是拿到了完整回执 ⇒ ok=true
     ok: true,
   };
@@ -469,6 +472,9 @@ async function judgeBooks(features, target, prefix, opts = {}) {
   let rulesSha = null;
   let testedCommit = null;
   let protectedFlag = false;
+  // ★ H3 补：跨册 warning 合并去重；#188 补观测：coverage 取证取首册非空（同主仓同一索引）。
+  const warningsAll = [];
+  let coverageReport = null;
   // 选量汇总（跨册相加）；`sheetsWithoutSelection` 用来抓"要了选量但 CLI 没回读数"
   const sel = { selected: 0, total: 0, hit: 0, always: 0, unselected: 0, changed: 0, sheets: 0, sheetsWithoutSelection: [], whyFull: [] };
   for (const f of features) {
@@ -501,6 +507,8 @@ async function judgeBooks(features, target, prefix, opts = {}) {
     if (!rulesSha && r.rules_sha) rulesSha = r.rules_sha;
     if (!testedCommit && r.tested_commit) testedCommit = r.tested_commit;
     if (r.protected) protectedFlag = true;
+    for (const w of r.warnings ?? []) if (!warningsAll.includes(w)) warningsAll.push(w);
+    if (!coverageReport && r.coverage) coverageReport = r.coverage;
     const selectedZero = Boolean(changed && r.selection && r.selection.selected === 0);
     const emptyBook = judged === 0 && !selectedZero;
     const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok || emptyBook;
@@ -522,7 +530,7 @@ async function judgeBooks(features, target, prefix, opts = {}) {
     for (const b of r.bad.slice(0, 5)) console.log(`       ${prefix}· ${b}`);
     if (r.bad.length > 5) console.log(`       ${prefix}· …另有 ${r.bad.length - 5} 条`);
   }
-  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems, selection: changed ? sel : null, rules_sha: rulesSha, tested_commit: testedCommit, protected: protectedFlag };
+  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems, selection: changed ? sel : null, rules_sha: rulesSha, tested_commit: testedCommit, protected: protectedFlag, warnings: warningsAll, coverage: coverageReport };
 }
 
 const { externals: extArgs, changed: changedRaw } = parseArgs(process.argv.slice(2));
@@ -966,6 +974,9 @@ if (repo.selection) {
         rules_sha: repo.rules_sha,
         tested_commit: repo.tested_commit,
         protected: repo.protected,
+        // ★ H3 补：校验 warning；#188 补观测：索引覆盖校验取证（三态 + backfill 读数）。
+        warnings: repo.warnings ?? [],
+        coverage: repo.coverage ?? null,
       },
       null,
       2,
@@ -975,6 +986,26 @@ if (repo.selection) {
   console.log(
     `  ✓ 已写 per-kind 判定读数：${path.relative(ROOT, readingsPath).replace(/\\/g, '/')}` +
       `（${Object.keys(repo.byKind).length} 种 kind · judged 合计 ${Object.values(repo.byKind).reduce((n, v) => n + v.judged, 0)} 条）`,
+  );
+  // ★ #188 补观测：判定时点覆盖取证快照落 verify-last/（被 verify-windows-logs artifact 收录），
+  //   供 CI windows 归因 A（冷启慢·环境）/ B（backfill wiring 失效·缺陷）；派生不入库。
+  const covDir = path.join(ROOT, '.agent-io', 'scratch', 'verify-last');
+  fs.mkdirSync(covDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(covDir, 'coverage-snapshot.json'),
+    JSON.stringify(
+      {
+        at: new Date().toISOString(),
+        rules_sha: repo.rules_sha,
+        tested_commit: repo.tested_commit,
+        protected: repo.protected,
+        warnings: repo.warnings ?? [],
+        coverage: repo.coverage ?? null,
+      },
+      null,
+      2,
+    ) + '\n',
+    'utf-8',
   );
 } catch (e) {
   console.error(`✗ 写不出 per-kind 判定读数（${e?.message ?? String(e)}）⇒ 投影门的「judge 判过」列将不可算（这不是"没有"）。`);

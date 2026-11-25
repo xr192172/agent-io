@@ -100,6 +100,37 @@ export interface ExpectationConflict {
 }
 
 /**
+ * ★★★ #188 时序深修补观测（2026-11-26）：判定前索引覆盖校验的**取证读数**。
+ *
+ * ## 为什么不再用一个 `missing=-1` 混三态
+ * 旧口径 `missing<0` 同时覆盖三种本质不同的失败，日志统一印「覆盖校验读不出」，无法区分：
+ * · `uncovered`：走查/覆盖校验**算得出**，但补齐后磁盘仍有文件未收录（真未覆盖）；
+ * · `uncoverable`：走查范围本身算不出来（项目根不存在 / 无可解析源码 / 扫描抛错）⇒ 覆盖状态不可判；
+ * · `backfill-error`：保鲜/补齐/校验过程抛异常被外层 catch 兜住（异常 message 记入 `error`，不吞）。
+ *
+ * 取证字段供 CI 判定时点归因：区分「冷启慢·环境差异」与「补齐 wiring 失效·代码缺陷」。
+ * 不填 ⇒ 读端判 `undefined`（≠ 空对象），既有假 judge / 旧实现零改动。
+ */
+export interface IndexCoverageReport {
+  /** 索引是否覆盖磁盘（与旧 `covers` 同义）。 */
+  covers: boolean;
+  /** 三态原因：`ok`=覆盖；`uncovered`=补齐后仍缺；`uncoverable`=走查查不出；`backfill-error`=补齐/校验抛错。 */
+  reason: 'ok' | 'uncovered' | 'uncoverable' | 'backfill-error';
+  /** 缺文件数；读不出 / 异常记 -1（不再三态混一）。 */
+  missing: number;
+  /** 磁盘走查范围内文件数（freshnessScope）。 */
+  walkCount: number;
+  /** 索引 files 表收录文件数（indexedRelativeSet）。 */
+  filesCount: number;
+  /** 判定前同步补齐（backfillChunk）累计读数。 */
+  backfill: { batches: number; synced: number; failed: number; remaining: number; total: number };
+  /** 覆盖校验本身是否可算（indexCoversDiskEx.ok）；`uncoverable` 时为 false。 */
+  covOk: boolean;
+  /** 校验 / 补齐异常 message（不吞）；无异常为 null。 */
+  error: string | null;
+}
+
+/**
  * 一次批量判定的**报告**（★ domain 类型，不是 application 类型）。
  *
  * ## 判据：谁必须读懂它
@@ -141,6 +172,12 @@ export interface ExpectationsReport {
    *   （file-exists / run / behavior-cases / edge-* 按设计不缓存 —— 便宜的与必须现跑的不凑数）。
    */
   cache?: { hits: number; misses: number };
+
+  /**
+   * ★★★ #188 时序深修补观测：判定前索引覆盖校验取证（三态拆分 + backfill 读数）。
+   * 不填 ⇒ `undefined`（旧实现 / 假 judge 零改动）；读端据此归因 CI windows 判定时点未覆盖。
+   */
+  coverage?: IndexCoverageReport;
 
   /**
    * ★★★ P1（只读报告层）：**证据分级分布**（分母 = checked；值为 0 也要给，便于手算复核）。

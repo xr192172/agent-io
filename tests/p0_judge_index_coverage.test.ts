@@ -74,6 +74,13 @@ test('P0-cov ① · 判定前补齐缺收录文件 ⇒ call-exists 可正常判�
     assert.equal(item.verdict, 'pass', `补齐后应命中调用边；实际 ${item.verdict}：${item.detail}`);
     assert.ok(indexedPaths(project).has(CALLER), '判定流程已把缺收录的 b.ts 补齐进索引');
     assert.doesNotMatch(item.detail, /查不到该文件/, '不得再报时序缺收录 unsupported');
+    // ★ #188 补观测：取证读数落 report —— 补齐成功 ⇒ reason=ok，walkCount/filesCount 有数，backfill 累计可见。
+    assert.ok(res.coverage, '回执须带 coverage 取证块');
+    assert.equal(res.coverage!.reason, 'ok', `覆盖成功应为 ok；实际 ${res.coverage!.reason}`);
+    assert.equal(res.coverage!.covers, true);
+    assert.ok(res.coverage!.walkCount > 0 && res.coverage!.filesCount > 0, 'walkCount/filesCount 须落判定时点读数');
+    assert.ok(res.coverage!.backfill.batches >= 0, 'backfill 批次累计须可见');
+    assert.equal(res.coverage!.error, null);
   } finally {
     rmRf(home);
     rmRf(project);
@@ -98,6 +105,13 @@ test('P0-cov ② · 整库未覆盖时边表类 fail-closed ⇒ unsupported 明�
     // ★ fail-closed：覆盖校验读不出 ⇒ 边表类判据只能 unsupported，不得判 pass/fail。
     assert.equal(item.verdict, 'unsupported', '未覆盖/读不出 ⇒ 只能 unsupported，不得 pass/fail');
     assert.match(item.detail, /未覆盖磁盘|边表事实不可信|判不了/, 'fail-closed 须明示原因');
+    // ★ #188 补观测：三态拆分 —— 走查范围算不出 ⇒ reason=uncoverable（非 backfill-error / 非 uncovered），
+    //   covOk=false、missing=-1、error 带原因 message（不再静默吞）。
+    assert.ok(res.coverage, '回执须带 coverage 取证块');
+    assert.equal(res.coverage!.reason, 'uncoverable', `空目录应为走查查不出；实际 ${res.coverage!.reason}`);
+    assert.equal(res.coverage!.covOk, false);
+    assert.equal(res.coverage!.missing, -1);
+    assert.ok(res.coverage!.error, 'uncoverable 须带走查失败 message，不吞');
   } finally {
     rmRf(home);
     rmRf(project);

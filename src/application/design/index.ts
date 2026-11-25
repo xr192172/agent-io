@@ -190,6 +190,10 @@ export async function judgeBookReceipt(input: {
       rules_sha: protectedCheck.rulesSha,
       tested_commit: protectedCheck.testedCommit,
       protected: protectedCheck.protected,
+      // ★ H3 补：校验内部提示性 warning（如 HEAD 领先审批基线）单列透出，不并入拒判 reasons。
+      warnings: protectedCheck.warnings,
+      // ★ #188 补观测：判定前索引覆盖校验取证（三态 + backfill 读数），供 CI windows 归因。
+      coverage: rep.coverage ?? null,
       // ★ 只有选量模式才带本字段（全量回执的形状逐字不变）；读端据此知道"这次没有全判"。
       ...(sel
         ? {

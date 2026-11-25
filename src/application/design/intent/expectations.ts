@@ -84,6 +84,7 @@ import type {
   ExpectationsReport,
   EvidenceMark,
   EvidenceTier,
+  IndexCoverageReport,
   JudgeItem,
   Verdict,
 } from '../../../domain/judge_port.js';
@@ -297,24 +298,16 @@ function countIndexBehindDisk(root: string, rels: readonly string[]): number {
  * · 先做**便宜探测**（`indexStaleFor` 只算目标文件的内容 hash，不扫全仓）：不陈旧就一次都不刷；
  * · 刷新失败 / 仍判不了 ⇒ **保持 `unsupported` 并如实报**（仍然红，但红得有理：说明索引真的修不动）。
  */
-/**
- * 判定前索引覆盖校验结果（#188 时序根因修，2026-11-26）。
- * · `covers=true`：索引覆盖磁盘，边表/符号事实可判；
- * · `covers=false`：保鲜 + 同步补齐后仍未覆盖磁盘（或覆盖校验读不出）⇒ 边表类判据
- *   fail-closed 拒绝判定（不拿缺行边表下结论）。`missing=-1` 表示读不出/数不准。
- */
-interface IndexCoverage {
-  covers: boolean;
-  missing: number;
-}
-
 /** 事实源是派生边表、整库覆盖与否决定其可信度的判据 kind（未覆盖时 fail-closed）。 */
 const EDGE_TABLE_KINDS = ['call-exists', 'edge-exists', 'edge-absent', 'domain-independent'];
 
-async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<IndexCoverage> {
+async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<IndexCoverageReport> {
   // ★ `Expectation` 是联合类型：只有一部分 kind 带 `path`（edge-* 是 from/to）⇒ 只收带 path 的
   const rels = judgedFilesOf(items);
-  if (!rels.length) return { covers: true, missing: 0 };
+  const backfill = { batches: 0, synced: 0, failed: 0, remaining: 0, total: 0 };
+  if (!rels.length) {
+    return { covers: true, reason: 'ok', missing: 0, walkCount: 0, filesCount: 0, backfill, covOk: true, error: null };
+  }
   let stale = false;
   for (const rel of rels) {
     try {
@@ -336,7 +329,10 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
     // ★★ #188 时序根因修：判定前用唯一权威 `indexCoversDiskEx` 复核整库是否覆盖磁盘。
     //   不完整 ⇒ 同步 `backfillChunk` 补齐一轮（复用 backfill 路径，非二次探测 retry 补丁），
     //   再复核；仍不覆盖 / 校验读不出 ⇒ `covers=false`，由判定循环对边表类判据 fail-closed。
-    const { indexCoversDiskEx } = await import('../../../infrastructure/index/index_freshness.js');
+    //   #188 补观测：累计 backfill 各批 synced/failed/remaining/total，终态落 walkCount/filesCount/error。
+    const { indexCoversDiskEx, indexedRelativeSet, freshnessScope } = await import(
+      '../../../infrastructure/index/index_freshness.js'
+    );
     const { backfillChunk } = await import('../../../infrastructure/index/index_backfill.js');
     let cov = indexCoversDiskEx(db, root);
     if (!cov.ok || !cov.covers) {
@@ -344,15 +340,40 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
       let guard = 0;
       while ((!cov.ok || !cov.covers) && guard++ < 20) {
         const r = await backfillChunk(db, root, { batch: 2000 });
+        backfill.batches++;
+        backfill.synced += r.synced;
+        backfill.failed += r.failed;
+        backfill.remaining = r.remaining;
+        backfill.total = r.total;
         cov = indexCoversDiskEx(db, root);
         if (r.remaining === 0 || r.synced === 0) break;
       }
     }
-    if (!cov.ok) return { covers: false, missing: -1 };
-    return { covers: cov.covers, missing: cov.covers ? 0 : -1 };
-  } catch {
-    /* 刷新/补齐尽力而为：失败就让它照旧 fail-closed（不掩盖） */
-    return { covers: false, missing: -1 };
+    const scope = freshnessScope(root);
+    const walkCount = scope.scope.size;
+    const filesCount = indexedRelativeSet(db).size;
+    // ★ 三态拆分：走查查不出 / 补齐后仍缺 / 覆盖。异常由外层 catch 兜成 backfill-error，message 不吞。
+    if (!cov.ok) {
+      return { covers: false, reason: 'uncoverable', missing: -1, walkCount, filesCount, backfill, covOk: false, error: cov.error };
+    }
+    if (!cov.covers) {
+      const missing = [...scope.scope].filter((rel) => !indexedRelativeSet(db).has(rel)).length;
+      return { covers: false, reason: 'uncovered', missing, walkCount, filesCount, backfill, covOk: true, error: null };
+    }
+    return { covers: true, reason: 'ok', missing: 0, walkCount, filesCount, backfill, covOk: true, error: null };
+  } catch (e) {
+    // ★ 异常 message 不再静默吞进 `{covers:false,missing:-1}`：带 message 落回执取证，供 CI 归因。
+    const err = e as Error;
+    return {
+      covers: false,
+      reason: 'backfill-error',
+      missing: -1,
+      walkCount: -1,
+      filesCount: -1,
+      backfill,
+      covOk: false,
+      error: err && err.message ? err.message : String(e),
+    };
   }
 }
 
@@ -1048,7 +1069,13 @@ export async function judgeExpectations(
     // ★★ #188 时序根因修：索引未覆盖磁盘时，边表类判据 fail-closed —— 边表事实可能缺行，
     //   "查无 ≠ 不存在"，不拿缺行边表判 pass/fail，单列 unsupported 明示（比照 V3 untrusted 不得 exit0）。
     if (indexUncovered && EDGE_TABLE_KINDS.includes(e.kind)) {
-      const why = coverage.missing < 0 ? '覆盖校验读不出' : `缺 ${coverage.missing} 个文件`;
+      // ★ 三态文案区分：真未覆盖 / 走查查不出 / 补齐校验异常，不混一口径、不夸大断言。
+      const why =
+        coverage.reason === 'uncovered'
+          ? `缺 ${coverage.missing} 个文件`
+          : coverage.reason === 'uncoverable'
+            ? `覆盖校验读不出（${coverage.error ?? '走查范围算不出来'}）`
+            : `补齐/校验异常（${coverage.error ?? '未知错误'}）`;
       push(it, 'unsupported', `索引未覆盖磁盘（${why}）⇒ 边表事实不可信，fail-closed 拒绝判定`);
       continue;
     }
@@ -1557,6 +1584,8 @@ export async function judgeExpectations(
     conflicts: findExpectationConflicts(items),
     // ★ 2026-10-24（judge-cache）：缓存命中率（读端可看见「没变的文件不再测」兑现了几成）
     cache: { hits: cacheHits, misses: cacheMisses },
+    // ★ #188 补观测：判定前索引覆盖校验取证（三态 + backfill 读数），透传到回执供 CI 归因。
+    coverage,
     items: out,
     notes,
   };
