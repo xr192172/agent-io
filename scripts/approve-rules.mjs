@@ -116,7 +116,7 @@ async function main() {
 
   console.log(`✓ 规则版本已批准并钉受保护 tag ${rules.PROTECTED_TAG}`);
   console.log(`  rules_sha  : ${fp.sha}`);
-  console.log(`  tested_commit: ${head.out}`);
+  console.log(`  tested_commit: ${testedCommit}`);
   console.log(`  册 (${Object.keys(books).length})：`);
   for (const rel of Object.keys(books).sort()) console.log(`    ${rel}  ${books[rel].slice(0, 12)}`);
   console.log(`  ledger: ${rules.APPROVAL_LEDGER_REL}（append-only）`);
