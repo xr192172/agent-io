@@ -146,6 +146,43 @@ const noCacheSel = args.includes('--no-cache');
 /** 选量回执（`--changed` 时非空）；缺/坏 ⇒ 响亮判红（判不了 ≠ 没选，绝不静默全跑当没事） */
 let SEL = null;
 
+// ════════════════════════════════════════════════════════════════════════
+// ★ #92 项①：`--audit-ablation` —— 真实对照审计入口（转发 incsel-audit.mjs，不内联重算全量 verdicts）。
+//   一处权威：对照判定住 incsel_ablation.ts，编排住 incsel-audit.mjs；本 flag 只做进程转发 + 回执透传。
+//   给定后不跑主测试套件：spawn audit 取 JSON 回执，退出码沿用 audit（对照模式 holes>0 ⇒ 1；非对照 ⇒ 0）。
+//   透传 `--changed` / `--no-cache`；audit 全量逐文件跑是重量级，调用方显式知情。
+// ════════════════════════════════════════════════════════════════════════
+const AUDIT_ABLATION = args.includes('--audit-ablation');
+if (AUDIT_ABLATION) {
+  const auditArgs = [];
+  for (const c of changedArgs) auditArgs.push('--changed', c);
+  if (noCacheSel) auditArgs.push('--no-cache');
+  const si = args.indexOf('--sample');
+  if (si >= 0 && args[si + 1]) auditArgs.push('--sample', args[si + 1]);
+  auditArgs.push('--json');
+  const ar = spawnSync(process.execPath, ['--import', 'tsx', path.join(ROOT, 'scripts/incsel-audit.mjs'), ...auditArgs], {
+    cwd: ROOT, encoding: 'utf8', shell: false, maxBuffer: 32 * 1024 * 1024,
+  });
+  let audit = null;
+  try { audit = JSON.parse(String(ar.stdout ?? '').trim()); } catch { /* 判不了 ⇒ 透传原始 stderr */ }
+  const auditRc = ar.status ?? 1;
+  if (JSON_OUT) {
+    process.stdout.write(JSON.stringify({ audit, exitCode: auditRc, mode: 'audit-ablation' }) + '\n');
+  } else if (audit) {
+    say(`${C.b}消融审计（--audit-ablation）：${audit.verdict}${C.x}`);
+    say(`  对照模式=${audit.contrastive ? '是（changed=' + JSON.stringify(audit.changed) + '）' : '否（全量参照，holes 平凡空）'}`);
+    say(`  选择：${audit.selection.selected} / ${audit.selection.total} · 全量 ${audit.fullRun.files} 文件 / 红 ${audit.fullRun.red} / skip ${audit.fullRun.skip}`);
+    if (audit.holes?.length) say(`  ${C.r}漏选（洞）：${audit.holes.join(', ')}${C.x}`);
+    if (audit.skipped?.length) say(`  ${C.y}skip（计洞口径内）：${audit.skipped.join(', ')}${C.x}`);
+    if (audit.uncoveredChanged?.length) say(`  ${C.y}影子覆盖：${audit.uncoveredChanged.join(', ')}${C.x}`);
+    if (audit.note) say(`  ${C.d}${audit.note}${C.x}`);
+  } else {
+    say(`${C.r}✗ --audit-ablation 审计进程未出结构化回执（rc=${ar.status}）：${String(ar.stderr ?? '').trim().split('\n').slice(-3).join(' | ')}${C.x}`);
+  }
+  process.exit(auditRc);
+}
+
+
 // ★★★ 2026-10-30（T-#REG-POLLUTE）：**测试跑在自己的数据根里** —— 与 `certs/run-all-certs.mjs` 同一笔修法。
 // 病：测试若 `importProject` 一个 temp 夹具项目，登记会落进**真数据仓**（`<包根>/.agentio-data/projects.json`），
 //     而运行期一过那条登记就永远指向一个不存在的目录 ⇒ 注册表（总任务视图的钥匙）被幽灵条目弄脏。

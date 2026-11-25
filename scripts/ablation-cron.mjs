@@ -20,7 +20,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   evaluateTriggers,
@@ -29,6 +29,7 @@ import {
   buildAblationRecord,
   summarizeShadowTrend,
 } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
+import { buildCoverageMap } from '../src/infrastructure/analysis/facts/test_coverage.ts';
 
 const argv = process.argv.slice(2);
 const val = (f) => {
@@ -48,6 +49,12 @@ const widen = has('--widen');
 const unknownEdges = Number(val('--unknown-edges') ?? '0');
 const nightWindow = has('--night-window');
 const worktreeArg = val('--worktree');
+// 真对照 changed 集（可选；本机信号源缺 ⇒ 空 ⇒ 非对照模式，holes 平凡空；真对照 changed 源在 CI/云端）。
+const changedCron = [];
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] !== '--changed') continue;
+  for (const p of String(argv[i + 1] ?? '').split(',')) if (p.trim()) changedCron.push(p.trim());
+}
 
 const LEDGER_REL = path.join('.agent-io', 'ablation-runs.jsonl');
 const LEDGER_ABS = path.join(ROOT, LEDGER_REL);
@@ -122,6 +129,36 @@ if (!dry && !snapshot.isolated) {
   process.exit(2);
 }
 
+// ── ③ 索引存在/新鲜度守卫：空/stale 显形报缺索引 fail-closed，绝不把保守全量 227/227 当选择读数 ──
+//   索引自建是隔离快照前置步骤（rebuild_feature/importProject 扫描 src 写 cache.db，重量级归 CI/云主机），
+//   不在 cron 编排内自动全量扫描（L4）；守卫只判可信性，不替快照补索引。
+const targetRoot = worktreeArg ? path.resolve(worktreeArg) : ROOT;
+const coverageProbe = buildCoverageMap(targetRoot);
+let auditResult = null;
+let auditNote = null;
+if (!dry && !coverageProbe.trusted) {
+  process.stderr.write(
+    `ablation-cron: 索引守卫拒跑：隔离快照 ${targetRoot} 覆盖映射不可信（空索引 / stale / 边型对账不可读）⇒ ` +
+    `需先在快照内自建索引（rebuild_feature/importProject）；不把保守全量当选择读数\n`,
+  );
+  process.exit(2);
+}
+
+// ── ② --real 调 incsel-audit 取真实对照读数（一处权威：判定住 incsel_ablation.ts，cron 只编排 + 落台账）──
+if (!dry) {
+  const auditArgs = ['--root', targetRoot, '--json'];
+  if (changedCron.length) auditArgs.push('--changed', changedCron.join(','));
+  if (files > 0) auditArgs.push('--sample', String(files));
+  const ar = spawnSync(process.execPath, ['--import', 'tsx', path.join(ROOT, 'scripts/incsel-audit.mjs'), ...auditArgs], {
+    cwd: targetRoot, encoding: 'utf8', shell: false, maxBuffer: 32 * 1024 * 1024,
+  });
+  try { auditResult = JSON.parse(String(ar.stdout ?? '').trim()); } catch { auditNote = `audit 回执解析失败 rc=${ar.status}`; }
+  if (ar.status !== 0 && !auditResult) {
+    process.stderr.write(`ablation-cron: audit 调用失败 rc=${ar.status}：${String(ar.stderr ?? '').trim().split('\n').slice(-3).join(' | ')}\n`);
+    process.exit(2);
+  }
+}
+
 const now = new Date().toISOString();
 const record = buildAblationRecord({
   run_id: `ablation:${headSha?.slice(0, 12) ?? 'unpinned'}:${now}`,
@@ -134,16 +171,16 @@ const record = buildAblationRecord({
     clean,
     isolated: snapshot.isolated,
   },
-  preemption: { preempted: false, reason: dry ? 'dry-run：未起真实对照（重量级全量留 CI/阶段边界）' : null },
+  preemption: { preempted: false, reason: dry ? 'dry-run：未起真实对照（重量级全量留 CI/阶段边界）' : auditNote },
   mode,
   quota: { files: quota.files, jobs: quota.jobs },
-  selection: [],
-  full_red: [],
-  holes: [],
-  skipped: [],
+  selection: auditResult?.selection?.selectedFiles ?? [],
+  full_red: auditResult?.fullRun?.redFiles ?? [],
+  holes: auditResult?.holes ?? [],
+  skipped: auditResult?.skipped ?? [],
   disturbing: [],
   must_run: [],
-  shadow_coverage: [],
+  shadow_coverage: auditResult?.uncoveredChanged ?? [],
   scenario_coverage: {},
 });
 
