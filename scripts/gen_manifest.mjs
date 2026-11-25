@@ -184,6 +184,16 @@ const NON_VOLUME_ENTRIES = [
     name: 'judge-readings.json',
     why: '`scripts/judge-all.mjs` 落的 per-kind 判定读数（pass+fail / unsupported / pending），随每次运行覆盖写；`scripts/gen-db-check.mjs` 的「judge判过」列读它，缺失或比册旧就印「不可算」而不判红',
   },
+  // ★★ 2026-11-25（#92 观察期台账）：cron 周期参考运行的 append-only 记录。
+  //   为什么不能放 scratch：观察期窗口（evaluateObservationWindow）要读**全部历史**记录数连续零洞，
+  //   scratch 按卡清理会丢积累 ⇒ 观察期退化成"刚起跑"。为什么不是"卷"：它不承载任何设计真相，
+  //   只是周期对照读数的历史载体，删掉只损失历史趋势与观察期计数，不丢源码/设计事实。
+  //   ★ 跟踪态：沿用 .agent-io/* gitignore（派生不入库），与 judge-readings.json 同为有意跟踪的轻量台账口径；
+  //      本门管的是"说得清来路"，登记它≠给它发免死牌。
+  {
+    name: 'ablation-runs.jsonl',
+    why: '`scripts/ablation-cron.mjs` 落的跨 run 观察期台账（append-only：每条 selection/holes/full_red/skipped/影子覆盖读数），`evaluateObservationWindow` 读全部历史数连续零洞；观察期需跨次存活 ⇒ 不能放 scratch；不是卷，删掉只损失历史趋势与观察期计数',
+  },
   { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },
   { name: 'baseline-replay.json', why: '`AGENT_IO_REPLAY_ONLY` 回放的读数，随该轮运行生灭' },
   { name: 'regen-report.json', why: '`scripts/regen-translate.mjs` 的读数（0.8 节：变差就靠它非零退出），随该轮运行生灭' },
