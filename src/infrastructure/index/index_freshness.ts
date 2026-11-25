@@ -64,6 +64,12 @@ export interface FreshnessReport {
   failed: number;
   /** 因超出补全上限而跳过的新增文件数（索引基线失效，建议重新 import_project） */
   skipped_adds: number;
+  /**
+   * ★★ 脱节态全量 backfill 标志（2026-11-26 · #188）：本轮判定索引**未覆盖磁盘**
+   * （`indexCoversDisk=false`）⇒ 新增走全量补全，**不受** `MAX_ADDS_PER_REFRESH` 100 上限截断。
+   * 常态增量（索引已覆盖磁盘的既有文件改动）仍守 100 上限保性能；脱节才放开，非一刀切抬上限。
+   */
+  backfilled?: boolean;
   /** ★ 本轮**重新打开**（resolved→pending）待重解析的引用条数 —— 手工改名/删符号后，
    *  引用方的边会被 FK 级联删掉且不会自己重建（漏报）；这里把它们放回待解析队列。 */
   refsReopened: number;
@@ -96,6 +102,7 @@ function emptyReport(): FreshnessReport {
     removed: 0,
     failed: 0,
     skipped_adds: 0,
+    backfilled: false,
     refsReopened: 0,
     bootstrapped: 0,
     selfWriteHits: 0,
@@ -819,8 +826,20 @@ export async function ensureFreshIndex(
     }
 
     const addCount = pending.filter((p) => p.kind === 'add').length;
-    const allowAdds = addCount <= MAX_ADDS_PER_REFRESH;
+    // ★★ #188（2026-11-26）：**脱节态全量 backfill**。
+    //   判据是唯一权威 {@link indexCovers}：走查前库内集合 ⊉ 磁盘走查集合 ⇒ 索引基线失效。
+    //   · **脱节态**（indexComplete=false）：新增整体纳入全量补全，**不受** 100 上限截断
+    //     （旧实现：新增 >100 ⇒ 全部 skip，scripts/ 落在截断外 ⇒ call-exists 查无行，#188 偶发 unsupported 根因）。
+    //   · **常态**（indexComplete=true，已覆盖磁盘，仅既有文件改动）：增量新增仍守 `MAX_ADDS_PER_REFRESH`
+    //     100 上限保性能 —— 仅脱节态放开，非一刀切抬上限。
+    const indexComplete = indexCovers(
+      new Set(rows.map((r) => r.path)),
+      absFiles.map((a) => path.relative(root, a).split(path.sep).join('/')),
+    );
+    const disjoint = !indexComplete;
+    const allowAdds = disjoint || addCount <= MAX_ADDS_PER_REFRESH;
     if (!allowAdds) report.skipped_adds = addCount;
+    if (disjoint && addCount > 0) report.backfilled = true;
 
     // ★ L1b 消费：**消费自写登记**（`write_gate.recordSelfWrite`）—— 同步签名的写工具
     //   （`remove_dead_imports` 等）await 不了异步的 `syncFile`，改完只能登记；这里替它们同步。
@@ -920,10 +939,7 @@ export async function ensureFreshIndex(
       //   ★★ ★ 口径是**集合**不是计数（第一版写 `rows.length >= absFiles.length`，
       //     被"数相等但集合不等"骗过 —— 外部复核抓出的那一格）：
       //     `rows` 是**走查之前**库里已有的集合 ⇒ "磁盘上每个文件走查前就已在库里" 才算完整。
-      const indexComplete = indexCovers(
-        new Set(rows.map((r) => r.path)),
-        absFiles.map((a) => path.relative(root, a).split(path.sep).join('/')),
-      );
+      //   `indexComplete` 在上方 #188 脱节判定处已按唯一权威 `indexCovers` 算过（走查前库内集合），复用。
       try {
         // ★ R4：索引完整时第二趟全库兜底捞回 scope 外滞留 pending（增量刷新不把可连边刷回 pending）；
         //   索引不完整保持 keepPending，不判 failed。
