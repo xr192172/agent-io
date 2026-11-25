@@ -42263,6 +42263,14 @@
         "path": "scripts/ablation-cron.mjs"
       },
       {
+        "id": "file_scripts_ablation-ingest_mjs",
+        "label": "ablation-ingest.mjs",
+        "x": 1200,
+        "y": 470,
+        "type": "file",
+        "path": "scripts/ablation-ingest.mjs"
+      },
+      {
         "id": "file_scripts_lib_gate_caps_mjs",
         "label": "gate_caps.mjs",
         "x": 1700,
@@ -85994,6 +86002,12 @@
         "expected_deps": [
           "src/infrastructure/analysis/facts/incsel_cron.ts"
         ]
+      },
+      {
+        "id": "file_scripts_ablation-ingest_mjs",
+        "path": "scripts/ablation-ingest.mjs",
+        "responsibility": "观察期台账宿主侧唯一写者：校验 CI reference artifact 后 append-only 落 ablation-runs.jsonl，run_id 幂等；不进 verify 总门。",
+        "expected_deps": []
       },
       {
         "id": "file_scripts_lib_gate_caps_mjs",

@@ -99,7 +99,18 @@ export async function judgeBookReceipt(input: {
   const { checkStaleBuild } = await import('../observe/runtime/stale_check.js');
   const feature = String(input.feature ?? '');
   if (!feature) throw new Error('design_line action=judge 需要 feature');
-  const dsl = getDSL(feature);
+  // ★★★ 2026-11-25（P3 施工批 D 根因修）：册锚点必须由调用方 `project_dir` 显式下传，
+  //   与下面 `requireProjectRoot` 同口径。原写法 `getDSL(feature)` /
+  //   `getDesignSheetFile(feature)` 未带 baseDir ⇒ 读册走注册表 projects.json → dataHome
+  //   候选链；CI clean-clone 无注册表（不入库）⇒ 落点落空 ⇒ `feature "…" 不存在`
+  //   （判据闸 workflow 靠显式 AGENT_IO_HOME=workspace 钉死才绿，verify 腿没设）。
+  //   baseDir 在注册表之前插锚（storage.ts 候选链既有口径）⇒ 册钉在
+  //   `<project_dir>/.agent-io/design`，不依赖本机登记 / AGENT_IO_HOME。
+  const baseDir =
+    typeof input.project_dir === 'string' && input.project_dir.trim()
+      ? input.project_dir.trim()
+      : undefined;
+  const dsl = getDSL(feature, baseDir);
   if (!dsl) throw new Error(`feature "${feature}" 不存在`);
   const expAll = collectExpectations(dsl as never);
   // ★★★ 2026-11-01（0.9 一处权威 + 0.12 静默空串）：
@@ -124,7 +135,7 @@ export async function judgeBookReceipt(input: {
   // ★ 这里**不**做任何"按 kind 决定选不选"的判断 —— 那是 `isLocalizableKind` 的事（0.9.1）。
   const changedRaw = input.changed;
   const changedArgs = Array.isArray(changedRaw) ? changedRaw.map((x) => String(x)) : null;
-  const sheetAbs = getDesignSheetFile(feature);
+  const sheetAbs = getDesignSheetFile(feature, baseDir);
   const sheetRel = path.relative(root, sheetAbs).replace(/\\/g, '/');
   const sel = changedArgs ? selectExpectationsForChanged(expAll, changedArgs, { sheetPath: sheetRel }) : null;
   const expItems = sel ? sel.items : expAll;

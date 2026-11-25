@@ -82,10 +82,11 @@ test('⑦ gates 登记与 GATES 门名一一对应（无漏登/多登）', () =>
   assert.deepEqual(Object.keys(c.gates).sort(), [...gateNames].sort());
 });
 
-test('⑧ 车道归属：测试门仅 windows；cache/tasks.db 门不入 CI lane；Go 两门 needs=go', () => {
+test('⑧ 车道归属：弱代理/派生门不入 CI lane；Go 两门 needs=go', () => {
   const c = loadContract(ROOT);
-  assert.deepEqual(gateSpec(c, '测试').lanes, ['windows']);
-  for (const n of ['派生条目要求权', '索引可信度', '任务镜像对账']) {
+  // ★ 2026-11-25（P3 施工批 · Main 裁①）：测试 / 判据突变 / 无卡写账 / 文档派生投影 归 offLane（lanes=[]），
+  //   与既有 cache/tasks.db 弱代理门同口径；本地全量 laneSet=null 仍强制核。
+  for (const n of ['测试', '判据突变', '无卡写账', '文档派生投影', '派生条目要求权', '索引可信度', '任务镜像对账']) {
     assert.deepEqual(gateSpec(c, n).lanes, [], `${n} 不应进任何 CI 车道`);
   }
   assert.deepEqual(gateSpec(c, 'Go 编译').needs, ['go']);
@@ -95,7 +96,7 @@ test('⑧ 车道归属：测试门仅 windows；cache/tasks.db 门不入 CI lane
   assert.ok(linux.has('ts 类型'));
   assert.ok(!linux.has('测试'));
   const win = gatesForLane(c, 'windows');
-  assert.ok(win.has('测试'));
+  assert.ok(!win.has('测试'));
 });
 
 test('⑨ 突变把守：门 lanes 引用未登记平台 ⇒ validateContract 点名', () => {

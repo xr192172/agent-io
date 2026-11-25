@@ -54,20 +54,23 @@
 | 1 | ts 类型 | TypeScript 类型与编译 |
 | 2 | 工具链完整 | 后续门所需工具与依赖是否完整 |
 | 3 | MCP 工具签名 | 工具注册与输入输出契约 |
-| 4 | Go 编译 | Go 辅助实现可编译 |
-| 5 | Go 静态检查 | Go 辅助实现静态约束 |
-| 6 | 实现夹具 | 受控实现场景 |
-| 7 | 设计 DB 结构 | 设计投影与结构归属 |
-| 8 | 设计册判据 | 当前判据真实执行结果 |
-| 9 | 判据突变 | 判据遇到反例是否有鉴别力 |
-| 10 | 文档与事实 | 文档、事实和生成视图是否一致 |
-| 11 | 测试 | 行为与结构回归 |
-| 12 | 结构意图 | 文件与目录的结构归属 |
-| 13 | 无卡写账 | 写盘是否有责任卡或明确例外 |
-| 14 | 派生条目要求权 | 派生事实是否越过设计意图 |
-| 15 | 索引可信度 | 索引 verdict 是否 trusted（陈旧断言 / 未同步 / 幽灵行） |
-| 16 | 任务镜像对账 | tasks.db 权威行与 tasks.jsonl 投影是否一致 |
-| 17 | 结案投影点名 | 册单侧结案投影点名（报告区，一期不判红） |
+| 4 | MCP 工具面开销 | 工具面固定开销棘轮（wire 字节 / 工具数 ≤ 基线，车道外） |
+| 5 | Go 编译 | Go 辅助实现可编译 |
+| 6 | Go 静态检查 | Go 辅助实现静态约束 |
+| 7 | 实现夹具 | 受控实现场景 |
+| 8 | 设计 DB 结构 | 设计投影与结构归属 |
+| 9 | 设计 DB 调用对账 | requirements_calls 调用方索引对账（车道外） |
+| 10 | 设计册判据 | 当前判据真实执行结果 |
+| 11 | 判据突变 | 判据遇到反例是否有鉴别力（车道外） |
+| 12 | 文档与事实 | 入库快照对账：散文写死计数 · 卷表一致 |
+| 13 | 文档派生投影 | 派生现算视图新鲜度：FACTS/COGNITION/台账/投影块（车道外） |
+| 14 | 测试 | 行为与结构回归（车道外） |
+| 15 | 结构意图 | 文件与目录的结构归属 |
+| 16 | 无卡写账 | 写盘是否有责任卡或明确例外（车道外） |
+| 17 | 派生条目要求权 | 派生事实是否越过设计意图 |
+| 18 | 索引可信度 | 索引 verdict 是否 trusted（陈旧断言 / 未同步 / 幽灵行） |
+| 19 | 任务镜像对账 | tasks.db 权威行与 tasks.jsonl 投影是否一致 |
+| 20 | 结案投影点名 | 册单侧结案投影点名（报告区，一期不判红） |
 
 - `npm run verify:changed` 是日常入口，只验本次改动及影响闭包。
 - `npm run verify` 是发布前/公共底座变更/用户明确要求时的总门；一次跑完全部门，语义不变。
@@ -117,19 +120,22 @@ edit_dsl 写判据 → design:gen-db → design_line plan → edit_code
 
 码数合计 73。★ 本表与源码逐族相等是**判据**（漂了就红），不是读数誊抄。
 
-<!-- DOC:GEN:guide.gates:BEGIN source=guide.gates@9a17faf7171da909 cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=bf4a075236a2ac52 -->
+<!-- DOC:GEN:guide.gates:BEGIN source=guide.gates@94ff4af739d670b1 cmd="npm run doc:render" format=docs-view-v1 generator=docs-view.render@0.1.3 body_sha256=05aa6c4dc9eb2433 -->
 | 门名 | 来源 |
 |---|---|
 | ts 类型 | `scripts/verify.mjs#GATES` |
 | 工具链完整 | `scripts/verify.mjs#GATES` |
 | MCP 工具签名 | `scripts/verify.mjs#GATES` |
+| MCP 工具面开销 | `scripts/verify.mjs#GATES` |
 | Go 编译 | `scripts/verify.mjs#GATES` |
 | Go 静态检查 | `scripts/verify.mjs#GATES` |
 | 实现夹具 | `scripts/verify.mjs#GATES` |
 | 设计 DB 结构 | `scripts/verify.mjs#GATES` |
+| 设计 DB 调用对账 | `scripts/verify.mjs#GATES` |
 | 设计册判据 | `scripts/verify.mjs#GATES` |
 | 判据突变 | `scripts/verify.mjs#GATES` |
 | 文档与事实 | `scripts/verify.mjs#GATES` |
+| 文档派生投影 | `scripts/verify.mjs#GATES` |
 | 测试 | `scripts/verify.mjs#GATES` |
 | 结构意图 | `scripts/verify.mjs#GATES` |
 | 无卡写账 | `scripts/verify.mjs#GATES` |
@@ -137,4 +143,4 @@ edit_dsl 写判据 → design:gen-db → design_line plan → edit_code
 | 索引可信度 | `scripts/verify.mjs#GATES` |
 | 任务镜像对账 | `scripts/verify.mjs#GATES` |
 | 结案投影点名 | `scripts/verify.mjs#GATES` |
-<!-- DOC:GEN:guide.gates:END body_sha256=bf4a075236a2ac52 -->
+<!-- DOC:GEN:guide.gates:END body_sha256=05aa6c4dc9eb2433 -->

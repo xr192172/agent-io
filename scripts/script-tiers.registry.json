@@ -44,15 +44,19 @@
     },
     "判据突变": {
       "verifies": "跨册取样本对 src/ 做一处语义突变，看判据有没有反应（killed / survived / unsupported）。",
-      "false_green": "killed===0（没验）必须判红 —— 否则「判了 0 条」会被读成绿。"
+      "false_green": "killed===0（没验）必须判红 —— 否则「判了 0 条」会被读成绿。索引依赖：CI 无 cache.db ⇒ 样本 facts 判不了/三态摆动 ⇒ 车道外 offLane 不计码；本地全量仍强制核。"
     },
     "文档与事实": {
-      "verifies": "四个断言式检查的聚合（lint:prose 写死计数 · gen-facts:check 数字一致 · manifest:check 卷表一致 · cognition:check 最新）。",
+      "verifies": "入库快照对账聚合（lint:prose 写死计数 · manifest:check 卷表一致）；派生现算子项归「文档派生投影」门。",
       "false_green": "子检查缺失（package.json 里没有那个 script）也算红 —— 这道门就是为「verify 全绿而其中三个是 EXIT=1」那次事故建的。"
+    },
+    "文档派生投影": {
+      "verifies": "派生现算对账聚合（gen-facts:check FACTS 数字 · cognition:check COGNITION 最新 · ledger:check todo 视图 · doc:check 投影块）。",
+      "false_green": "派生依赖：CI 无 cache.db/派生落盘 ⇒ 现算空或陈旧，与入库快照三向对账不符 ⇒ 车道外 offLane 不计码；本地全量（无 --lane）仍强制核。无派生读不到 ≠ 投影最新。"
     },
     "测试": {
       "verifies": "tests/ 下全部 *.test.ts 逐文件真跑（node:test + tsx，读源码不读 dist），按 TAP 计数判红。",
-      "false_green": "两个已修形态：0 个用例被执行算红 · 任何 skip/todo 算红；通过腿曾印「用例 6/6」而真值 422/422（R38，现只从该门自己的汇总行锚点取）。"
+      "false_green": "两个已修形态：0 个用例被执行算红 · 任何 skip/todo 算红；通过腿曾印「用例 6/6」而真值 422/422（R38，现只从该门自己的汇总行锚点取）。派生依赖：CI 无派生 ⇒ TAP 失败行解析不出/用例漂移 ⇒ 车道外 offLane 不计码；独立 node-test windows 腿已 success（核心测试绿）；本地全量仍强制核。"
     },
     "结构意图": {
       "verifies": "两档各调一处现存权威：文件级 silentGapsOf（哪些源文件既没节点也没声明排除）+ 目录级 structureGap（unlisted / misplaced / relocating）。",
@@ -60,7 +64,7 @@
     },
     "无卡写账": {
       "verifies": "write_log 第三本账：谁在什么时候改了哪个文件、挂在哪张卡上；按「只许不增」的棘轮判。",
-      "false_green": "边界：只覆盖过写原语的写；Write / Edit / shell 直写磁盘不在账上 ⇒ 门通过 ≠ 一切写都有卡。"
+      "false_green": "边界：只覆盖过写原语的写；Write / Edit / shell 直写磁盘不在账上 ⇒ 门通过 ≠ 一切写都有卡。任务库依赖：CI 无 tasks.db ⇒ 读不到账按 0 行计（读不到 ≠ 没有无卡写）⇒ 车道外 offLane 不计码；本地全量仍强制核。"
     },
     "派生条目要求权": {
       "verifies": "被改动的派生条目（notes: from:cache.db@*）有没有借「把册改回源码当前值」行使要求权。",
@@ -150,6 +154,14 @@
     "patrol.mjs": {
       "status": "manual-only",
       "reason": "巡检只报告不改 state（AGENTS 三：『只报告不改 state』）；它是运行时入口，不是每轮提交的必需品。"
+    },
+    "ablation-cron.mjs": {
+      "status": "informational",
+      "reason": "观察期周期 reference 编排：对照读数（holes/full_red/影子覆盖）只进台账 `widen_required` 信号，不进 verify 硬判据、不抬退出码（§5 L5 ④）。触发方是宿主 cron 与 CI 观察期 workflow（ablation-reference.yml），不挂总门；dry/light 本机轻量，全量对照留隔离副本。"
+    },
+    "ablation-ingest.mjs": {
+      "status": "manual-only",
+      "reason": "观察期台账的宿主侧**唯一写者**：把 CI reference artifact 校验后 append-only 落进 `.agent-io/ablation-runs.jsonl`（D.6 单写者多读者）。CI 本身不写账本；本脚本由宿主 cron 调度调用，不进总门。run_id 幂等，重复 ingest 跳过不重复记账。"
     }
   }
 }

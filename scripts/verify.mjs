@@ -492,11 +492,28 @@ const GATES = [
     consumer: 'npm run verify',
     tier: 'A',
     cmd: 'node',
-    args: ['scripts/docs-facts-check.mjs'],
+    // ★ 2026-11-25（P3 施工批 · Main 裁①）：本门只留**入库快照对账**（lint:prose 散文 · manifest:check 卷表）；
+    //   依赖派生现算的 gen-facts / cognition / ledger / doc:check 拆到「文档派生投影」门车道外 offLane。
+    args: ['scripts/docs-facts-check.mjs', '--snapshot'],
     why:
-      '★ 四个断言式检查（lint:prose 写死计数 · gen-facts:check 数字一致 · manifest:check 卷表一致 · cognition:check 最新）' +
-      '此前**不在任何门里** ⇒ `npm run verify` 全绿时它们是红的也没人知道。' +
-      '★ 它挡的事故：文档/FACTS/MANIFEST 静默撒谎 —— 它们是给人和 agent 读的"事实"，漂了就等于指错路。',
+      '★ 入库快照对账（lint:prose 写死计数 · manifest:check 卷表一致）：读盘上入库文档/卷表，CI 可判 ⇒ 车道内。' +
+      '★ 它挡的事故：文档/MANIFEST 静默撒谎 —— 它们是给人和 agent 读的"事实"，漂了就等于指错路。' +
+      '★ 派生现算子项见「文档派生投影」门（车道外，本地全量仍强制核）。',
+  },
+  {
+    name: '文档派生投影',
+    kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
+    // ★ 2026-11-25（P3 施工批 · Main 裁①）：派生现算子项（gen-facts:check 数字 · cognition:check · ledger:check 视图 ·
+    //   doc:check 投影块）依赖 cache.db 等派生落盘；CI clean-clone 缺派生 ⇒ 现算空/陈旧误报。
+    //   车道外 offLane（env-contract lanes=[]）：CI 没判单列不计码；本地全量 laneSet=null 仍强制核。逐条判据语义不变。
+    cmd: 'node',
+    args: ['scripts/docs-facts-check.mjs', '--derived'],
+    why:
+      '★ 派生现算对账（gen-facts:check FACTS 数字 · cognition:check COGNITION · ledger:check todo 视图 · doc:check 投影块）：' +
+      '依赖 cache.db/派生投影，CI 无派生环境判不了 ⇒ 车道外弱代理（诚实标注「CI 没判」）；本地全量仍强制核。' +
+      '★ 它挡的事故：派生视图陈旧/手改生成区，与入库快照三向对账不符。',
   },
   // ★★★ 2026-10-30（第十道）：**测试门** —— 此前 `tests/` 下 11 个 `*.test.ts` **没有任何 runner 在跑**。
   //   为什么这算"病"而不是"待办"：`docs/GUIDE-GATE.md` 的门表就是"跑过什么"的唯一账本，
@@ -688,9 +705,13 @@ const UNSUPPORTED_EXIT = 2;
 //   不参与任何门的判定（判定仍住在各子门）；**识别不出 ⇒ 说「没识别出」，绝不许报 0**（0.9.4 第 1 行）。
 const FAIL_LINE_RE = /^\s*(?:not ok\b|FAIL\b|[✗✖×])|error TS\d+/;
 
-/** 失败行（原文，未截断）。空数组 = **没识别出**，不是「没有失败」。 */
+/** 失败行（原文，未截断）。空数组 = **没识别出**，不是「没有失败」。
+ * ★ 2026-11-25（P3 施工批 B 根因修）：先剥 ANSI 再匹配。子门 say() 的红/绿是硬编码
+ *   ANSI 串（不判 TTY）⇒ CI 非 TTY 输出失败行首是 ESC 码 `\x1b[31m`，`^\s*` 吞不掉
+ *   ⇒ ✗/not ok 锚点失配，失败行解析不出（casesOf 早走 plainText，failureLines 漏了）。
+ *   剥色后行首即判据记号；本函数只计数/定位，不参与门判定。 */
 export function failureLines(out) {
-  return String(out ?? '')
+  return plainText(String(out ?? ''))
     .split(/\r?\n/)
     .filter((l) => FAIL_LINE_RE.test(l));
 }
@@ -738,8 +759,16 @@ export const READOUT_ANCHORS = [
   {
     gate: '文档与事实',
     unit: '检查',
-    // 实测原文：`—— 文档与事实：4/4 通过`
+    // 实测原文：`—— 文档与事实：2/2 通过`（snapshot 组：lint:prose · manifest:check）
     anchor: /^\s*—— 文档与事实：(\d+)\/(\d+) 通过$/gm,
+    pass: 1,
+    total: 2,
+  },
+  {
+    gate: '文档派生投影',
+    unit: '检查',
+    // 实测原文：`—— 文档派生投影：4/4 通过`（derived 组：gen-facts · cognition · ledger · doc:check）
+    anchor: /^\s*—— 文档派生投影：(\d+)\/(\d+) 通过$/gm,
     pass: 1,
     total: 2,
   },

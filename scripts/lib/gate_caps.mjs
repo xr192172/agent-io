@@ -112,7 +112,11 @@ export const GATE_CAPS = Object.freeze({
   },
   '文档与事实': {
     reads: [RES.DOCS, RES.SRC, RES.AGENT_IO], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
-    note: '聚合门；六个子检查逐子登记于 SUBCHECK_CAPS，全部只读三向对账。',
+    note: 'snapshot 组（lint:prose · manifest:check）：入库快照对账，只读三向对账。聚合门，子检查逐子登记于 SUBCHECK_CAPS。',
+  },
+  '文档派生投影': {
+    reads: [RES.DOCS, RES.SRC, RES.AGENT_IO], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
+    note: 'derived 组（gen-facts · cognition · ledger · doc:check）：派生现算对账，只读。车道外 offLane 不计码，本地全量仍计入。',
   },
   '测试': {
     reads: [RES.SRC, RES.TESTS], writes: [RES.ISOLATED_HOME], side_effect: false, pool: POOL.CPU, rank: 1,

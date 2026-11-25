@@ -230,7 +230,8 @@ const HINTS = {
     '`design-db/` 0 文件被跟踪 ⇒ 384 份投影全缺（`npm run gate` 会先 `design:gen-db`，`npm run verify` 不会）',
   '设计册判据':
     '`.agentio-data/projects.json`（项目注册表）不入 git ⇒ CLI 不知道这 3 册属于本仓 ⇒ 回落到 `<storageRoot>/design/` ⇒ 判据 0 条（exit 2）',
-  '文档与事实': '`.agent-io/COGNITION.txt` 不入 git，且本地盘上也没有 ⇒ `cognition:check` 必红',
+  '文档与事实': 'snapshot 组：lint:prose 散文 · manifest:check 卷表对账（入库快照，干净环境可判）。',
+  '文档派生投影': 'derived 组：gen-facts / cognition / ledger / doc:check 派生现算对账；CI 无 cache.db 派生落盘 ⇒ 现算空/陈旧与入库快照三向不符必红；车道外 offLane 单列，本地全量才核。',
 };
 
 const hintFor = (name) => HINTS[name] ?? '';

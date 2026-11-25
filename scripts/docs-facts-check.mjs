@@ -26,17 +26,31 @@ import { loadStore, planGate, recordGate, DEFAULT_INPUTS } from './lib/verify_in
 
 const ROOT = process.cwd();
 const INHERIT = process.env.AGENT_IO_VERIFY_INHERIT !== '0';
-const CHECKS = [
-  ['lint:prose', '散文当结构 / 写死计数（规则 A–E）'],
-  ['gen-facts:check', 'FACTS.json 与 README 的数字是否与实际一致'],
-  ['manifest:check', 'MANIFEST 卷表与 `.agent-io/` 实际内容是否一致'],
-  ['cognition:check', 'COGNITION.txt 是否最新（枚举源必须读 `design/*.dsl.json`）'],
-  // ★★ 2026-11-17（T-#LEDGER-ENGINE L3）：`docs/todo.md` 从**手写真相**降为**派生视图** ⇒
-  //   "视图是不是最新"必须有门，否则手改视图（或引擎改了没重生成）在 `verify` 里是**看不见的**。
-  //   退出码是三态（0 最新 / 3 陈旧或缺失 / 1 坏），本聚合器只关心"非 0 ⇒ 红"。
-  ['ledger:check', 'docs/todo.md 视图是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账）'],
-  ['doc:check', '文档投影块是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账；手改生成区/stale/自洽失败非绿）'],
-];
+
+// ★★★ 2026-11-25（P3 施工批 · Main 裁① 统一车道政策）：六子检查按**数据源归属**分两组。
+//   · `--snapshot` 入库快照对账（lint:prose / manifest:check）：读盘上入库文档/卷表，CI 可判 ⇒ 车道内 inLane。
+//   · `--derived` 派生现算（gen-facts / cognition / ledger / doc:check）：依赖 cache.db 等派生
+//     现算落盘，CI clean-clone 缺派生 ⇒ 车道外 offLane 单列（本地全量 laneSet=null 仍强制核）。
+//   缺省（不带 mode）= 六件全跑，向后兼容；逐条判据语义不变，只按数据源分桶。
+const GROUPS = {
+  snapshot: [
+    ['lint:prose', '散文当结构 / 写死计数（规则 A–E）'],
+    ['manifest:check', 'MANIFEST 卷表与 `.agent-io/` 实际内容是否一致'],
+  ],
+  derived: [
+    ['gen-facts:check', 'FACTS.json 与 README 的数字是否与实际一致'],
+    ['cognition:check', 'COGNITION.txt 是否最新（枚举源必须读 `design/*.dsl.json`）'],
+    // ★★ 2026-11-17（T-#LEDGER-ENGINE L3）：`docs/todo.md` 从**手写真相**降为**派生视图** ⇒
+    //   "视图是不是最新"必须有门，否则手改视图（或引擎改了没重生成）在 `verify` 里是**看不见的**。
+    //   退出码是三态（0 最新 / 3 陈旧或缺失 / 1 坏），本聚合器只关心"非 0 ⇒ 红"。
+    ['ledger:check', 'docs/todo.md 视图是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账）'],
+    ['doc:check', '文档投影块是否最新（引擎现算 vs 盘上 vs git HEAD 三向对账；手改生成区/stale/自洽失败非绿）'],
+  ],
+};
+const MODE = process.argv.includes('--derived') ? 'derived'
+  : process.argv.includes('--snapshot') ? 'snapshot'
+  : 'all';
+const CHECKS = MODE === 'all' ? [...GROUPS.snapshot, ...GROUPS.derived] : GROUPS[MODE];
 
 const SUBCHECK_SCRIPT = {
   'lint:prose': 'scripts/lint-prose-as-structure.mjs',
@@ -103,5 +117,6 @@ function printFailDetail(script, out) {
   );
 }
 
-console.log(`  —— 文档与事实：${CHECKS.length - failed}/${CHECKS.length} 通过`);
+const head = MODE === 'derived' ? '文档派生投影' : '文档与事实';
+console.log(`  —— ${head}：${CHECKS.length - failed}/${CHECKS.length} 通过`);
 process.exit(failed ? 1 : 0);
