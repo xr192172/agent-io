@@ -42333,6 +42333,38 @@
         },
         "arch_layer": "core",
         "path": "scripts/debug-index-dump.mjs"
+      },
+      {
+        "id": "file_src_infrastructure_rules_protected_rules_ts",
+        "label": "protected_rules.ts",
+        "x": 780,
+        "y": 13420,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "path": "src/infrastructure/rules/protected_rules.ts"
+      },
+      {
+        "id": "file_scripts_approve-rules_mjs",
+        "label": "approve-rules.mjs",
+        "x": 780,
+        "y": 13420,
+        "width": 240,
+        "height": 64,
+        "type": "file",
+        "style": {
+          "bg": "#37474f",
+          "color": "#eceff1",
+          "borderRadius": 4
+        },
+        "arch_layer": "core",
+        "path": "scripts/approve-rules.mjs"
       }
     ],
     "edges": [
@@ -86289,6 +86321,142 @@
           "dist/src/infrastructure/parse/kernel.js"
         ],
         "path": "scripts/debug-index-dump.mjs"
+      },
+      {
+        "id": "file_src_infrastructure_rules_protected_rules_ts",
+        "responsibility": "protected_rules —— H3 裁判独立受保护规则版本钉验：规则源码集合 sha256 排序拼接 rules_sha、册 JSON 取 tag 内/工作树 blob SHA，与审批 ledger 最新 entry 比对；受保护环境（git 仓且有 entry/tag）任一不符 fail-closed 拒判，隔离夹具/未引导基线 protected=false 放行。",
+        "symbols": [
+          {
+            "name": "RULE_SOURCE_FILES",
+            "kind": "const",
+            "line": 27,
+            "end_line": 27,
+            "signature": "export const RULE_SOURCE_FILES = ["
+          },
+          {
+            "name": "PROTECTED_TAG",
+            "kind": "const",
+            "line": 35,
+            "end_line": 35,
+            "signature": "export const PROTECTED_TAG = 'rules-protected';"
+          },
+          {
+            "name": "APPROVAL_LEDGER_REL",
+            "kind": "const",
+            "line": 36,
+            "end_line": 36,
+            "signature": "export const APPROVAL_LEDGER_REL = '.agent-io/protected-approvals.jsonl';"
+          },
+          {
+            "name": "sha256",
+            "kind": "const",
+            "line": 38,
+            "end_line": 38,
+            "signature": "const sha256 = (buf: Buffer | string): string => crypto.createHash('sha256').update(buf).digest('hex');"
+          },
+          {
+            "name": "norm",
+            "kind": "const",
+            "line": 39,
+            "end_line": 39,
+            "signature": "const norm = (p: string): string => p.replace(/\\\\/g, '/').replace(/^\\.\\//, '');"
+          },
+          {
+            "name": "ApprovalEntry",
+            "kind": "interface",
+            "line": 42,
+            "end_line": 42,
+            "signature": "export interface ApprovalEntry {"
+          },
+          {
+            "name": "ProtectedVerification",
+            "kind": "interface",
+            "line": 53,
+            "end_line": 53,
+            "signature": "export interface ProtectedVerification {"
+          },
+          {
+            "name": "listBookFiles",
+            "kind": "function",
+            "line": 73,
+            "end_line": 73,
+            "signature": "export function listBookFiles(root: string): string[] {"
+          },
+          {
+            "name": "worktreeBlobSha",
+            "kind": "function",
+            "line": 84,
+            "end_line": 84,
+            "signature": "export function worktreeBlobSha(root: string, rel: string): string | null {"
+          },
+          {
+            "name": "tagBlobSha",
+            "kind": "function",
+            "line": 90,
+            "end_line": 90,
+            "signature": "export function tagBlobSha(root: string, rel: string): string | null {"
+          },
+          {
+            "name": "headCommit",
+            "kind": "function",
+            "line": 96,
+            "end_line": 96,
+            "signature": "export function headCommit(root: string): string | null {"
+          },
+          {
+            "name": "rulesSourceFingerprint",
+            "kind": "function",
+            "line": 105,
+            "end_line": 105,
+            "signature": "export function rulesSourceFingerprint(root: string): { sha: string; files: Record<string, string>; missing: string[] } {"
+          },
+          {
+            "name": "loadLatestApproval",
+            "kind": "function",
+            "line": 128,
+            "end_line": 128,
+            "signature": "export function loadLatestApproval(root: string): ApprovalEntry | null {"
+          },
+          {
+            "name": "verifyProtectedRules",
+            "kind": "function",
+            "line": 157,
+            "end_line": 157,
+            "signature": "export function verifyProtectedRules(root: string): ProtectedVerification {"
+          }
+        ],
+        "lines": 218,
+        "layer": "core",
+        "expected_deps": [
+          "dist/src/infrastructure/exec_guard.js"
+        ],
+        "path": "src/infrastructure/rules/protected_rules.ts"
+      },
+      {
+        "id": "file_scripts_approve-rules_mjs",
+        "responsibility": "approve-rules —— H3 独立批准动作唯一入口：算当前规则源码指纹 + 册 blob SHA + HEAD，写一条 append-only 审批 entry 到 protected-approvals.jsonl，再前移受保护 tag rules-protected；回读校验不符退出 1，前置不满足退出 2。",
+        "symbols": [
+          {
+            "name": "ROOT",
+            "kind": "const",
+            "line": 30,
+            "end_line": 30,
+            "signature": "const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');"
+          },
+          {
+            "name": "distImport",
+            "kind": "const",
+            "line": 32,
+            "end_line": 32,
+            "signature": "const distImport = async (relPath) =>"
+          }
+        ],
+        "lines": 111,
+        "layer": "core",
+        "expected_deps": [
+          "dist/src/infrastructure/rules/protected_rules.js"
+        ],
+        "path": "scripts/approve-rules.mjs"
       }
     ]
   },
