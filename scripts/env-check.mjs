@@ -24,9 +24,20 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadContract } from './lib/env_contract.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
+
+// ★ 工具链命令 / 版本下限 / 平台子集唯一权威 = 仓根 env-contract.json（CI-fix C3）。
+//   契约读不到 / JSON 坏 / 结构不符 ⇒ exit 2（体检本身没跑完，不是"环境没问题"），不回退内置硬编码。
+let contract;
+try {
+  contract = loadContract(ROOT);
+} catch (e) {
+  console.error(`${C.r}⇒ env-contract 加载失败：${e?.message ?? e}${C.x}`);
+  process.exit(2);
+}
 
 /** 跑一条命令拿首行（不抛：失败也要有读数）。Windows 下 .cmd 需要 shell。 */
 function probe(cmd, args = [], { shell = false, timeout = 20000 } = {}) {
@@ -46,12 +57,14 @@ const add = (level, item, detail, fix) => rows.push({ level, item, detail, fix }
 // ── ① 运行时（必需）────────────────────────────────────────────────
 const nodeV = process.version.replace(/^v/, '');
 const [nMajor, nMinor] = nodeV.split('.').map(Number);
-if (nMajor > 22 || (nMajor === 22 && nMinor >= 5)) {
+const nodeVer = contract.tools.node.version;
+const nodeOk = nMajor > nodeVer.major_min || (nMajor === nodeVer.major_min && nMinor >= (nodeVer.minor_min ?? 0));
+if (nodeOk) {
   // ★ 版本匹配只报"能不能跑"，不判"该不该用这个版本"：node:sqlite 在 22.5 起可用。
-  const note = nMajor === 22 ? '' : `${C.y}（本仓开发基线是 22.x；24+ 的 node:sqlite 有 API 差异，非必要不升级）${C.x}`;
+  const note = nMajor === nodeVer.major_min ? '' : `${C.y}（本仓开发基线是 ${nodeVer.major_min}.x；更新大版本的 node:sqlite 有 API 差异，非必要不升级）${C.x}`;
   add('OK', 'node', `v${nodeV}${note}`);
 } else {
-  add('FAIL', 'node', `v${nodeV} 低于 22.5（缺 node:sqlite）`, '装 Node 22 LTS（>=22.5）并把它的目录放进 PATH');
+  add('FAIL', 'node', `v${nodeV} 低于 ${nodeVer.major_min}.${nodeVer.minor_min}（缺 node:sqlite）`, `装 Node ${nodeVer.major_min} LTS（>=${nodeVer.major_min}.${nodeVer.minor_min}）并把它的目录放进 PATH`);
 }
 
 const npmP = probe('npm', ['-v']);
@@ -74,9 +87,10 @@ const javaLine = `${javaP.raw}`.split('\n').find((l) => /version/i.test(l))?.tri
 if (javaP.ok) {
   const m = /version "(\d+)/.exec(javaLine);
   const major = m ? Number(m[1]) : 0;
-  add(major >= 17 ? 'OK' : 'WARN', 'java', `${javaLine}${major && major < 17 ? '（夹具 pom 要求 17+）' : ''}`, '装 JDK 17+，把 `<JDK>\\bin` 放进 PATH，并设 JAVA_HOME');
+  const javaMajorMin = contract.tools.java.version.major_min;
+  add(major >= javaMajorMin ? 'OK' : 'WARN', 'java', `${javaLine}${major && major < javaMajorMin ? `（夹具 pom 要求 ${javaMajorMin}+）` : ''}`, `装 JDK ${javaMajorMin}+，把 \`<JDK>\\bin\` 放进 PATH，并设 JAVA_HOME`);
 } else {
-  add('WARN', 'java', '不可用（Java 夹具/MyBatis 契约会 SKIP）', '装 JDK 17+；PATH 加 `<JDK>\\bin`；设 JAVA_HOME');
+  add('WARN', 'java', '不可用（Java 夹具/MyBatis 契约会 SKIP）', `装 JDK ${contract.tools.java.version.major_min}+；PATH 加 \`<JDK>\\bin\`；设 JAVA_HOME`);
 }
 const mvnP = probe('mvn', ['-v']);
 add(mvnP.ok ? 'OK' : 'WARN', 'maven', mvnP.ok ? mvnP.first : '不可用（Java 测试对象跑不了）', '装 Maven；PATH 加 `<maven>\\bin`');

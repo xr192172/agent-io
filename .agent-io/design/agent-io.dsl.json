@@ -42301,6 +42301,14 @@
         "y": 1080,
         "type": "file",
         "path": "scripts/lib/preempt_guard.mjs"
+      },
+      {
+        "id": "file_scripts_lib_env_contract_mjs",
+        "label": "env_contract.mjs",
+        "x": 1700,
+        "y": 1150,
+        "type": "file",
+        "path": "scripts/lib/env_contract.mjs"
       }
     ],
     "edges": [
@@ -86012,6 +86020,12 @@
         "responsibility": "S-13 插队 + 安全点抢占护栏 + 并行降级显形回退：安全点三条件、非安全点排队、降级挂起/串行对账/mismatch 显形。",
         "expected_deps": [],
         "path": "scripts/lib/preempt_guard.mjs"
+      },
+      {
+        "id": "file_scripts_lib_env_contract_mjs",
+        "responsibility": "CI-fix C3：仓根 env-contract.json 的读取 + 结构校验一处权威；工具命令/版本下限/平台子集/派生库归属登记于此，本地 harness 与 CI workflow 共读；契约缺失/坏 JSON/结构不符 fail-closed 抛错，不回退内置硬编码。",
+        "expected_deps": [],
+        "path": "scripts/lib/env_contract.mjs"
       }
     ]
   },

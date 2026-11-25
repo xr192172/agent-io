@@ -1,0 +1,76 @@
+{
+  "schema": "env-contract/1",
+  "updated_at": "2026-11-25",
+  "note": "本地 harness（env-check.mjs / check-toolchain-intact.mjs / verify.mjs）与 CI workflow 共读的工具链契约唯一权威；工具命令、版本下限、平台子集、派生库归属都登记在这里，私补 env 或脚本内写死阈值以这里为准（漂移即红）。",
+  "tools": {
+    "node": {
+      "required": true,
+      "command": "node",
+      "version": { "major_min": 22, "minor_min": 5 },
+      "version_note": "node:sqlite 自 22.5 起可用；engines 字段同源 >=22.5",
+      "ci": { "setup": "setup-node", "version": "22" }
+    },
+    "npm": {
+      "required": true,
+      "command": "npm",
+      "version": null,
+      "ci": { "setup": "bundled-with-node" }
+    },
+    "git": {
+      "required": true,
+      "command": "git",
+      "version": null,
+      "ci": { "setup": "checkout-action-bundled" }
+    },
+    "java": {
+      "required": false,
+      "command": "java",
+      "version": { "major_min": 17 },
+      "version_note": "Java LanguagePack 夹具/MyBatis 契约需要 17+；纯 TS 开发可缺（WARN/SKIP，不判 FAIL）",
+      "ci": { "setup": "setup-java", "version": "17" }
+    },
+    "maven": {
+      "required": false,
+      "command": "mvn",
+      "version": null,
+      "ci": { "setup": "setup-maven" }
+    },
+    "go": {
+      "required": false,
+      "command": "go",
+      "version": null,
+      "version_note": "observe-lang-go 两门需要；纯标准库，无 go.sum",
+      "ci": { "setup": "setup-go", "version": "stable" }
+    }
+  },
+  "platforms": {
+    "windows": {
+      "runs_on": "windows-latest",
+      "tools": ["node", "npm", "git", "java", "maven", "go"],
+      "role": "Windows 绑定腿：平台相关门（Java/Go 等）诚实归位，不 SKIP 凑绿；三态保持 unsupported 单列"
+    },
+    "linux": {
+      "runs_on": "ubuntu-latest",
+      "tools": ["node", "npm", "git", "go"],
+      "role": "跨平台子集：TS 类型/构建/结构/判据/测试门"
+    }
+  },
+  "derived": {
+    "design_db": {
+      "in_repo": false,
+      "ci": "bootstrap",
+      "bootstrap_cmd": "npm run design:gen-db",
+      "note": "设计册的纯投影（design-db/），CI 可由册自建"
+    },
+    "cache_db": {
+      "in_repo": false,
+      "ci": "unsupported",
+      "note": "符号索引（.agent-io/cache.db）归本机/云主机探针；CI 诚实 unsupported，不凑绿"
+    },
+    "tasks_db": {
+      "in_repo": false,
+      "ci": "unsupported",
+      "note": "任务卡库（.agent-io/tasks.db）同上，CI 不重建"
+    }
+  }
+}
