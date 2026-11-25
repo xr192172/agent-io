@@ -17,13 +17,20 @@
  *   进退码（观察期窗口评估属 `evaluateObservationWindow` 的读数口径）。
  *
  * 用法：
- *   node scripts/ablation-ingest.mjs --artifact <json 文件> [--root <dir>] [--json]
+ *   node --import tsx scripts/ablation-ingest.mjs --artifact <json 文件> [--root <dir>] [--json]
  *
  * 幂等：同一 `run_id` 已在台账 ⇒ 跳过追加（不重复记账），exit 0。
+ *
+ * H1 诚实分母：落账前按 `classifyRunClass`（权威口径在 incsel_cron.ts）标定 `run_class`
+ * （dry / untrusted / sampled / full-control）；旧台账行缺类别时由评估端现场分类兼容，
+ * 新入账记录在此写死类别。仅 full-control 进观察期分母。
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { classifyRunClass } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
+
+const RUN_CLASSES = ['dry', 'untrusted', 'sampled', 'full-control'];
 
 const argv = process.argv.slice(2);
 const val = (f) => {
@@ -70,6 +77,9 @@ function validate(record) {
   if (!Array.isArray(record.triggered_by)) reasons.push('triggered_by 非数组');
   if (record.reading_only !== true) reasons.push('reading_only 必须为 true（对照读数不进硬判据）');
   if (record.snapshot == null || typeof record.snapshot !== 'object') reasons.push('snapshot 非对象');
+  if (record.run_class != null && !RUN_CLASSES.includes(record.run_class)) {
+    reasons.push(`run_class=${record.run_class} 不在闭集 ${RUN_CLASSES.join('/')}`);
+  }
   return reasons;
 }
 
@@ -97,6 +107,15 @@ const reasons = validate(record);
 if (reasons.length > 0) {
   process.stderr.write(`ablation-ingest: record 校验失败：${reasons.join('；')}\n`);
   process.exit(2);
+}
+
+// H1：缺类别 ⇒ 按权威口径现算回填；已有类别已在 validate 闭集内校验。
+if (record.run_class == null) {
+  record.run_class = classifyRunClass({
+    finished_at: record.finished_at ?? null,
+    snapshot: { clean: !!record.snapshot.clean, isolated: !!record.snapshot.isolated },
+    mode: record.mode,
+  });
 }
 
 const { records: existing, bad } = readLedgerRecords();
@@ -128,6 +147,7 @@ const out = {
   ingested: true,
   run_id: record.run_id,
   mode: record.mode,
+  run_class: record.run_class,
   triggered_by: record.triggered_by,
   base_sha: record.snapshot.commit_sha,
   ledger: LEDGER_REL,
@@ -138,7 +158,7 @@ const out = {
 };
 if (jsonOut) process.stdout.write(JSON.stringify(out, null, 2) + '\n');
 else {
-  console.log(`ablation-ingest: 已记账 run_id=${record.run_id}（mode=${record.mode}）`);
+  console.log(`ablation-ingest: 已记账 run_id=${record.run_id}（mode=${record.mode} · 类别=${record.run_class}）`);
   console.log(`  台账 ${after.length} 条；底座 sha 轮数 ${afterBases.size}${afterBases.size >= 2 ? '（已跨 ≥1 轮底座变更）' : '（基线轮）'}`);
   if (bad.length > 0) console.log(`  ⚠ 台账既有坏行 ${bad.length} 处（不静默）：${bad.map((b) => `#${b.line}`).join(', ')}`);
 }

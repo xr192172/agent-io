@@ -161,7 +161,7 @@
     },
     "ablation-ingest.mjs": {
       "status": "manual-only",
-      "reason": "观察期台账的宿主侧**唯一写者**：把 CI reference artifact 校验后 append-only 落进 `.agent-io/ablation-runs.jsonl`（D.6 单写者多读者）。CI 本身不写账本；本脚本由宿主 cron 调度调用，不进总门。run_id 幂等，重复 ingest 跳过不重复记账。"
+      "reason": "观察期台账的宿主侧**唯一写者**：把 CI reference artifact 校验后 append-only 落进 `.agent-io/ablation-runs.jsonl`（D.6 单写者多读者）。CI 本身不写账本；本脚本由宿主 cron 调度调用（`node --import tsx`，分类口径单一权威在 incsel_cron.ts），不进总门。run_id 幂等，重复 ingest 跳过不重复记账。"
     }
   }
 }

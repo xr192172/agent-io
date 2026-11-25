@@ -221,6 +221,7 @@ else {
   console.log(`ablation-cron: 触发因=${eval_.fired.join(',')} mode=${mode} files=${quota.files} jobs=${quota.jobs}`);
   console.log(`  快照 ${snapshot.snapshot_id} isolated=${snapshot.isolated}${snapshot.reasons.length ? `（${snapshot.reasons.join('；')}）` : ''}`);
   console.log(`  台账=${LEDGER_REL} 趋势=${trend.direction}（runs=${trend.runs}）`);
+  console.log(`  观察期：足额对照=${observation.eligibleRuns}/${observation.runs} 连续零洞=${observation.consecutiveZero} 类别=${JSON.stringify(observation.classified)} 窗外=${observation.outsideWindow} reason=${observation.reason}`);
   console.log('  对照读数 reading-only：不进硬判据、不抬退出码；漏选扩宽信号见台账 widen_required。');
 }
 // ④ 编排层恒 exit 0：对照读数不抬退出码（前置守卫失败已在上面 exit 2）。

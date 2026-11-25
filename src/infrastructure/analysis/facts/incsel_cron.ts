@@ -93,6 +93,22 @@ export const LIGHT_SAMPLE_MAX_JOBS = 2;
 
 export type RunMode = 'light' | 'full';
 
+/**
+ * 观察期落账类别（H1 诚实分母）—— 只有 `full-control` 足额对照进观察期分母，
+ * 其余三类的平凡空 holes **不构成漏选闭合证明**，不计零洞段、不进分母。
+ * · `dry`：未起真实对照（finished_at=null / dry-run 占位）；
+ * · `untrusted`：跑了对照但快照不可信（脏树 / 非独立 worktree / 非干净快照）；
+ * · `sampled`：快照可信但 light 抽样（未达足额 quota）；
+ * · `full-control`：可信快照 + 足额 quota（mode=full）+ 对照完成，唯一计入观察期的类别。
+ */
+export type RunClass = 'dry' | 'untrusted' | 'sampled' | 'full-control';
+
+/** 观察期窗口长度 K（周），已冻结：2 周。 */
+export const OBSERVATION_WINDOW_DAYS = 14;
+
+/** 观察期起钟（window_start，已录台账）；窗口内记录才进诚实分母。 */
+export const OBSERVATION_WINDOW_START = '2026-11-25T18:53:43+08:00';
+
 export interface SamplingQuota {
   files: number;
   jobs: number;
@@ -203,6 +219,8 @@ export interface AblationRunRecord {
   scenario_coverage: Partial<Record<AblationScenarioClass, readonly string[]>>;
   /** 漏选 ⇒ 选材 fail-closed 扩宽信号（记录留痕，不在编排层就地扩宽） */
   widen_required: boolean;
+  /** 落账类别（H1 诚实分母）：仅 full-control 进观察期分母 */
+  run_class: RunClass;
   /** 对照读数：不进 verify 硬判据、不抬退出码 */
   reading_only: true;
 }
@@ -224,19 +242,42 @@ export interface AblationRecordInput {
   must_run?: readonly string[];
   shadow_coverage?: readonly string[];
   scenario_coverage?: Partial<Record<AblationScenarioClass, readonly string[]>>;
+  /** 显式指定类别；缺省由 `classifyRunClass` 按快照/完成态/配额现算（旧台账行现场分类兼容）。 */
+  run_class?: RunClass;
+}
+
+/**
+ * 落账类别判定（纯函数，fail-closed 从严；优先级自上而下）：
+ * 1. 未完成对照（`finished_at == null`）⇒ `dry`：占位跑，无对照读数；
+ * 2. 快照不可信（脏树 / 非独立 worktree）⇒ `untrusted`：读数不背书；
+ * 3. 非足额 quota（`mode !== 'full'`）⇒ `sampled`：light 抽样，平凡空不证明闭合；
+ * 4. 否则 ⇒ `full-control`：可信快照 + 足额 quota + 对照完成，唯一进观察期分母的类别。
+ */
+export function classifyRunClass(record: {
+  finished_at: string | null;
+  snapshot: { clean: boolean; isolated: boolean };
+  mode: RunMode;
+}): RunClass {
+  if (record.finished_at == null) return 'dry';
+  if (!record.snapshot.clean || !record.snapshot.isolated) return 'untrusted';
+  if (record.mode !== 'full') return 'sampled';
+  return 'full-control';
 }
 
 /** 装配一条台账记录（纯函数；排序归一，未知字段不进记录）。 */
 export function buildAblationRecord(input: AblationRecordInput): AblationRunRecord {
   const holes = [...(input.holes ?? [])].sort();
   const list = (v: readonly string[] | undefined) => [...(v ?? [])].sort();
+  const finishedAt = input.finished_at ?? null;
+  const snapshot = { ...input.snapshot };
+  const runClass = input.run_class ?? classifyRunClass({ finished_at: finishedAt, snapshot, mode: input.mode });
   return {
     schema: 1,
     run_id: input.run_id,
     triggered_by: [...input.triggered_by],
     started_at: input.started_at,
-    finished_at: input.finished_at ?? null,
-    snapshot: { ...input.snapshot },
+    finished_at: finishedAt,
+    snapshot,
     preemption: input.preemption ?? { preempted: false, reason: null },
     mode: input.mode,
     quota: { ...input.quota },
@@ -249,6 +290,7 @@ export function buildAblationRecord(input: AblationRecordInput): AblationRunReco
     shadow_coverage: list(input.shadow_coverage),
     scenario_coverage: { ...(input.scenario_coverage ?? {}) },
     widen_required: holes.length > 0,
+    run_class: runClass,
     reading_only: true,
   };
 }
@@ -289,52 +331,115 @@ export function summarizeShadowTrend(records: readonly AblationRunRecord[]): Sha
  */
 export const OBSERVATION_HOLES_ZERO_RUNS = 10;
 
-export type ObservationWindowReason = 'eligible' | 'insufficient-runs' | 'hole-in-window';
+export type ObservationWindowReason =
+  | 'eligible'
+  | 'insufficient-runs'
+  | 'hole-in-window'
+  | 'ineligible-class'
+  | 'outside-window';
 
 export interface ObservationWindowResult {
-  /** 末尾连续 holes=0 的次数（从最后一条往前数，遇任一 holes>0 即中断） */
+  /** 末尾连续 holes=0 的次数（仅足额对照段内，从最后一条纳入记录往前数，遇任一 holes>0 即中断） */
   consecutiveZero: number;
-  /** 台账记录总数 */
+  /** 台账记录总数（含 dry/抽样/非对照，仅披露不进分母） */
   runs: number;
+  /** 纳入观察期分母的足额对照条数（full-control 且窗口内） */
+  eligibleRuns: number;
+  /** 四类落账计数（dry / untrusted / sampled / full-control） */
+  classified: Record<RunClass, number>;
+  /** 类别合规但落在时间窗外的条数 */
+  outsideWindow: number;
   /** 零洞门槛 N（L2 起步 10） */
   threshold: number;
-  /** 连续零洞次数 ≥ N ⇒ true；不足或窗口内有洞 ⇒ false */
+  /** 连续零洞次数 ≥ N ⇒ true；不足 / 窗口内有洞 / 无足额对照 ⇒ false */
   eligible: boolean;
-  /** 读数口径：eligible=达标；insufficient-runs=记录数/连续零洞不足 N；hole-in-window=末尾连续段之前（或最近一条）存在漏选洞 */
+  /** 读数口径：eligible=达标；insufficient-runs=足额对照条数/连续零洞不足 N；hole-in-window=纳入段内存在漏选洞；ineligible-class=无足额对照（全为 dry/抽样/非对照）；outside-window=记录均在窗口外 */
   reason: ObservationWindowReason;
+  /** 窗口起钟 ISO（回显入参或冻结默认） */
+  windowStart: string;
+  /** 窗口长度（天，K=2 周=14） */
+  windowKDays: number;
 }
 
 /**
- * ⑤ 观察期机制（纯函数，零 IO）：数台账末尾连续 holes=0 的次数，对照 L2 门槛 N。
+ * ⑤ 观察期机制（纯函数，零 IO，H1 诚实分母）。
  *
  * 口径：
- * · 从最后一条记录向前遍历，`holes.length === 0` 计入连续段；遇到第一条 holes>0 即中断；
+ * · **只有 `full-control`（可信快照 + 足额 quota + 对照完成）且 `started_at` 落在窗口内**的记录进分母；
+ *   dry / untrusted / sampled 三类的平凡空 holes **不构成漏选闭合证明**：不计零洞段、不进分母；
+ * · 从纳入集合最后一条向前遍历，`holes.length === 0` 计入连续段；纳入段内第一条 holes>0 即中断（真实洞重置连续零洞）；
  * · `eligible = consecutiveZero >= N`；N ≤0 按 OBSERVATION_HOLES_ZERO_RUNS 起步值；
- * · 最近一条就有洞 ⇒ consecutiveZero=0，reason='hole-in-window'（回退条件：出现漏选即重新计观察期）；
- * · 记录为空 ⇒ runs=0，insufficient，不冒充达标。
- * ★ 本判定只看 holes 计数；unknown 占比 / undetermined 占比 / 边型完备性等并列准入证据不在本函数内。
+ * · 最近纳入记录就有洞 ⇒ consecutiveZero=0，reason='hole-in-window'（回退条件：出现漏选即重新计观察期）；
+ * · 无足额对照记录 ⇒ 不冒充达标：全为非足额类别记 'ineligible-class'，均在窗外记 'outside-window'。
+ * ★ 本判定只数 holes 与类别/时间窗；unknown 占比 / undetermined 占比 / 边型完备性等并列准入证据不在本函数内。
  */
 export function evaluateObservationWindow(
   records: readonly AblationRunRecord[],
   threshold: number = OBSERVATION_HOLES_ZERO_RUNS,
+  opts: { windowStart?: string; windowKDays?: number } = {},
 ): ObservationWindowResult {
   const N = Number.isFinite(threshold) && threshold > 0 ? Math.floor(threshold) : OBSERVATION_HOLES_ZERO_RUNS;
-  const runs = records.length;
+  const windowStart = opts.windowStart ?? OBSERVATION_WINDOW_START;
+  const kDays = opts.windowKDays;
+  const windowKDays = Number.isFinite(kDays) && (kDays as number) > 0 ? Math.floor(kDays as number) : OBSERVATION_WINDOW_DAYS;
+  const startMs = Date.parse(windowStart);
+  const endMs = Number.isFinite(startMs) ? startMs + windowKDays * 86_400_000 : NaN;
+
+  const classified: Record<RunClass, number> = { dry: 0, untrusted: 0, sampled: 0, 'full-control': 0 };
+  const eligible: AblationRunRecord[] = [];
+  let outsideWindow = 0;
+
+  for (const rec of records) {
+    const cls: RunClass = rec.run_class ?? classifyRunClass(rec);
+    classified[cls] = (classified[cls] ?? 0) + 1;
+    if (cls !== 'full-control') continue;
+    const ts = Date.parse(rec.started_at);
+    const inWindow = Number.isFinite(startMs) && Number.isFinite(ts) && ts >= startMs && ts < endMs;
+    if (!inWindow) {
+      outsideWindow++;
+      continue;
+    }
+    eligible.push(rec);
+  }
+
   let consecutiveZero = 0;
   let sawHole = false;
-  for (let i = runs - 1; i >= 0; i--) {
-    if ((records[i].holes?.length ?? 0) === 0) {
+  for (let i = eligible.length - 1; i >= 0; i--) {
+    if ((eligible[i].holes?.length ?? 0) === 0) {
       consecutiveZero++;
     } else {
       sawHole = true;
       break;
     }
   }
-  const eligible = consecutiveZero >= N;
-  const reason: ObservationWindowReason = eligible
-    ? 'eligible'
-    : sawHole
-      ? 'hole-in-window'
-      : 'insufficient-runs';
-  return { consecutiveZero, runs, threshold: N, eligible, reason };
+
+  const eligibleRuns = eligible.length;
+  const eligiblePass = consecutiveZero >= N;
+  let reason: ObservationWindowReason;
+  if (eligiblePass) {
+    reason = 'eligible';
+  } else if (eligibleRuns === 0) {
+    reason = records.length === 0
+      ? 'insufficient-runs'
+      : outsideWindow > 0 && classified['full-control'] === outsideWindow
+        ? 'outside-window'
+        : 'ineligible-class';
+  } else if (sawHole) {
+    reason = 'hole-in-window';
+  } else {
+    reason = 'insufficient-runs';
+  }
+
+  return {
+    consecutiveZero,
+    runs: records.length,
+    eligibleRuns,
+    classified,
+    outsideWindow,
+    threshold: N,
+    eligible: eligiblePass,
+    reason,
+    windowStart,
+    windowKDays,
+  };
 }
