@@ -24,19 +24,28 @@
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, statSync, readdirSync, renameSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
 export const STORE_REL = '.agent-io/scratch/verify-inheritance.json';
 export const STORE_VERSION = 1;
 
-/** 继承白名单（只读门）—— 名字与 `GATES` / 子检查逐字相同 */
-export const INHERITABLE = Object.freeze(['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check', 'doc:check']);
+/**
+ * 继承白名单（只读门）—— 名字与 `GATES` / 子检查逐字相同。
+ * H2（无法证明闭包就实跑）：仅读面可静态枚举证明闭包的门保留继承；
+ * `manifest:check` 对账面 `.agent-io/` 顶层，递归含派生 db / scratch / 台账等跨机不一致且不可
+ * 静态枚举闭包的部分 ⇒ 移出白名单，恒串行全量实跑（不继承未证闭包的读数）。
+ */
+export const INHERITABLE = Object.freeze(['Go 编译', 'Go 静态检查', 'lint:prose', 'doc:check']);
 
 /** 默认额外输入（可覆盖；门的 args[0] 脚本自动进指纹） */
 export const DEFAULT_INPUTS = Object.freeze({
   'Go 编译': ['observe-lang-go'], // go build ./... = 递归整棵包树
   'Go 静态检查': ['observe-lang-go'],
-  'lint:prose': [],
+  // lint:prose 实扫面：docs/*.md（顶层）+ scripts/*.mjs（顶层）+ .agent-io/design 册；
+  // 目录递归为超集（子目录变也触发重跑），fail-closed 方向，不漏钉。
+  'lint:prose': ['docs', 'scripts', '.agent-io/design'],
+  // manifest:check 已移出白名单；输入声明保留仅作诊断参照，不进继承键。
   'manifest:check': ['.agent-io'],
   'doc:check': ['docs', 'src/application/docs_view'],
 });
@@ -45,6 +54,21 @@ const norm = (p) => String(p ?? '').replace(/\\/g, '/').replace(/^\.\//, '');
 
 function hashOf(buf) {
   return createHash('sha1').update(buf).digest('hex');
+}
+
+/**
+ * 工具链身份（H2：执行与指纹共用同一调用定义，钉工具链身份）。
+ * · node 运行时版本恒钉；Go 两门额外钉 `go version` 输出。
+ * · 身份取不到（工具链缺失 / spawn 失败）⇒ 返回 null（指纹不可算 ⇒ fail-closed 实跑），不拿"读不到"冒充"没变"。
+ */
+function toolchainIdentity(root, gate) {
+  const parts = [`node:${process.version}`];
+  if (/^Go /.test(gate.name)) {
+    const r = spawnSync('go', ['version'], { cwd: root, encoding: 'utf8', shell: process.platform === 'win32' });
+    if (r.error || r.status !== 0) return null;
+    parts.push(`go:${String(r.stdout ?? '').trim()}`);
+  }
+  return parts.join('\u0000');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -148,9 +172,15 @@ export function inputFingerprint(root, gate, extraInputs = DEFAULT_INPUTS) {
     if (!expandInput(root, rel, parts)) return null;
   }
   if (parts.length === 0) return null; // 没有任何可钉的输入 ⇒ 不许继承（静态路径不自证新鲜）
+  const tc = toolchainIdentity(root, gate);
+  if (!tc) return null; // 工具链身份取不到 ⇒ 闭包不可证 ⇒ fail-closed 实跑
+  const shell = gate.shell ?? process.platform === 'win32';
   const h = createHash('sha256');
   h.update(`v${STORE_VERSION}\u0000`);
+  // H2：执行与指纹共用同一调用定义 —— 钉完整 argv / shell / 工具链身份，不只 cmd/cwd。
   h.update(`${gate.name}\u0000${gate.cmd ?? ''}\u0000${gate.cwd ?? ''}\u0000`);
+  h.update(`shell:${shell}\u0000argv:${JSON.stringify(gate.args ?? [])}\u0000`);
+  h.update(`toolchain:${tc}\u0000`);
   for (const p of parts) h.update(`${p.path}\u0000${p.size}\u0000${p.sha1}\u0000`);
   return h.digest('hex');
 }

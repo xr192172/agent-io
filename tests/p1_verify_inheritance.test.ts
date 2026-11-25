@@ -72,8 +72,8 @@ const inputsOf = (name: string): Record<string, string[]> => ({ [name]: ['docs']
 test('R1 只读门：冷启动 run → 真跑记录 PASS → 再 plan = inherit（带上次 verdict）', () => {
   const root = makeRoot('cold');
   try {
-    const g = roGate('manifest:check');
-    const extra = inputsOf('manifest:check');
+    const g = roGate('lint:prose');
+    const extra = inputsOf('lint:prose');
     const cold = I.planGate(root, g, I.loadStore(root), extra);
     assert.equal(cold.decision, 'run', '冷启动没有上次 verdict ⇒ 必须实跑');
     assert.ok(cold.fingerprint, '只读门必须能算出输入指纹');
@@ -90,7 +90,7 @@ test('R1 只读门：冷启动 run → 真跑记录 PASS → 再 plan = inherit�
 test('R2 写面门：store 里有"完美命中"也恒 run（不继承，防假绿）', () => {
   const root = makeRoot('writeface');
   try {
-    for (const name of ['ts 类型', '设计册判据', '判据突变', '测试', '无卡写账']) {
+    for (const name of ['ts 类型', '设计册判据', '判据突变', '测试', '无卡写账', 'manifest:check']) {
       // 即便手工塞一个"同指纹 PASS"进 store，写面门也必须拒绝继承
       const fakeFp = 'a'.repeat(64);
       const store = { ok: true, reason: '', entries: { [name]: { fingerprint: fakeFp, verdict: 'PASS', ran_at: new Date().toISOString(), cases: { unit: '用例', pass: 5, total: 5 } } } };
@@ -133,8 +133,8 @@ test('R4 上次 verdict=FAIL ⇒ 不继承（红不固化成"已验"）', () => 
 test('R5 继承读数带分母 + 显式"继承"标记（verify.mjs 文本契约）', () => {
   const root = makeRoot('reading');
   try {
-    const g = roGate('manifest:check');
-    const extra = inputsOf('manifest:check');
+    const g = roGate('lint:prose');
+    const extra = inputsOf('lint:prose');
     let store = I.recordGate(root, g, I.loadStore(root), { verdict: 'PASS', state: 'PASS', cases: { unit: '检查', pass: 4, total: 5 } }, extra);
     const p = I.planGate(root, g, store, extra);
     assert.equal(p.decision, 'inherit');
@@ -213,6 +213,6 @@ test('R8 derived 存储落点 = .agent-io/scratch/ 下（不进 git 的 scratch 
   assert.match(I.STORE_REL, /^\.agent-io\/scratch\//, `存储必须在 scratch 下：${I.STORE_REL}`);
   const gi = fs.readFileSync(path.join(REPO, '.gitignore'), 'utf8');
   assert.match(gi, /\.agent-io\/\*/, '.gitignore 必须忽略 .agent-io/*（scratch 派生不进 git）');
-  // 只读门白名单恰好是 lead 裁定的五个（写面门不得混入）
-  assert.deepEqual([...I.INHERITABLE].sort(), ['Go 编译', 'Go 静态检查', 'lint:prose', 'manifest:check', 'doc:check'].sort());
+  // 只读门白名单恰好是 H2 裁后可证闭包的四门（manifest:check 闭包不可静态枚举 ⇒ 移出恒实跑）
+  assert.deepEqual([...I.INHERITABLE].sort(), ['Go 编译', 'Go 静态检查', 'lint:prose', 'doc:check'].sort());
 });

@@ -40,7 +40,7 @@ function rmRf(dir: string): void {
   try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 6, retryDelay: 60 }); } catch { /* 不影响判定 */ }
 }
 const roGate = (name: string, script: string): Gate => ({ name, cmd: 'node', args: [script], cwd: '' });
-const extra = (): Record<string, string[]> => ({ 'manifest:check': [], 'lint:prose': [] });
+const extra = (): Record<string, string[]> => ({ 'doc:check': [], 'lint:prose': [] });
 
 // ① 本地相对依赖改一字节 ⇒ 指纹变 ⇒ 不继承。
 test('① S-4 键面闭包：脚本本地依赖改动进指纹，未变才允许跳过', () => {
@@ -48,7 +48,7 @@ test('① S-4 键面闭包：脚本本地依赖改动进指纹，未变才允许
   try {
     fs.writeFileSync(path.join(root, 'scripts', 'stub.mjs'), "import './lib/dep.mjs';\n// v1\n", 'utf8');
     fs.writeFileSync(path.join(root, 'scripts', 'lib', 'dep.mjs'), '// dep v1\n', 'utf8');
-    const g = roGate('manifest:check', 'scripts/stub.mjs');
+    const g = roGate('doc:check', 'scripts/stub.mjs');
     const fp1 = I.inputFingerprint(root, g, extra());
     assert.ok(fp1, '闭包可静态算清 ⇒ 指纹非 null');
     let store = I.recordGate(root, g, I.loadStore(root), { verdict: 'PASS', state: 'PASS' }, extra());
@@ -81,7 +81,7 @@ test('③ S-4 并发不丢：陈旧快照写回仍合并最新落盘，两条门
   try {
     fs.writeFileSync(path.join(root, 'scripts', 'a.mjs'), '// a\n', 'utf8');
     fs.writeFileSync(path.join(root, 'scripts', 'b.mjs'), '// b\n', 'utf8');
-    const ga = roGate('manifest:check', 'scripts/a.mjs');
+    const ga = roGate('doc:check', 'scripts/a.mjs');
     const gb = roGate('lint:prose', 'scripts/b.mjs');
     // A 先写回（落盘含 A）。
     I.recordGate(root, ga, I.loadStore(root), { verdict: 'PASS', state: 'PASS' }, extra());
@@ -89,7 +89,7 @@ test('③ S-4 并发不丢：陈旧快照写回仍合并最新落盘，两条门
     I.recordGate(root, gb, { ok: true, reason: '', entries: {} }, { verdict: 'PASS', state: 'PASS' }, extra());
     const store = I.loadStore(root);
     assert.ok(store.ok, '写回后 store 可解析');
-    assert.ok(store.entries['manifest:check'], 'A 条目不得被 B 的陈旧快照覆盖丢失');
+    assert.ok(store.entries['doc:check'], 'A 条目不得被 B 的陈旧快照覆盖丢失');
     assert.ok(store.entries['lint:prose'], 'B 条目必须在');
   } finally { rmRf(root); }
 });
@@ -99,12 +99,12 @@ test('④ S-4 写回原子化：落盘 version 相符、条目字段齐全', () 
   const root = makeRoot('atomic');
   try {
     fs.writeFileSync(path.join(root, 'scripts', 'stub.mjs'), '// v1\n', 'utf8');
-    const g = roGate('manifest:check', 'scripts/stub.mjs');
+    const g = roGate('doc:check', 'scripts/stub.mjs');
     I.recordGate(root, g, I.loadStore(root), { verdict: 'PASS', state: 'PASS', cases: { unit: '检查', pass: 3, total: 3 } }, extra());
     const store = I.loadStore(root);
     assert.equal(store.ok, true);
-    assert.equal(store.entries['manifest:check'].fingerprint, I.inputFingerprint(root, g, extra()));
-    assert.ok(store.entries['manifest:check'].ran_at, '条目必须带 ran_at');
-    assert.deepEqual(store.entries['manifest:check'].cases, { unit: '检查', pass: 3, total: 3 });
+    assert.equal(store.entries['doc:check'].fingerprint, I.inputFingerprint(root, g, extra()));
+    assert.ok(store.entries['doc:check'].ran_at, '条目必须带 ran_at');
+    assert.deepEqual(store.entries['doc:check'].cases, { unit: '检查', pass: 3, total: 3 });
   } finally { rmRf(root); }
 });

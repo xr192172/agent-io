@@ -104,7 +104,7 @@ for (const [script, what] of CHECKS) {
   console.log(`  ${tag} ${script.padEnd(18)} ${what} ${denom}`);
 }
 if (INHERIT) {
-  console.log(`  ⟲ 子检查继承：只读白名单 3 个（lint:prose / manifest:check / doc:check）→ 继承 ${inheritedCount} / 实跑 ${ranCount}` +
+  console.log(`  ⟲ 子检查继承：可证闭包白名单 2 个（lint:prose / doc:check；manifest:check 闭包不可静态枚举 ⇒ 恒实跑）→ 继承 ${inheritedCount} / 实跑 ${ranCount}` +
     `（派生存储 .agent-io/scratch/verify-inheritance.json，不进 git）`);
 }
 
