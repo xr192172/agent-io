@@ -40,6 +40,14 @@ import { checkDesignDbStructure } from '../dist/src/application/design/db/gen_de
 //   + 一条**只许升**的 entry 总条数棘轮（掉 = 红并逐册点名；与 `judge-baseline.json` 同形）。
 import { auditHistory } from '../dist/src/infrastructure/decision_history.js';
 
+// ★★★ 2026-11-25（P2 裁① B1 拆门）：本门按 mode 拆两类对账，各归一道 verify 门、各归一条车道政策：
+//   · 缺省（车道内「设计 DB 结构」）：history 段 + 不依赖索引的结构对账（//source 持有者 / requirements 并集 /
+//     缺 / 多 / 归属重复 / 真冲突 / 占位 / kind 投影缺口）。requirements_calls 调用方对账归下一道车道外门。
+//   · `--calls-index`（车道外「设计 DB 调用对账」）：只核 requirements_calls 调用方索引对账（staleCalls 桶）。
+//     target 落点解析走 cache.db（qHome）；CI 无索引 ⇒ 降级空误报 ⇒ 车道外 offLane 不计码；本地全量（无 --lane）仍强制核。
+//   判据本身一条不改，只按索引依赖分桶到各自门（0.9 一处权威）。
+const CALLS_INDEX = process.argv.includes('--calls-index');
+
 const r = checkDesignDbStructure('.');
 
 // ── 决定版本史（外置）审计 ────────────────────────────────────
@@ -57,70 +65,76 @@ const booksForAudit = fs.existsSync(DESIGN_DIR)
 // ★ 侧车与册**同目录解析**：`booksForAudit` 从 cwd 的 `.agent-io/design` 直读册，侧车读端必须
 //   传同一个项目根（baseDir=cwd），不许重走注册表（projects.json 不入库；CI clean-clone 注册表空 ⇒
 //   旧口径落点分叉、侧车 missing ⇒ 棘轮误掉）。单处权威 = `getDesignSheetFile(feature, baseDir)`。
-const ha = auditHistory(booksForAudit, process.cwd());
+// ★ calls-index 门只核 requirements_calls 索引对账，不跑 history 外置审计（history 归车道内门）。
+const ha = CALLS_INDEX ? null : auditHistory(booksForAudit, process.cwd());
 
 // 棘轮：**只许升**（掉 = 有人删了历史 ⇒ 那是事故，必须显式 --update-baseline 并写理由）
-const BASELINE = path.join(process.cwd(), 'scripts', 'decision-history-baseline.json');
-const updateBaseline = process.argv.includes('--update-baseline');
-let ratchetBad = 0;
+let histBad = 0;
 let ratchetMsg = '';
-const currentPerBook = Object.fromEntries(ha.books.map((b) => [b.feature, b.sidecar + b.inline]));
-if (!fs.existsSync(BASELINE)) {
-  // 首次运行：按当前值建账（与 judge-baseline 同款逃生口：装上本判据的那一刻不许让整个 verify 变红）
-  ratchetMsg = `首次运行 ⇒ 未建基线（本次读数 ${ha.sidecarTotal + ha.inlineTotal} 条）。加 \`--update-baseline\` 建账。`;
-  if (updateBaseline) {
+if (!CALLS_INDEX) {
+  const BASELINE = path.join(process.cwd(), 'scripts', 'decision-history-baseline.json');
+  const updateBaseline = process.argv.includes('--update-baseline');
+  let ratchetBad = 0;
+  const currentPerBook = Object.fromEntries(ha.books.map((b) => [b.feature, b.sidecar + b.inline]));
+  if (!fs.existsSync(BASELINE)) {
+    // 首次运行：按当前值建账（与 judge-baseline 同款逃生口：装上本判据的那一刻不许让整个 verify 变红）
+    ratchetMsg = `首次运行 ⇒ 未建基线（本次读数 ${ha.sidecarTotal + ha.inlineTotal} 条）。加 \`--update-baseline\` 建账。`;
+    if (updateBaseline) {
+      fs.writeFileSync(
+        BASELINE,
+        JSON.stringify({ _why: 'decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）', total: ha.sidecarTotal + ha.inlineTotal, per_book: currentPerBook }, null, 2) + '\n',
+        'utf-8',
+      );
+      ratchetMsg = `已按当前值建账：${ha.sidecarTotal + ha.inlineTotal} 条`;
+    }
+  } else if (updateBaseline) {
     fs.writeFileSync(
       BASELINE,
       JSON.stringify({ _why: 'decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）', total: ha.sidecarTotal + ha.inlineTotal, per_book: currentPerBook }, null, 2) + '\n',
       'utf-8',
     );
-    ratchetMsg = `已按当前值建账：${ha.sidecarTotal + ha.inlineTotal} 条`;
-  }
-} else if (updateBaseline) {
-  fs.writeFileSync(
-    BASELINE,
-    JSON.stringify({ _why: 'decision_history 外置后的 entry 总条数棘轮（只许升；掉=红，须 --update-baseline 并写理由）', total: ha.sidecarTotal + ha.inlineTotal, per_book: currentPerBook }, null, 2) + '\n',
-    'utf-8',
-  );
-  ratchetMsg = `已按当前值更新基线：${ha.sidecarTotal + ha.inlineTotal} 条`;
-} else {
-  const base = JSON.parse(fs.readFileSync(BASELINE, 'utf-8'));
-  const cur = ha.sidecarTotal + ha.inlineTotal;
-  const dropped = Object.entries(base.per_book ?? {})
-    .map(([f, n]) => ({ f, n, now: currentPerBook[f] ?? 0 }))
-    .filter((x) => x.now < x.n);
-  if (cur < (base.total ?? 0) || dropped.length) {
-    ratchetBad = 1;
-    ratchetMsg =
-      `✗ 条目**掉了**：基线 ${base.total} ⇒ 现在 ${cur}（差 ${(base.total ?? 0) - cur}）` +
-      (dropped.length ? `；逐册：${dropped.map((d) => `${d.f} ${d.n}→${d.now}`).join(' · ')}` : '') +
-      `\n  ★ 历史是事故的唯一记录 ⇒ 删它必须显式：\`node scripts/gen-db-check.mjs --update-baseline\`（并在 commit 里写为什么）`;
+    ratchetMsg = `已按当前值更新基线：${ha.sidecarTotal + ha.inlineTotal} 条`;
   } else {
-    ratchetMsg = `✓ 未掉（基线 ${base.total} ⇒ 现在 ${cur}${cur > (base.total ?? 0) ? '，涨了 ' + (cur - (base.total ?? 0)) : ''}）`;
+    const base = JSON.parse(fs.readFileSync(BASELINE, 'utf-8'));
+    const cur = ha.sidecarTotal + ha.inlineTotal;
+    const dropped = Object.entries(base.per_book ?? {})
+      .map(([f, n]) => ({ f, n, now: currentPerBook[f] ?? 0 }))
+      .filter((x) => x.now < x.n);
+    if (cur < (base.total ?? 0) || dropped.length) {
+      ratchetBad = 1;
+      ratchetMsg =
+        `✗ 条目**掉了**：基线 ${base.total} ⇒ 现在 ${cur}（差 ${(base.total ?? 0) - cur}）` +
+        (dropped.length ? `；逐册：${dropped.map((d) => `${d.f} ${d.n}→${d.now}`).join(' · ')}` : '') +
+        `\n  ★ 历史是事故的唯一记录 ⇒ 删它必须显式：\`node scripts/gen-db-check.mjs --update-baseline\`（并在 commit 里写为什么）`;
+    } else {
+      ratchetMsg = `✓ 未掉（基线 ${base.total} ⇒ 现在 ${cur}${cur > (base.total ?? 0) ? '，涨了 ' + (cur - (base.total ?? 0)) : ''}）`;
+    }
   }
+
+  histBad =
+    ha.inlineTotal + // 册里内联必须 0（外置没落地 / 有人写回来了）
+    ha.badTotal + // 侧车坏行
+    ha.bothTotal + // 两侧都在（0.9.1）
+    ha.missingBooks.length + // 侧车缺失（读不到）
+    ratchetBad;
+
+  console.log(
+    `决定版本史（外置）· 册 ${ha.books.length} · 条目 ${ha.sidecarTotal} · 册内联 ${ha.inlineTotal}（须 0）· ` +
+      `坏行 ${ha.badTotal}（须 0）· 两侧都在 ${ha.bothTotal}（须 0）· 缺侧车 ${ha.missingBooks.length}（须 0）`,
+  );
+  for (const b of ha.books) {
+    if (b.inline || b.bad_lines || b.both || b.missing) {
+      console.log(
+        `  ✗ ${b.feature}: 内联 ${b.inline} · 侧车 ${b.sidecar} · 坏行 ${b.bad_lines} · 两侧都在 ${b.both}${b.missing ? ' · ★ 侧车不存在' : ''}`,
+      );
+    }
+  }
+  console.log(`  ${ratchetMsg}`);
 }
 
-const histBad =
-  ha.inlineTotal + // 册里内联必须 0（外置没落地 / 有人写回来了）
-  ha.badTotal + // 侧车坏行
-  ha.bothTotal + // 两侧都在（0.9.1）
-  ha.missingBooks.length + // 侧车缺失（读不到）
-  ratchetBad;
-
-console.log(
-  `决定版本史（外置）· 册 ${ha.books.length} · 条目 ${ha.sidecarTotal} · 册内联 ${ha.inlineTotal}（须 0）· ` +
-    `坏行 ${ha.badTotal}（须 0）· 两侧都在 ${ha.bothTotal}（须 0）· 缺侧车 ${ha.missingBooks.length}（须 0）`,
-);
-for (const b of ha.books) {
-  if (b.inline || b.bad_lines || b.both || b.missing) {
-    console.log(
-      `  ✗ ${b.feature}: 内联 ${b.inline} · 侧车 ${b.sidecar} · 坏行 ${b.bad_lines} · 两侧都在 ${b.both}${b.missing ? ' · ★ 侧车不存在' : ''}`,
-    );
-  }
-}
-console.log(`  ${ratchetMsg}`);
-
-const bad =
+// 车道内门（缺省）：history 段 + 不依赖索引的结构对账；requirements_calls 调用方索引对账（staleCalls）归车道外门。
+// 车道外门（--calls-index）：只核 staleCalls 桶。判据判定本身不变，只按索引依赖分桶。
+const nonIndexBad =
   r.problems.length +
   r.conflicts.length +
   r.ownership.length +
@@ -130,22 +144,34 @@ const bad =
   // ★★★ 2026-11-03（M1a ⑧）：判据 kind → 投影去向 —— **声明了投影键却落地不满**、声明表漏了 kind、
   //   `SYMBOL_COLUMN_MAP` 有沉默列，三样都算红。声明 `why_not_projected` 的 kind 按载体豁免（条数另行印出），
   //   所以这一项在正常状态下**可以**是绿的（0.16：一条永远会亮的告警 = 一条被关掉的告警）。
-  r.kindProjectionGaps.length +
-  // ★★★ 2026-11-06（R54-history）：历史外置的四条断言 + 条目棘轮（见上）。
-  histBad;
+  r.kindProjectionGaps.length;
+const bad = CALLS_INDEX ? r.staleCalls.length : nonIndexBad + histBad;
 
 // ★ 0.12「统计必须带分母」：受断言路径数是分子（归属重复）的分母 —— 只报 0 违例而不知道查了几个 path，等于没验。
-console.log(
-  `设计 DB 结构 · ${r.paths} 份投影（${r.files} 个文件节点）· 受断言路径 ${r.assertedPaths} · ` +
-    `归属重复 ${r.ownership.length} · 真冲突 ${r.conflicts.length} · 陈旧 ${r.stale.length} · 缺 ${r.missing.length} · 多 ${r.extra.length}`,
-);
-for (const x of r.ownership) console.log(`  ✗ 归属重复 ${x}`);
-for (const x of r.conflicts) console.log(`  ★ 真冲突 ${x}`);
-for (const x of r.stale) console.log(`  ⚠ 陈旧 ${x}`);
-for (const x of r.missing) console.log(`  ⚠ 缺 ${x}`);
-for (const x of r.extra) console.log(`  ⚠ 多 ${x}`);
-for (const x of r.problems) console.log(`  ⚠ 问题 ${x}`);
-for (const x of r.kindProjectionGaps) console.log(`  ✗ 判据 kind 投影 ${x}`);
+if (CALLS_INDEX) {
+  console.log(
+    `设计 DB 调用对账（索引依赖）· ${r.paths} 份投影（${r.files} 个文件节点）· 受断言路径 ${r.assertedPaths} · ` +
+      `requirements_calls 调用方不符 ${r.staleCalls.length}`,
+  );
+  for (const x of r.staleCalls) console.log(`  ⚠ 调用对账 ${x}`);
+} else {
+  console.log(
+    `设计 DB 结构 · ${r.paths} 份投影（${r.files} 个文件节点）· 受断言路径 ${r.assertedPaths} · ` +
+      `归属重复 ${r.ownership.length} · 真冲突 ${r.conflicts.length} · 陈旧 ${r.stale.length} · 缺 ${r.missing.length} · 多 ${r.extra.length}`,
+  );
+  for (const x of r.ownership) console.log(`  ✗ 归属重复 ${x}`);
+  for (const x of r.conflicts) console.log(`  ★ 真冲突 ${x}`);
+  for (const x of r.stale) console.log(`  ⚠ 陈旧 ${x}`);
+  for (const x of r.missing) console.log(`  ⚠ 缺 ${x}`);
+  for (const x of r.extra) console.log(`  ⚠ 多 ${x}`);
+  for (const x of r.problems) console.log(`  ⚠ 问题 ${x}`);
+  for (const x of r.kindProjectionGaps) console.log(`  ✗ 判据 kind 投影 ${x}`);
+  if (r.staleCalls.length) {
+    console.log(
+      `  ⚠ requirements_calls 调用方不符 ${r.staleCalls.length} 条（索引依赖对账，归车道外门「设计 DB 调用对账」；本车道内门不计此桶）。`,
+    );
+  }
+}
 
 // ★★ AGENTS-RULES 0.12（10 处同族里的第 8 处）：**投影为空 ⇒ 没有可比的东西，不是"一致"**。
 //   ★ 2026-11-03（M1a）：这一档必须**排在 `bad` 之前** —— 空投影时 `kindProjectionGaps` 会附一条
@@ -165,11 +191,16 @@ if (r.paths === 0 || r.files === 0) {
 }
 
 if (bad) {
-  console.log('\n★ 本门只比**设计侧**（不读 cache.db）：上面每一条都能靠入库文件复现。');
-  console.log('★ 修法：node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db');
-  console.log('★ 真冲突例外：重跑修不好 —— 两个 feature 对同一文件的要求互相矛盾，只能改设计。');
-  console.log('★ 归属重复例外：重跑也修不好 —— 把那条断言**原样搬**到持有册（多者持有；平手归 agent-io），再从另一册删；断言一条都不许丢。');
-  console.log('★ 判据 kind 投影例外：声明了投影键却没落地 ⇒ 改投影（M1b）；声明不投影的按载体豁免，别把豁免当红。');
+  if (CALLS_INDEX) {
+    console.log('\n★ 调用对账依赖 cache.db 索引：`requirements_calls` 的 target 落点解析走 qHome；先确保索引新鲜，再重跑生成器。');
+    console.log('★ 修法：重建索引后 `node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db`，再跑本门。');
+  } else {
+    console.log('\n★ 本门只比**设计侧**（不读 cache.db）：上面每一条都能靠入库文件复现。');
+    console.log('★ 修法：node dist/src/presentation/cli/cli.js design_line project_dir=. action=gen-db');
+    console.log('★ 真冲突例外：重跑修不好 —— 两个 feature 对同一文件的要求互相矛盾，只能改设计。');
+    console.log('★ 归属重复例外：重跑也修不好 —— 把那条断言**原样搬**到持有册（多者持有；平手归 agent-io），再从另一册删；断言一条都不许丢。');
+    console.log('★ 判据 kind 投影例外：声明了投影键却没落地 ⇒ 改投影（M1b）；声明不投影的按载体豁免，别把豁免当红。');
+  }
   process.exit(1);
 }
 // ════════════════════════════════════════════════════════════════════
@@ -179,7 +210,7 @@ if (bad) {
 //   仍不读 cache.db）；分母（册侧/可投影）与分子（落地/可达）**每次都印**（AGENTS-RULES 0.12 第 3 条）。
 // ════════════════════════════════════════════════════════════════════
 const cov = r.kindCoverage;
-if (cov.length) {
+if (!CALLS_INDEX && cov.length) {
   const pad = (s, n) => String(s).padEnd(n);
   const num = (n, w) => String(n).padStart(w);
   console.log('\n【判据 kind → 投影去向】（★ 现算：册侧 = design/*.dsl.json，投影侧 = design-db/）');
@@ -221,9 +252,13 @@ if (cov.length) {
   );
   if (r.kindJudgedNote) console.log(`  ⚠ judge判过 不可算：${r.kindJudgedNote}`);
 }
-console.log(
-  '\n★ 结构一致：`//source` 的持有者 / `requirements` / `requirements_calls` 的调用方 / 归属 / 副本数 全部对上；\n' +
-    '  没有两个 feature 提出互斥要求；也没有同一个受断言的文件被两个 feature 同时断言（归属重复 0）。\n' +
-    '★ ★ 注意：**「每条判据都在 design-db 里」这句话不成立**（上面那张表就是分母）—— design-db 只承载**声明了投影键**的 kind；\n' +
-    '  其余 kind 的验收在 judge 侧（`design_line action=judge` 会真跑它们），本门通过 `judge判过` 那一列确认它们真的判出了结论。',
-);
+if (CALLS_INDEX) {
+  console.log('\n★ requirements_calls 调用方与设计一致（索引依赖对账；target 落点解析走 cache.db）。');
+} else {
+  console.log(
+    '\n★ 结构一致：`//source` 的持有者 / `requirements` / 归属 / 副本数 全部对上；`requirements_calls` 调用方对账见车道外门「设计 DB 调用对账」。\n' +
+      '  没有两个 feature 提出互斥要求；也没有同一个受断言的文件被两个 feature 同时断言（归属重复 0）。\n' +
+      '★ ★ 注意：**「每条判据都在 design-db 里」这句话不成立**（上面那张表就是分母）—— design-db 只承载**声明了投影键**的 kind；\n' +
+      '  其余 kind 的验收在 judge 侧（`design_line action=judge` 会真跑它们），本门通过 `judge判过` 那一列确认它们真的判出了结论。',
+  );
+}

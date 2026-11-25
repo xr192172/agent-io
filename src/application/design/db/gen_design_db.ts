@@ -1602,8 +1602,11 @@ export interface DesignDbStructureResult {
   files: number;
   /** 设计里有、盘上没有 */
   missing: string[];
-  /** 盘上有、但与设计的**设计要求/表头**对不上 */
+  /** 盘上有、但与设计的**设计要求/表头**对不上（//source 持有者 · requirements 并集；不依赖索引） */
   stale: string[];
+  /** ★ 索引依赖对账：`requirements_calls` 调用方与设计不一致（target 落点解析走 cache.db qHome；无索引 ⇒ 降级空 ⇒ 误报）。
+   *   单列车道外门核（P2 裁① B1 拆门）；车道内门不计此桶。判定本身不变，只是按索引依赖分桶。 */
+  staleCalls: string[];
   /** 盘上有、设计里没有 */
   extra: string[];
   conflicts: string[];
@@ -1694,6 +1697,7 @@ export function checkDesignDbStructure(
     files: 0,
     missing: [],
     stale: [],
+    staleCalls: [],
     extra: [],
     conflicts: [],
     ownership: [],
@@ -1750,7 +1754,11 @@ export function checkDesignDbStructure(
     const wantFrom = requirementCallsOf(item).map((x) => x.from);
     const gotFrom = ((disk.requirements_calls ?? []) as Array<{ from?: string }>).map((x) => norm(x.from));
     if (JSON.stringify(gotFrom) !== JSON.stringify(wantFrom)) {
-      why.push(`requirements_calls 的调用方 ${JSON.stringify(gotFrom)} 与设计的 ${JSON.stringify(wantFrom)} 不一致`);
+      // ★ P2 裁① B1 拆门：requirements_calls 的 target 落点解析走 cache.db（qHome），无索引 ⇒ 整条降级空 ⇒
+      //   此比对在 CI 无索引环境必误报陈旧。单列车道外门核（staleCalls 桶）；车道内门不计。判定本身不变，只分桶。
+      r.staleCalls.push(
+        `${name}: requirements_calls 的调用方 ${JSON.stringify(gotFrom)} 与设计的 ${JSON.stringify(wantFrom)} 不一致（该重跑生成器）`,
+      );
     }
     if (why.length) r.stale.push(`${name}: ${why.join('；')}（该重跑生成器）`);
   }

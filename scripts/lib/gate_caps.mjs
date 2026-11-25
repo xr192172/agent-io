@@ -98,6 +98,10 @@ export const GATE_CAPS = Object.freeze({
     reads: [RES.DESIGN_DB, RES.DESIGN_DSL, RES.JUDGE_READINGS, RES.BASELINE], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
     note: '只读 design-db / DSL / judge-readings / 基线；--update-baseline 逃生口写基线，不在常规 verify 路径。',
   },
+  '设计 DB 调用对账': {
+    reads: [RES.DESIGN_DB, RES.DESIGN_DSL, RES.CACHE_DB], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
+    note: '--calls-index：只核 requirements_calls 调用方索引对账（qHome 落点解析）；读 design-db 副本 / DSL / cache.db。车道外 offLane 不计码，本地全量仍计入。',
+  },
   '设计册判据': {
     reads: [RES.DESIGN_DB, RES.SRC, RES.JUDGE_READINGS], writes: [RES.JUDGE_CACHE, RES.CACHE_DB, RES.JUDGE_READINGS, RES.DESIGN_DB], side_effect: true, pool: POOL.HEAVY, rank: 3,
     note: 'judge-all：跑判定并刷新 judge-cache / cache.db / judge-readings；重活排他。',

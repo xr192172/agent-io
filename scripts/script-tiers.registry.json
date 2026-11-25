@@ -31,8 +31,12 @@
       "false_green": "只覆盖 cardStanding 的一个分支条件（门自己已如实声明）；缺输入时自报退出码 2。"
     },
     "设计 DB 结构": {
-      "verifies": "design-db/ 的生成物与它的消费者之间不漂移（只读入库文件，不读 cache.db）。",
-      "false_green": "只比「只依赖入库文件」的那几样 ⇒ cache.db 侧的漂移不在射程内（刻意，否则同一次提交在不同机器上红绿不同）。"
+      "verifies": "design-db/ 的生成物与它的消费者之间不漂移（只读入库文件，不读 cache.db）：//source 持有者 / requirements 并集 / 缺 / 多 / 归属重复 / 真冲突 / 占位 / kind 投影缺口 + history 外置审计。requirements_calls 调用方索引对账归下一道「设计 DB 调用对账」。",
+      "false_green": "只比「只依赖入库文件」的那几样 ⇒ cache.db 侧的调用方落点漂移不在本门射程内（刻意，否则同一次提交在不同机器上红绿不同）；那部分由车道外调用对账门在本地有索引时核。"
+    },
+    "设计 DB 调用对账": {
+      "verifies": "requirements_calls 调用方与设计一致（target 落点解析走 cache.db qHome）。",
+      "false_green": "索引依赖：CI 无 cache.db ⇒ qHome=null ⇒ 调用方降级空，此对账在无索引环境必误报陈旧 ⇒ 车道外 offLane 不计码；本地全量（无 --lane）仍强制核。无索引读不到 ≠ 调用方一致。"
     },
     "设计册判据": {
       "verifies": "全部册的节点判据逐条真跑（执行核是 CLI 的 design_line judge，本门只遍历+汇总+退出码）。",

@@ -351,7 +351,23 @@ const GATES = [
     why:
       '★ 生成物与它的消费者之间不允许有静默漂移：`design-db/*.calls.json` 是 `contract-calls` 的输入，' +
       '它旧了，契约门就变成假门。★ 只读入库文件（`design/*.dsl.json` + `design-db/`），**不读 cache.db** ⇒ 可复现。' +
-      '★ 真冲突（两个 feature 对同一文件要求互斥）也在这里红 —— 那种红重跑修不好，只能改设计。',
+      '★ 真冲突（两个 feature 对同一文件要求互斥）也在这里红 —— 那种红重跑修不好，只能改设计。' +
+      // ★★★ 2026-11-25（P2 裁① B1 拆门）：requirements_calls 调用方对账（target 落点解析走 cache.db qHome）' +
+      //   拆到下一道车道外「设计 DB 调用对账」门；本门只留不依赖索引的结构对账 + history 外置审计。
+      '★ requirements_calls 调用方索引对账见下一道「设计 DB 调用对账」（车道外）。',
+  },
+  {
+    name: '设计 DB 调用对账',
+    kind: 'gate',
+    consumer: 'npm run verify',
+    tier: 'A',
+    cmd: 'node',
+    args: ['scripts/gen-db-check.mjs', '--calls-index'],
+    why:
+      '`requirements_calls` 调用方与设计一致对账（target 落点解析走 cache.db qHome）。' +
+      '★ 索引依赖：CI clean-clone 无 cache.db ⇒ qHome=null ⇒ 调用方降级空 ⇒ 此对账在无索引环境必误报陈旧 ⇒ ' +
+      '本门声明车道外（manifest lanes=[]），CI 单列 offLane 不计码；本地全量（无 --lane）仍跑本门强制核。' +
+      '★ 判据判定不变，仅按索引依赖从「设计 DB 结构」拆出（P2 裁① B1）。',
   },
   // ★★★ 2026-10-31：原**第八道门「两段式领取」已撤** —— 内容整张迁进
   //   `tests/p0_two_phase_claim.test.ts`，由下面的**「测试」门**收走（同上：0.9 一处权威）。
