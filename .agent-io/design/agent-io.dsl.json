@@ -35350,14 +35350,14 @@
             {
               "kind": "signature-matches",
               "path": "src/infrastructure/decision_history.ts",
-              "signature": "historyLogFile(feature: string): string",
+              "signature": "historyLogFile(feature: string, baseDir?: string): string",
               "symbol": "historyLogFile",
               "why": "侧车路径只能从 getDesignSheetFile 的 dirname 派生（照 todoJournalFile 先例）。硬编码路径会在设计册搬家时静默跑到旧目录，而两侧都在/两侧都无两个态都靠它分辨"
             },
             {
               "kind": "signature-matches",
               "path": "src/infrastructure/decision_history.ts",
-              "signature": "readHistoryLog(feature: string): HistoryIndex",
+              "signature": "readHistoryLog(feature: string, baseDir?: string): HistoryIndex",
               "symbol": "readHistoryLog",
               "why": "坏行必须计数而不是抛错或静默吞（照 journal 先例）。它改为抛错时，一行损坏就会让整个 feature 的版本史不可用"
             },
