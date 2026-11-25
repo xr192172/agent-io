@@ -104,6 +104,8 @@ test('T1+T2 · 只动范围外(.md/.json/tests) ⇒ trusted；再动范围内(.t
       `夹具无效：必须造出「自写登记待消费」才能测这条腿：${JSON.stringify(r1.freshness)}`,
     );
     assert.equal(r1.freshness.not_fresh, 3, `三处改动都应被 stat 看见（全量口径）：${JSON.stringify(r1.freshness)}`);
+    // ★ V3：机器入口默认短导航（navigation 缺省 short）；全量须显式 navigation:'full'。
+    assert.equal(r1.navigation, 'short', `缺省应为短导航，实得 ${r1.navigation}`);
     assert.equal(
       r1.freshness.not_fresh_out_of_scope.length,
       3,

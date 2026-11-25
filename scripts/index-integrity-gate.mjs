@@ -23,7 +23,8 @@ const repoRoot = path.resolve(here, '..');
 const distUrl = (...p) => pathToFileURL(path.join(repoRoot, 'dist', 'src', ...p)).href;
 
 const argv = process.argv.slice(2);
-const projectDir = path.resolve(argv[0] && !argv[0].startsWith('--') ? argv[0] : process.cwd());
+const fullNav = argv.includes('--full');
+const projectDir = path.resolve(argv.find((a) => !a.startsWith('--')) ?? process.cwd());
 
 let indexIntegrity;
 try {
@@ -35,7 +36,7 @@ try {
 
 let result;
 try {
-  result = await indexIntegrity({ project_dir: projectDir, refresh: false });
+  result = await indexIntegrity({ project_dir: projectDir, refresh: false, navigation: fullNav ? 'full' : 'short' });
 } catch (e) {
   console.error(`✗ 判不了（退出码 2）：index_integrity 现算抛错：${String(e).slice(0, 160)}`);
   process.exit(2);
@@ -43,7 +44,7 @@ try {
 
 const verdict = result.verdict;
 const label = { trusted: '可信', untrusted: '不可信', unknown: '判不了' }[verdict] ?? verdict;
-console.log(`索引可信度：${verdict}（${label}）`);
+console.log(`索引可信度：${verdict}（${label}）｜ 导航：${result.navigation ?? 'short'}${fullNav ? '（全量）' : '（摘要）'}`);
 if (result.summary) console.log(`  ${result.summary}`);
 
 const blockers = (result.issues ?? []).filter((i) => i.severity === 'blocker');

@@ -269,8 +269,15 @@ export interface IndexIntegrityResult {
    */
   verdict: 'trusted' | 'untrusted' | 'unknown';
   /**
-   * 布尔口径（**保留**，= `verdict === 'trusted'`）：`true` = 眼下读到的东西可以当真。
-   * ★ 只回答"可信吗"；"为什么不可信 / 是不是查不了"看 {@link verdict} 与 {@link summary}。
+   * ★ 导航粒度（机器入口协议位）：`'short'`（默认）= 摘要短导航，样例/点名按硬上限截断；
+   *   `'full'` = 显式请求全量导航，放开抽样上限。机器入口默认 short，全量须显式开关。
+   */
+  navigation: 'short' | 'full';
+  /**
+   * 布尔口径（**@deprecated 遗留兼容**，= `verdict === 'trusted'`）：`true` = 眼下读到的东西可以当真。
+   * ★ 机器消费侧**只读三态 {@link verdict}**，不要读本字段 —— 它会把 `unknown`（查不了）与
+   *   `untrusted`（查了发现问题）一起塌成 `false`，丢掉"是不是查得了"这一维。
+   *   保留仅为旧人读调用方兼容；新入口一律用 `verdict`。
    */
   trustworthy: boolean;
   /**
@@ -608,9 +615,13 @@ async function indexIntegrityCore(opts: {
   refresh?: boolean;
   sample?: number;
   retry_failed?: boolean;
+  /** 导航粒度：`'short'`（默认，摘要截断）/ `'full'`（显式全量，放开抽样上限）。 */
+  navigation?: 'short' | 'full';
 }): Promise<IndexIntegrityResult> {
   const root = path.resolve(opts.project_dir);
-  const sampleN = Math.max(0, opts.sample ?? NOT_FRESH_SAMPLE);
+  const navigation = opts.navigation === 'full' ? 'full' : 'short';
+  const FULL_SAMPLE = 1000;
+  const sampleN = Math.max(0, opts.sample ?? (navigation === 'full' ? FULL_SAMPLE : NOT_FRESH_SAMPLE));
   const issues: IntegrityIssue[] = [];
   let refreshed = false;
   let state: IndexState = 'empty';
@@ -665,6 +676,7 @@ async function indexIntegrityCore(opts: {
       issues: [issue],
       // ★ 库**在**（只是版本旧、不可用）⇒ 这是“查了、发现了”，不是“查不了”
       verdict: integrityVerdict({ hasIndex: true, hasBlocker: true, hasGhost: false }),
+      navigation,
       trustworthy: false,
       summary:
         `索引 schema ${from} ≠ 当前 v${SCHEMA_VERSION} ⇒ **需重建**` +
@@ -740,6 +752,7 @@ async function indexIntegrityCore(opts: {
       ],
       // ★ 三态：无索引 = **查不了**（给不出结论），不是"不可信"，也不是"可信"。
       verdict: integrityVerdict({ hasIndex: false, hasBlocker: false, hasGhost: false }),
+      navigation,
       trustworthy: false,
       ...(refreshReport !== null ? { refresh_receipt: receiptOf(refreshReport, state) } : {}),
       summary:
@@ -1209,11 +1222,12 @@ async function indexIntegrityCore(opts: {
     languages: summarizeLanguagesByTier([...indexedSet]),
     issues,
     verdict,
+    navigation,
     trustworthy,
     ...(refreshReport !== null ? { refresh_receipt: receiptOf(refreshReport, state) } : {}),
     summary,
     // ★ 2026-10-26：与 refs.stale_resolved 同一把尺的名单（让 blocker 可行动）
-    stale_names: listStaleResolvedRefs(db, 20),
+    stale_names: listStaleResolvedRefs(db, sampleN),
     // ★ D1：与 refs.unknown_kind 同一把尺的坏行名单（warn 级点名可行动信息）
     unknown_kind_names: listUnknownKindResolvedRefs(db, 20),
     // ★ 2026-10-26（T-#5）：根偏离 + 根清单（让「根」在工具面上可见）
@@ -1258,6 +1272,8 @@ export async function indexIntegrity(opts: {
   project_dir_explicit?: boolean;
   refresh?: boolean;
   sample?: number;
+  /** 导航粒度：`'short'`（默认摘要截断）/ `'full'`（显式全量，放开抽样上限）。 */
+  navigation?: 'short' | 'full';
 }): Promise<TouchedProduct<IndexIntegrityResult>> {
   const r = await indexIntegrityCore(opts);
   return withTouched(r, touchedOf(opts));
