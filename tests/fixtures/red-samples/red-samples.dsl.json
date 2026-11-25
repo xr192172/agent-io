@@ -1,0 +1,42 @@
+{
+  "feature": "red-samples",
+  "title": "H3 红样本 · 固定坏夹具（改尺后必须仍红）",
+  "geometry": {
+    "nodes": [
+      {
+        "id": "card_red_missing",
+        "label": "红样本：目标永远不存在",
+        "type": "service",
+        "x": 0,
+        "y": 0,
+        "decision": {
+          "summary": "固定坏夹具：三条判据都指向磁盘上不存在的文件 / 符号 / 文本。裁判核若被放宽成假绿（不存在也判 pass），本批立刻红。改尺（裁判核/清单/册）后本批必须仍落在 fail / unsupported，不许出现 pass。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "src/red-missing.ts",
+              "why": "红样本：src/red-missing.ts 在夹具工程里永远不存在 ⇒ 必须 fail，不许判 pass"
+            },
+            {
+              "kind": "symbol-exists",
+              "path": "src/red-missing.ts",
+              "symbol": "redMissingSymbol",
+              "why": "红样本：文件与导出符号都不存在 ⇒ 必须 fail，不许判 pass"
+            },
+            {
+              "kind": "source-has",
+              "path": "src/red-missing.ts",
+              "must": ["red-absent-needle-xyz"],
+              "why": "红样本：目标文件不存在 ⇒ 必须 fail 或 unsupported，绝不许 pass"
+            }
+          ]
+        }
+      }
+    ],
+    "edges": []
+  },
+  "semantic": {
+    "files": []
+  },
+  "todos": []
+}
