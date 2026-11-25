@@ -86430,7 +86430,37 @@
         "expected_deps": [
           "dist/src/infrastructure/exec_guard.js"
         ],
-        "path": "src/infrastructure/rules/protected_rules.ts"
+        "path": "src/infrastructure/rules/protected_rules.ts",
+        "expected_apis": [
+          {
+            "signature": "listBookFiles(root: string): string[]",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "worktreeBlobSha(root: string, rel: string): string | null",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "tagBlobSha(root: string, rel: string): string | null",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "headCommit(root: string): string | null",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "rulesSourceFingerprint(root: string): { sha: string; files: Record<string, string>; missing: string[] }",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "loadLatestApproval(root: string): ApprovalEntry | null",
+            "notes": "from:cache.db@1795636756010"
+          },
+          {
+            "signature": "verifyProtectedRules(root: string): ProtectedVerification",
+            "notes": "from:cache.db@1795636756010"
+          }
+        ]
       },
       {
         "id": "file_scripts_approve-rules_mjs",
@@ -86518,13 +86548,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2981,
+  "_dsl_rev": 2982,
   "_sync": {
-    "saved_at": "2026-11-25T08:31:00.623Z",
+    "saved_at": "2026-11-25T20:06:14.115Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2594463486,
+    "age": 2636176978,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },
