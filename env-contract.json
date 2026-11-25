@@ -76,7 +76,8 @@
   "gates": {
     "ts 类型": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "node/tsc，跨平台" },
     "工具链完整": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "关键 optional 包按当前平台解析，跨平台" },
-    "MCP 工具签名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "走 dist/ CLI 入口；dist 由 npm run build 产出" },
+    "MCP 工具签名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "semantic 模式：坏签名守卫 / 线上工具数=注册数 / 孤立集 / dist 新鲜 / top10 明细；走 dist/ CLI 入口" },
+    "MCP 工具面开销": { "lanes": [], "needs": [], "derived": [], "note": "surface 模式：wire 字节 / 工具数 ≤ 基线棘轮；跨 Node 环境 ±6B 噪声弱代理，CI offLane 不计码，本地全量仍强制核 byte" },
     "Go 编译": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "observe-lang-go，纯标准库无 go.sum" },
     "Go 静态检查": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "go vet，同上" },
     "实现夹具": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "cardStanding 行为分支纯 TS 夹具" },

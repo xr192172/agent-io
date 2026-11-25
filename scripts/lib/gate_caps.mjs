@@ -76,7 +76,11 @@ export const GATE_CAPS = Object.freeze({
   },
   'MCP 工具签名': {
     reads: [RES.SRC], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
-    note: '扫描 TOOL_DEFS 签名，只读 src。',
+    note: 'semantic 模式：扫描 TOOL_DEFS 签名 / 注册一致 / 孤立集 / dist 新鲜 / top10 明细，只读 src。',
+  },
+  'MCP 工具面开销': {
+    reads: [RES.SRC, RES.DIST, RES.BASELINE], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,
+    note: 'surface 模式：起 server 取 wire 字节/工具数对基线棘轮；只读 src/dist/基线。--surface --update 逃生口才写基线，不在常规 verify 路径。',
   },
   'Go 编译': {
     reads: [RES.GO_PKG], writes: [], side_effect: false, pool: POOL.CPU, rank: 0,

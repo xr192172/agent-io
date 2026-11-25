@@ -90,6 +90,12 @@ const BASELINE = path.join(HERE, 'tool-surface-baseline.json');
 // ★ 位置参数要跳过 `--` 开头的开关（否则 `mcp_scan.mjs --update` 会把 `--update` 当成 dist 根 = 报"找不到编译产物"）
 const positional = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 const UPDATE = process.argv.includes('--update');
+// ★★★ 2026-11-25（P2 裁③ 甲拆门）：本门按 mode 拆两类判据，各归一道 verify 门、各归一条车道政策：
+//   · 缺省（semantic）：坏签名守卫 + 线上工具数=注册数 + 孤立工具集 + dist 新鲜 + top10 明细结构 —— 车道内强制。
+//   · `--surface`：工具面 wire 字节 / 工具数 ≤ 基线的固定开销棘轮 —— 跨 Node 环境弱代理，单列车道外门
+//     （manifest lanes=[]，CI offLane 不计码）；本地全量（无 --lane）仍跑此 mode 强制核 byte。
+//   判据本身一条不改，只按 mode 分流到各自失败集合与退出码（0.9 一处权威：基线/度量仍在本文件与 tool_surface.mjs）。
+const MODE_SURFACE = process.argv.includes('--surface');
 const cwd = positional[1] ? path.resolve(positional[1]) : process.cwd();
 const distRoot = path.resolve(positional[0] ?? path.join(cwd, 'dist'));
 
@@ -199,14 +205,15 @@ const top10Share = surfaceBytes ? ((100 * top10.reduce((n, [, l]) => n + l, 0)) 
 /** 字节 → token 区间（粗估：中文密 ≈2.5 字节/token，英文/JSON 疏 ≈3.5）★ 字节数才是实测 */
 const tokRange = (c) => `${Math.round(c / 3.5 / 1000)}k–${Math.round(c / 2.5 / 1000)}k`;
 
-const ratchetFails = [];
+// ★ 失败按 mode 分集合：semantic（车道内强制）/ surface（车道外棘轮）。退出码只取本 mode 的集合。
+const failsByMode = { semantic: [], surface: [] };
 if (toolCount !== TOOL_DEFS.length) {
-  ratchetFails.push(
+  failsByMode.semantic.push(
     `① 线上工具数(${toolCount}) 必须等于 TOOL_DEFS(${TOOL_DEFS.length}) —— 不相等说明面被过滤/多注册，本门量到的不是全部契约`,
   );
 }
-const ratchetLine = (ok, label, detail) => {
-  if (!ok) ratchetFails.push(`${label}（${detail}）`);
+const ratchetLine = (ok, label, detail, mode) => {
+  if (!ok) failsByMode[mode].push(`${label}（${detail}）`);
   console.log(`  ${ok ? '✓' : '✗'} ${label}${detail ? `  —— ${detail}` : ''}`);
 };
 
@@ -231,7 +238,7 @@ let fresh = { stale: false, entries: [], scanned: 0, skipped: [], basis: 'n/a' }
 try {
   fresh = checkStaleBuild(cwd);
 } catch (e) {
-  ratchetLine(false, '④ dist 新鲜度判得了', `尺子读不到：${String(e?.message ?? e).slice(0, 120)}`);
+  ratchetLine(false, '④ dist 新鲜度判得了', `尺子读不到：${String(e?.message ?? e).slice(0, 120)}`, 'semantic');
 }
 if (fresh && typeof fresh.stale === 'boolean') {
   ratchetLine(
@@ -240,6 +247,7 @@ if (fresh && typeof fresh.stale === 'boolean') {
     fresh.stale
       ? `dist 旧 ⇒ 先 \`npm run build\` 再跑本门（${fresh.entries.length}/${fresh.scanned} 源未重建，basis=${fresh.basis}）`
       : `一致（${fresh.scanned} 个手写源，basis=${fresh.basis}）`,
+    'semantic',
   );
   if (Array.isArray(fresh.skipped) && fresh.skipped.length) {
     // ★ 0.12 ③：分母两半都给 —— 有源读不到 ⇒ 新鲜度只验了一部分，不许当"dist 最新"放行
@@ -247,6 +255,7 @@ if (fresh && typeof fresh.stale === 'boolean') {
       false,
       '⑤ dist 新鲜度验全了',
       `扫到 ${fresh.scanned} 个源，其中 ${fresh.skipped.length} 个读不到 ⇒ 剩下的可能比 src 旧`,
+      'semantic',
     );
   }
 }
@@ -260,12 +269,14 @@ let prevIsolated = [];
 //   基线**缺失**时就用当前读数自建、**跳过下面 ①②③ 的比对**，还在门里回写文件并声称"本次是**显式**动作"
 //   ⇒ **删掉 baseline.json 就永久放宽**（"唯一删个文件就变绿"的洞）。
 //   ⇒ 基线**只许 `--update` 写**；缺失必须 **FAIL**（0.12：读不到 ≠ 没有）。
+const curMode = MODE_SURFACE ? 'surface' : 'semantic';
 if (!UPDATE && !fs.existsSync(BASELINE)) {
   ratchetLine(
     false,
     '① 工具面基线存在',
-    `缺 ${path.relative(cwd, BASELINE)} ⇒ 基线只许显式建立：\`node scripts/mcp/mcp_scan.mjs --update\`` +
+    `缺 ${path.relative(cwd, BASELINE)} ⇒ 基线只许显式建立：\`node scripts/mcp/mcp_scan.mjs --surface --update\`` +
       '（有意识动作，本文件的 diff 会在评审里现形）',
+    curMode,
   );
 } else if (UPDATE) {
   // ★★★ 2026-10-31（第十轮复核，与 E-3 同族）：原来**基线写盘就在这里**，早于下面的坏签名判定与退出码 ⇒
@@ -286,6 +297,7 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
         ? `**--update 想洗白 ${newIso.length} 个零消费者工具**：${newIso.join(' / ')} —— **基线不写**。` +
           '要让它们进主干，先接上真正的消费者；确有理由豁免 ⇒ **人工**在 `tool-surface-baseline.json` 的 `isolated` 里加一条并写原因（本脚本不代劳）。'
         : `当前孤立 ${iso.length} 个 / 上版基线 ${prevIsolated.length} 个`,
+      'semantic',
     );
   }
   pendingBaseline = true;
@@ -293,16 +305,20 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
 } else {
   const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
   console.log(`  基线（上次读数，住 ${path.relative(cwd, BASELINE)}，采集于 ${base.capturedAt}）：工具 ${base.tools} 个 · ${base.bytes} B`);
+  // ── surface 模式：固定开销棘轮（wire 字节 / 工具数 ≤ 基线）── 跨 Node 环境弱代理，车道外门判据。
   ratchetLine(
     typeof base.bytes === 'number' && surfaceBytes <= base.bytes,
     '① 工具面开销未增长（≤ 基线）',
     `当前 ${surfaceBytes} B / 基线 ${base.bytes} B（差 ${surfaceBytes - (base.bytes ?? 0)}）—— ★ 单位是 UTF-8 字节（wire），不是字符`,
+    'surface',
   );
-  ratchetLine(toolCount <= base.tools, '② 工具数未增长', `当前 ${toolCount} / 基线 ${base.tools}`);
+  ratchetLine(toolCount <= base.tools, '② 工具数未增长', `当前 ${toolCount} / 基线 ${base.tools}`, 'surface');
+  // ── semantic 模式：基线结构完整性（Top-10 明细）── 车道内强制。
   ratchetLine(
     Array.isArray(base.top10) && base.top10.length >= 5 && base.top10.every((x) => Array.isArray(x) && typeof x[1] === 'number'),
     '③ 基线含 Top-10 明细（把一个工具悄悄撑大 ⇒ 在它的 diff 里现形）',
     `top10 条目 ${Array.isArray(base.top10) ? base.top10.length : '缺失'}`,
+    'semantic',
   );
   // ★★★ 2026-11-07（J6 / §14.1）：**⑤ 孤立工具集不许增长**。
   //   方向同 ①/②：只许不增。判据 = "今天新增了零消费者的工具吗" ——
@@ -320,6 +336,7 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
           `（口径扫了 ${reach.scannedFiles.code} 个代码文件 + ${reach.scannedFiles.doc} 个文档文件；分母必须有 —— 否则"0 命中"与"没扫"读起来一样）。` +
           '出路：① 接上一个真实消费者（代码/测试/脚本里真的用它）；② 别让它进主干（§14.1）。'
         : `当前孤立 ${isolated.length} 个 / 基线上限 ${allowedIsolated.length} 个（扫 ${reach.scannedFiles.code} 代码 + ${reach.scannedFiles.doc} 文档文件）`,
+      'semantic',
     );
     const tightened = allowedIsolated.filter((t) => !isolated.includes(t));
     if (tightened.length) {
@@ -329,58 +346,62 @@ if (!UPDATE && !fs.existsSync(BASELINE)) {
       );
     }
   }
-  if (surfaceBytes < base.bytes) {
+  if (MODE_SURFACE && surfaceBytes < base.bytes) {
     console.log(
       `\n  ★ 比基线**小了 ${base.bytes - surfaceBytes} B** —— 可以把基线收紧（有意识动作）：` +
-        '`node scripts/mcp/mcp_scan.mjs --update`',
+        '`node scripts/mcp/mcp_scan.mjs --surface --update`',
     );
   }
-  if (surfaceBytes > base.bytes) {
+  if (MODE_SURFACE && surfaceBytes > base.bytes) {
     console.log('\n  ★★ 工具面变大了。两条路（二选一，都要有意识）：');
     console.log('     ① 把描述压回去（★ Top-10 占四成以上，见上面读数）；');
-    console.log('     ② 若确有必要 ⇒ `--update` 更新基线，并在提交信息里写清理由。');
+    console.log('     ② 若确有必要 ⇒ `--surface --update` 更新基线，并在提交信息里写清理由。');
   }
 }
 console.log('');
 
+// ── 坏签名守卫扫描：仅 semantic 模式（surface 模式只量 wire 开销，不调 handler）──
 const rows = [];
-for (const def of TOOL_DEFS) {
-  let out = '';
-  let threw = null;
-  const t0 = Date.now();
-  try {
-    const r = await def.handler({});
-    out = typeof r?.text === 'string' ? r.text : JSON.stringify(r ?? null);
-  } catch (e) {
-    // ★ `wrap` 通常把异常吞成 {text,isError}；真漏出来的照收 —— 那也是证据。
-    threw = String(e?.message ?? e);
-    out = threw;
+if (!MODE_SURFACE) {
+  for (const def of TOOL_DEFS) {
+    let out = '';
+    let threw = null;
+    const t0 = Date.now();
+    try {
+      const r = await def.handler({});
+      out = typeof r?.text === 'string' ? r.text : JSON.stringify(r ?? null);
+    } catch (e) {
+      // ★ `wrap` 通常把异常吞成 {text,isError}；真漏出来的照收 —— 那也是证据。
+      threw = String(e?.message ?? e);
+      out = threw;
+    }
+    const hits = BAD.filter((re) => re.test(out)).map((re) => re.source);
+    // ★★ 2026-10-21：入账（`via` 见文件头）。★ `ok` 在这里的口径是**本门的判据**（零坏签名），
+    //   不是「handler 返回成功」—— `{}` 空调用本来就该被守卫拒掉，那不算失败。别拿它算采纳率。
+    recordDogfoodUsage({
+      ts: new Date().toISOString(),
+      tool: def.name,
+      via: VIA,
+      ok: hits.length === 0,
+      ms: Date.now() - t0,
+      err: threw ?? (hits.length ? `坏签名[${hits.join(' | ')}]` : undefined),
+    });
+    const first = (out.trim().split('\n')[0] ?? '').slice(0, 110);
+    rows.push({ name: def.name, bad_signature: hits, first_line: first, threw });
+    console.log(
+      `${def.name.padEnd(28)} ${hits.length ? `✗ 坏签名 [${hits.join(' | ')}]` : '· 人话/正常返回'}\n    ${first}`,
+    );
   }
-  const hits = BAD.filter((re) => re.test(out)).map((re) => re.source);
-  // ★★ 2026-10-21：入账（`via` 见文件头）。★ `ok` 在这里的口径是**本门的判据**（零坏签名），
-  //   不是「handler 返回成功」—— `{}` 空调用本来就该被守卫拒掉，那不算失败。别拿它算采纳率。
-  recordDogfoodUsage({
-    ts: new Date().toISOString(),
-    tool: def.name,
-    via: VIA,
-    ok: hits.length === 0,
-    ms: Date.now() - t0,
-    err: threw ?? (hits.length ? `坏签名[${hits.join(' | ')}]` : undefined),
-  });
-  const first = (out.trim().split('\n')[0] ?? '').slice(0, 110);
-  rows.push({ name: def.name, bad_signature: hits, first_line: first, threw });
-  console.log(
-    `${def.name.padEnd(28)} ${hits.length ? `✗ 坏签名 [${hits.join(' | ')}]` : '· 人话/正常返回'}\n    ${first}`,
-  );
 }
 
 const bad = rows.filter((r) => r.bad_signature.length);
 // ★★★ 基线写盘（推迟到这里：本次跑的结论已经清楚）
 if (pendingBaseline) {
-  if (bad.length || ratchetFails.length) {
+  const anyFail = bad.length || failsByMode.semantic.length || failsByMode.surface.length;
+  if (anyFail) {
     console.log(
-      `\n✗ 本次有失败（坏签名 ${bad.length} / 工具面棘轮 ${ratchetFails.length}）⇒ **拒绝更新基线**` +
-        '（基线不许按坏读数改写；先修好再 --update）',
+      `\n✗ 本次有失败（坏签名 ${bad.length} / 语义棘轮 ${failsByMode.semantic.length} / 开销棘轮 ${failsByMode.surface.length}）⇒ **拒绝更新基线**` +
+        '（基线不许按坏读数改写；先修好再 --surface --update）',
     );
   } else {
     fs.writeFileSync(
@@ -413,17 +434,26 @@ if (pendingBaseline) {
 }
 
 console.log('\n================ 汇总 ================');
-console.log(`总工具   = ${rows.length}`);
-const markBad = bad.length ? '✗' : '·';
-console.log(`${markBad} 坏签名 = ${bad.length}${bad.length ? '  →  ' + bad.map((r) => r.name).join(', ') : ''}`);
-console.log(`· 其余   = ${rows.length - bad.length}（人话 or 正常返回）`);
-console.log(`${ratchetFails.length ? '✗' : '·'} 工具面棘轮 = ${ratchetFails.length}${ratchetFails.length ? '  →  ' + ratchetFails.join(' / ') : ''}`);
-console.log('★ **本门没验**：schema 层拦截（zod，故意绕过）· 参数给对时的正确性 · 自由袋子类入参的形状');
+const semanticFails = failsByMode.semantic;
+const surfaceFails = failsByMode.surface;
+if (!MODE_SURFACE) {
+  console.log(`总工具   = ${rows.length}`);
+  const markBad = bad.length ? '✗' : '·';
+  console.log(`${markBad} 坏签名 = ${bad.length}${bad.length ? '  →  ' + bad.map((r) => r.name).join(', ') : ''}`);
+  console.log(`· 其余   = ${rows.length - bad.length}（人话 or 正常返回）`);
+  console.log(`${semanticFails.length ? '✗' : '·'} 语义棘轮 = ${semanticFails.length}${semanticFails.length ? '  →  ' + semanticFails.join(' / ') : ''}`);
+  console.log('★ **本门没验**：schema 层拦截（zod，故意绕过）· 参数给对时的正确性 · 自由袋子类入参的形状');
 
-const jsonOut = path.join(cwd, '.inspect/mcp_scan.json');
-fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
-fs.writeFileSync(jsonOut, JSON.stringify(rows, null, 1));
-console.log(`\n逐条明细： ${jsonOut}`);
-// ★ 两道判据都在这一个退出码里（坏签名 / 工具面棘轮）—— 它们同属"工具面这件事"，不拆成两道门
-process.exit(bad.length || ratchetFails.length ? 1 : 0);
+  const jsonOut = path.join(cwd, '.inspect/mcp_scan.json');
+  fs.mkdirSync(path.dirname(jsonOut), { recursive: true });
+  fs.writeFileSync(jsonOut, JSON.stringify(rows, null, 1));
+  console.log(`\n逐条明细： ${jsonOut}`);
+} else {
+  console.log(`工具数   = ${toolCount} · wire ${surfaceBytes} B（棘轮：≤ 基线）`);
+  console.log(`${surfaceFails.length ? '✗' : '·'} 开销棘轮 = ${surfaceFails.length}${surfaceFails.length ? '  →  ' + surfaceFails.join(' / ') : ''}`);
+  console.log('★ 本模式只量工具面固定开销（byte/工具数）；坏签名守卫 / 孤立集在 semantic 模式门。');
+}
+// ★ 退出码只取本 mode 的失败集合：semantic = 坏签名 + 语义棘轮；surface = 开销棘轮。两车道门各判各的。
+const exitCode = MODE_SURFACE ? (surfaceFails.length ? 1 : 0) : bad.length || semanticFails.length ? 1 : 0;
+process.exit(exitCode);
 

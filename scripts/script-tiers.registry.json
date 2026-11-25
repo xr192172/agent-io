@@ -11,8 +11,12 @@
       "false_green": "★ 分两档写准（2026-11-06 复核订正：原句「缺 optional 平台二进制 ⇒ 本门仍绿」对**建门的那起事故**是反的）。【红】`check-toolchain-intact.mjs` 的 CRITICAL 那 5 个关键包（esbuild 本体 + 当前平台对应的 `@esbuild/<platform>-<arch>` 二进制）**整个消失 / 解析不到** ⇒ `resolvable()` 三段式全失败 ⇒ 打印「工具链坏了 n/5」并退 1 —— 而「`@esbuild/win32-x64` 被 npm 当 extraneous 剪掉」正是本门被建起来的理由（见 verify.mjs 该门的 why）。【仍绿，如实声明它不管】① 包**在但用起来坏**（版本互斥 / 坏 shim / 包内容损坏 / 平台二进制内容坏）⇒ 本门只断「能否解析」，不断「版本对不对」「跑起来行不行」；② CRITICAL **之外**的包整个消失 ⇒ 清单是刻意收窄的（收窄判据写在 `check-toolchain-intact.mjs` 的 CRITICAL 上方）；③ 平台二进制按当前 `process.platform/arch` 推导对应 optional 包（`@esbuild/<platform>-<arch>`，2026-11-25 CI-fix C1 前写死 win32-x64），其他平台的 optional 包缺失不管；④ `node_modules` 顶层指纹差异与「哪些目录借了本仓 junction」只报不判红（正当 `npm install` 也会变 / 可能是别人正在用的工作区）。"
     },
     "MCP 工具签名": {
-      "verifies": "全部工具的入参/出参契约：走 CLI 入口、绕过 zod 直接调 handler，专测 handler 自己的守卫；另含工具面固定开销棘轮与「dist 不比 src 旧」。",
+      "verifies": "semantic 模式：全部工具的入参/出参契约（走 CLI 入口、绕过 zod 直接调 handler，专测 handler 自己的守卫）；线上工具数=TOOL_DEFS 注册数；孤立工具集；dist 不比 src 旧；基线 Top-10 明细结构。固定开销 byte/工具数棘轮归下一道「MCP 工具面开销」。",
       "false_green": "它绕开 zod ⇒ zod 层的坏签名不在这道门现形（那一层由 CLI 面覆盖）。"
+    },
+    "MCP 工具面开销": {
+      "verifies": "surface 模式：工具面固定开销棘轮 —— wire 字节 ≤ 基线、工具数 ≤ 基线（基线 `scripts/mcp/tool-surface-baseline.json`，上一次实测读数）。",
+      "false_green": "跨 Node 环境 wire 序列化有 ±6B 噪声（ubuntu/Node24 vs 本地 Node22）⇒ 本门声明车道外，CI 单列 offLane 不计码；本地全量仍强制核 byte。坏签名守卫/孤立集不在本门（在 semantic 门）。"
     },
     "Go 编译": {
       "verifies": "observe-lang-go 的 go build ./...。",
