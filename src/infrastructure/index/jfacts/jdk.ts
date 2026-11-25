@@ -198,13 +198,59 @@ export function resolveJdkForProject(
 }
 
 /**
+ * 候选 JDK 根目录列表（纯函数，可喂假 env/平台对拍）。
+ *
+ * ★ 2026-11-25（CI-fix C2）：原先硬编码 `D:/dev_hzy/devkit`、`C:/dev_hzy/devkit` 两个
+ *   本机私有布局 ⇒ Linux/其它机器上枚举不到任何标准位置。根治为三层：
+ *   ① 显式环境 `AGENT_IO_JDK_HOME` / `JAVA_HOME`（最强信号，仍要过 major 校验）；
+ *   ② `AGENT_IO_JDK_ROOTS` 补充根（`;` / `:` 分隔，机器私有 devkit 走这里注入，不写死在代码里）；
+ *   ③ 按平台枚举标准安装位置。
+ *
+ * @param env 环境变量（可注入假值）
+ * @param platform 进程平台（默认 process.platform）
+ */
+export function jdkCandidateRoots(
+  env: Record<string, string | undefined> = process.env,
+  platform: string = process.platform,
+): string[] {
+  const roots: string[] = [];
+  const push = (r: string | null | undefined): void => {
+    const h = String(r ?? '').trim();
+    if (h !== '' && !roots.includes(h)) roots.push(h);
+  };
+  push(env.AGENT_IO_JDK_HOME);
+  push(env.JAVA_HOME);
+  for (const r of String(env.AGENT_IO_JDK_ROOTS ?? '').split(/[;:]/)) push(r);
+
+  if (platform === 'win32') {
+    for (const base of [
+      'C:/Program Files/Java',
+      'C:/Program Files/Eclipse Adoptium',
+      'C:/Program Files/Microsoft',
+      'C:/Program Files/Amazon Corretto',
+      'C:/Program Files/Zulu',
+    ]) push(base);
+  } else if (platform === 'darwin') {
+    for (const base of [
+      '/Library/Java/JavaVirtualMachines',
+      '/opt/homebrew/opt/openjdk',
+      '/usr/local/opt/openjdk',
+    ]) push(base);
+  } else {
+    // Linux 及其它 POSIX：发行版标准 JDK 根
+    for (const base of ['/usr/lib/jvm', '/opt/java/openjdk', '/opt']) push(base);
+  }
+  return roots;
+}
+
+/**
  * 枚举本机可用的 JDK 根。
  *
  * ★ 为什么只看这几个位置而不是全盘找：全盘 `find` 一次要几十秒且会撞权限，
- *   而"本机 JDK 装在哪"在本仓已有既定习惯 —— devkit 下的 `jdk*` 目录（`docs/ENVIRONMENT.md` 的机器布局）。
+ *   而"本机 JDK 装在哪"由 `jdkCandidateRoots` 按环境变量 + 平台标准位置给出。
  * ★ 顺序不是优先级（真正挑谁由 `pickJdk` 的 major 相等 + 字典序决定）：
  *   这里只负责"把候选凑齐"，凑不齐时 `resolveJdkForProject` 会报 `no-candidate-dirs`。
- * ★ 副作用薄到可以一眼看完：读 `JAVA_HOME`、扫 3 个父目录下名为 `jdk*` 的子目录。
+ * ★ 副作用薄到可以一眼看完：读 `JAVA_HOME`、扫候选根下名为 `jdk*`/`java*` 的子目录。
  */
 export function enumerateJdks(env: Record<string, string | undefined> = process.env): JdkCandidate[] {
   const out: JdkCandidate[] = [];
@@ -217,16 +263,14 @@ export function enumerateJdks(env: Record<string, string | undefined> = process.
     if (out.some((c) => c.home === h)) return;
     out.push({ home: h, major });
   };
-  // ① 显式环境（用户说"就用这个"是最强信号，但仍要它有合法 major）
-  push(env.AGENT_IO_JDK_HOME);
-  push(env.JAVA_HOME);
-  // ② 已知 devkit 布局（本仓 `npm run env:check` 的同一个假设）
-  for (const base of [path.join('D:', 'dev_hzy', 'devkit'), path.join('C:', 'dev_hzy', 'devkit')]) {
-    for (const sub of safeReaddir(base)) {
-      if (/^jdk/i.test(sub)) {
-        for (const inner of safeReaddir(path.join(base, sub))) push(path.join(base, sub, inner));
-        push(path.join(base, sub));
-      }
+  for (const root of jdkCandidateRoots(env)) {
+    // 根本身可能就是 JDK home（release 文件在根下）；再向下扫一层 `jdk*`/`java*` 子目录
+    push(root);
+    for (const sub of safeReaddir(root)) {
+      if (!/^(jdk|java)/i.test(sub)) continue;
+      const subPath = path.join(root, sub);
+      push(subPath);
+      for (const inner of safeReaddir(subPath)) push(path.join(subPath, inner));
     }
   }
   return out;
