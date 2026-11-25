@@ -85452,7 +85452,17 @@
         "id": "file_tests_p1_action_effect_boundary_test_ts",
         "path": "tests/p1_action_effect_boundary.test.ts",
         "responsibility": "本卡定向边界反例集：隔离 AGENT_IO_HOME + 临时项目 + 随机回环端口 + 注入 handler；R1–R13 受控消融，不触真实服务",
-        "status": "in_progress"
+        "status": "in_progress",
+        "expected_deps": [
+          "src/application/action_effect.ts",
+          "src/application/plumbing.ts",
+          "src/application/refactor/snapshot/file_snapshot.ts",
+          "src/application/tool_registry.ts",
+          "src/infrastructure/index/db.ts",
+          "src/presentation/daemon/server.ts",
+          "src/presentation/http/serve.ts",
+          "src/presentation/mcp/server_registry.ts"
+        ]
       },
       {
         "id": "file_scripts_card-sheet-projection-gate_mjs",
@@ -85989,7 +85999,25 @@
         "id": "file_scripts_lib_gate_caps_mjs",
         "responsibility": "S-2 门/任务读写能力分类一处权威：17 门 + 六子检查 reads/writes/side_effect/pool/rank/note 登记，未登记 fail-closed 保守串行。",
         "expected_deps": [],
-        "path": "scripts/lib/gate_caps.mjs"
+        "path": "scripts/lib/gate_caps.mjs",
+        "expected_apis": [
+          {
+            "signature": "capOf(gateOrName)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "isWriteCap(cap)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "isConcurrentRead(cap)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "validateCaps(gates, inheritable = [], caps = GATE_CAPS, subchecks = SUBCHECK_CAPS)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       },
       {
         "id": "file_scripts_lib_exec_slots_mjs",
@@ -85997,7 +86025,25 @@
         "expected_deps": [
           "scripts/lib/gate_caps.mjs"
         ],
-        "path": "scripts/lib/exec_slots.mjs"
+        "path": "scripts/lib/exec_slots.mjs",
+        "expected_apis": [
+          {
+            "signature": "createCpuPool(limit)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "createWriteMutex()",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "acquireSlot(cap, ctx, slots)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "slotDiagnostics(slots)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       },
       {
         "id": "file_scripts_lib_dag_plan_mjs",
@@ -86005,7 +86051,41 @@
         "expected_deps": [
           "scripts/lib/gate_caps.mjs"
         ],
-        "path": "scripts/lib/dag_plan.mjs"
+        "path": "scripts/lib/dag_plan.mjs",
+        "expected_apis": [
+          {
+            "signature": "createDag()",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "addNode(dag, node)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "nodeCap(node)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "detectCycle(dag)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "validateDag(dag)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "topoLayers(dag)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "canConcurrentlyRun(node)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "aggregateVerdict(results)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       },
       {
         "id": "file_scripts_lib_concurrency_policy_mjs",
@@ -86013,19 +86093,81 @@
         "expected_deps": [
           "scripts/lib/gate_caps.mjs"
         ],
-        "path": "scripts/lib/concurrency_policy.mjs"
+        "path": "scripts/lib/concurrency_policy.mjs",
+        "expected_apis": [
+          {
+            "signature": "planJobs(input = {})",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "classifyExit(exit = {})",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "allowUpscale(history = {}, upRuns = 2)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       },
       {
         "id": "file_scripts_lib_preempt_guard_mjs",
         "responsibility": "S-13 插队 + 安全点抢占护栏 + 并行降级显形回退：安全点三条件、非安全点排队、降级挂起/串行对账/mismatch 显形。",
         "expected_deps": [],
-        "path": "scripts/lib/preempt_guard.mjs"
+        "path": "scripts/lib/preempt_guard.mjs",
+        "expected_apis": [
+          {
+            "signature": "canPreempt(point = {})",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "enqueuePrioritized(queue, part, opts = {})",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "recordDegradation(input = {})",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "attachSerialRerun(record, serialVerdict)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "canCloseout(record)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       },
       {
         "id": "file_scripts_lib_env_contract_mjs",
         "responsibility": "CI-fix C3：仓根 env-contract.json 的读取 + 结构校验一处权威；工具命令/版本下限/平台子集/派生库归属登记于此，本地 harness 与 CI workflow 共读；契约缺失/坏 JSON/结构不符 fail-closed 抛错，不回退内置硬编码。",
         "expected_deps": [],
-        "path": "scripts/lib/env_contract.mjs"
+        "path": "scripts/lib/env_contract.mjs",
+        "expected_apis": [
+          {
+            "signature": "loadContract(root = ROOT)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "validateContract(contract)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "toolSpec(contract, name)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "gateSpec(contract, name)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "gatesForLane(contract, lane)",
+            "notes": "from:cache.db@1795592056416"
+          },
+          {
+            "signature": "aggregateLane(done, laneSet)",
+            "notes": "from:cache.db@1795592056416"
+          }
+        ]
       }
     ]
   },
@@ -86087,13 +86229,13 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2980,
+  "_dsl_rev": 2981,
   "_sync": {
-    "saved_at": "2026-11-24T14:24:27.557Z",
+    "saved_at": "2026-11-25T08:31:00.623Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2529270420,
+    "age": 2594463486,
     "dbSchemaVersion": 17,
     "via": "derived:project_actual_fields"
   },
