@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main] # ★ H3：受保护 tag push 不触发 CI（tag 事件 checkout refspec 与 fetch-tags 冲突 128；基线 tag 只读，无需重跑）
   pull_request:
 
 concurrency:
@@ -26,6 +27,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
+          # ★ H3：受保护 tag rules-protected 指向基线 commit；depth=1 只拉 tag ref 不拉其对象/树，
+          #   tag 内册 blob 比对在 shallow 边界外 ⇒ fail-closed。必须 0（全历史）tag commit 树才可达。
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
@@ -47,6 +51,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
+          # ★ H3：受保护 tag rules-protected 指向基线 commit；depth=1 只拉 tag ref 不拉其对象/树，
+          #   tag 内册 blob 比对在 shallow 边界外 ⇒ fail-closed。必须 0（全历史）tag commit 树才可达。
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
@@ -81,6 +88,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
+          # ★ H3：受保护 tag rules-protected 指向基线 commit；depth=1 只拉 tag ref 不拉其对象/树，
+          #   tag 内册 blob 比对在 shallow 边界外 ⇒ fail-closed。必须 0（全历史）tag commit 树才可达。
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -112,6 +122,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
+          # ★ H3：受保护 tag rules-protected 指向基线 commit；depth=1 只拉 tag ref 不拉其对象/树，
+          #   tag 内册 blob 比对在 shallow 边界外 ⇒ fail-closed。必须 0（全历史）tag commit 树才可达。
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22

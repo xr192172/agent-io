@@ -55,6 +55,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-tags: true
+          # ★ H3：受保护 tag rules-protected 指向基线 commit；depth=1 只拉 tag ref 不拉其对象/树，
+          #   tag 内册 blob 比对在 shallow 边界外 ⇒ fail-closed。必须 0（全历史）tag commit 树才可达。
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
