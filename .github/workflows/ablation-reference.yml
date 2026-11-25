@@ -1,0 +1,68 @@
+# ══════════════════════════════════════════════════════════════════════
+# 观察期 reference 车道 —— **CI 只产读数 artifact；账本唯一写者是宿主 cron**
+#
+# ## 它验什么 / 不验什么
+#   · 观察期（K=2 周，window_start 2026-11-25T18:53:43+08:00，N=10 积累）需要跨次存活的
+#     周期对照读数。本 workflow 由 schedule 周期触发，跑一条 **dry/light** reference，把结构化
+#     record 作为 artifact 上传，供宿主侧 `scripts/ablation-ingest.mjs` 下载并 append 进仓内台账
+#     `.agent-io/ablation-runs.jsonl`。
+#   · **CI 不直接写账本**（D.6 三轴：单写者 · 多读者）：runner 上即使有本地台账副本也不 commit、
+#     不回推；账本的追加落盘只发生在宿主 cron 调用 ingest 脚本时。CI 产物走 Actions 自己的通道。
+#   · dry/light：CI 干净克隆无本机索引（cache.db/tasks.db）与隔离快照 worktree ⇒ 不起全量对照、
+#     不克隆 worktree；record 的 holes/full_red 在本车道是平凡空，真实对照读数留本机/云主机隔离副本。
+#
+# ## 底座变更标记
+#   record 的 `snapshot.commit_sha` 标识本轮底座快照；ingest 回执按台账内 distinct commit_sha 计
+#   底座轮数（首条基线轮，≥2 个不同 sha ⇒ 已跨 ≥1 轮底座变更）。本 workflow 只带 sha，不判进退码。
+#
+# ## 触发
+#   · `schedule`：每日一次周期 reference（观察期积累自动喂台账；宿主 ingest 后落仓）。
+#   · `workflow_dispatch`：手动补跑一轮 reference。
+#   · 不挂 push / pull_request：观察期读数不是每次提交的闸，避免把对照读数混进提交门禁。
+# ══════════════════════════════════════════════════════════════════════
+name: 观察期 reference
+
+on:
+  schedule:
+    # 每日 02:00 UTC（北京 10:00）；观察期内周期采集。
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+# 最小权限：只读仓库 + 上传 Actions 自己的 artifact；不写任何仓内账本。
+permissions:
+  contents: read
+
+concurrency:
+  group: ablation-reference-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      # ★ 钉数据根 = 仓库根（同 judge-gate 先例）：避免自建 runner 上数据根漂到 ~/.agent-io。
+      - name: 周期 reference（dry/light；不写仓内账本）
+        env:
+          AGENT_IO_HOME: ${{ github.workspace }}
+        run: node --import tsx scripts/ablation-cron.mjs --json --mode light --night-window --files 3 > ablation-reference.json
+
+      - name: 上传 reference 读数 artifact
+        # ★ `if: always()`：参考步骤崩了，读数/报错更要留档供宿主 ingest 与复核。
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ablation-reference
+          path: ablation-reference.json
+          if-no-files-found: warn
+          retention-days: 14

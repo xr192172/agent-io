@@ -188,13 +188,13 @@ const NON_VOLUME_ENTRIES = [
   //   为什么不能放 scratch：观察期窗口（evaluateObservationWindow）要读**全部历史**记录数连续零洞，
   //   scratch 按卡清理会丢积累 ⇒ 观察期退化成"刚起跑"。为什么不是"卷"：它不承载任何设计真相，
   //   只是周期对照读数的历史载体，删掉只损失历史趋势与观察期计数，不丢源码/设计事实。
-  //   ★ 跟踪态（口径校正 2026-11-25）：当前沿用 .agent-io/* gitignore，**本机派生、不跨机持久**；
-  //      注意它与 `judge-readings.json` 不同——后者实测已 git 跟踪，本台账当前**未跟踪（派生）**。
-  //      阶段 3 启用 N=10 / K=2 周**跨机**积累前，参照 `tasks.jsonl` 先例（!/.agent-io/tasks.jsonl 例外）
-  //      评估纳入跟踪；在那之前不跨机同步、不冒充持久基线。本门管的是"说得清来路"，登记≠免死牌。
+  //   ★ 跟踪态（口径校正 2026-11-25 · Main 裁②）：观察期跨机积累载体，**纳入 git 跟踪**
+  //      （append-only，`git add -f` 比照 judge-readings.json / tasks.jsonl 先例；.agent-io/*
+  //      仍在 gitignore 覆盖下，索引强制跟踪）。唯一写者 = 宿主 cron 调 `ablation-ingest.mjs`；
+  //      CI 观察期车道只产 reference artifact，不直接写本台账。
   {
     name: 'ablation-runs.jsonl',
-    why: '`scripts/ablation-cron.mjs` 落的**本机派生**跨 run 观察期台账（append-only：每条 selection/holes/full_red/skipped/影子覆盖读数），`evaluateObservationWindow` 读全部历史数连续零洞；观察期需跨次存活 ⇒ 不能放 scratch；**不跨机持久**，阶段 3 跨机积累前参照 tasks.jsonl 先例纳入跟踪；不是卷，删掉只损失历史趋势与观察期计数',
+    why: '`scripts/ablation-cron.mjs` 编排、`scripts/ablation-ingest.mjs`（宿主 cron 唯一写者）落的跨 run 观察期台账（append-only：每条 selection/holes/full_red/skipped/影子覆盖读数），`evaluateObservationWindow` 读全部历史数连续零洞；观察期需跨次存活 ⇒ 不能放 scratch；观察期跨机积累 ⇒ 纳入 git 跟踪（force-add，比照 tasks.jsonl）；不是卷，删掉只损失历史趋势与观察期计数',
   },
   { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },
   { name: 'baseline-replay.json', why: '`AGENT_IO_REPLAY_ONLY` 回放的读数，随该轮运行生灭' },
