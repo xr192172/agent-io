@@ -28,8 +28,8 @@ import { ablationCheck, assertAblationTarget } from '../src/infrastructure/analy
 import { collectTestFiles } from './lib/test_files.mjs';
 
 const argv = process.argv.slice(2);
-const ROOT = path.resolve(val('--root') ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
 const val = (f) => { const i = argv.indexOf(f); return i >= 0 ? argv[i + 1] : undefined; };
+const ROOT = path.resolve(val('--root') ?? path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'));
 const changed = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--changed') for (const p of String(argv[i + 1] ?? '').split(',')) if (p.trim()) changed.push(p.trim());
@@ -118,7 +118,7 @@ for (const rel of tests) {
 const ab = ablationCheck(fullVerdicts, selSelected, { map: coverage, changedFiles: changed });
 const verdictCounts = { pass: 0, fail: 0, skip: 0, error: 0 };
 for (const v of Object.values(fullVerdicts)) verdictCounts[v] = (verdictCounts[v] ?? 0) + 1;
-const redFiles = Object.entries(fullVerdicts).filter((, v) => v === 'fail' || v === 'error').map(([f]) => f).sort();
+const redFiles = Object.entries(fullVerdicts).filter(([, v]) => v === 'fail' || v === 'error').map(([f]) => f).sort();
 const result = {
   ok: ab.ok,
   contrastive,

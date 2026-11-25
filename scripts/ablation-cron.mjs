@@ -28,6 +28,8 @@ import {
   snapshotRefOf,
   buildAblationRecord,
   summarizeShadowTrend,
+  evaluateObservationWindow,
+  OBSERVATION_HOLES_ZERO_RUNS,
 } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
 import { buildCoverageMap } from '../src/infrastructure/analysis/facts/test_coverage.ts';
 
@@ -67,6 +69,15 @@ function git(args) {
   }
 }
 
+/** 在指定目录跑 git（隔离快照副本的干净度判定用；默认仍活树 ROOT）。 */
+function gitIn(dir, args) {
+  try {
+    return execFileSync('git', args, { cwd: dir, encoding: 'utf8', shell: false }).trim();
+  } catch {
+    return '';
+  }
+}
+
 /** 读台账末条记录（读不到 ⇒ null；坏行不静默，标注 skip）。 */
 function readLastRecord() {
   if (!fs.existsSync(LEDGER_ABS)) return null;
@@ -90,7 +101,9 @@ const commitsSinceLast = lastCommit
   ? Number(git(['rev-list', '--count', `${lastCommit}..HEAD`]) || '0')
   : 0;
 const headSha = git(['rev-parse', 'HEAD']) || null;
-const clean = git(['status', '--porcelain']).length === 0;
+// 隔离快照干净度判副本（--worktree 指向的独立 worktree）；活树自身的未提交改动不影响快照判定。
+const targetRoot = worktreeArg ? path.resolve(worktreeArg) : ROOT;
+const clean = gitIn(targetRoot, ['status', '--porcelain']).length === 0;
 
 const signal = {
   widenChanged: widen,
@@ -132,7 +145,6 @@ if (!dry && !snapshot.isolated) {
 // ── ③ 索引存在/新鲜度守卫：空/stale 显形报缺索引 fail-closed，绝不把保守全量 227/227 当选择读数 ──
 //   索引自建是隔离快照前置步骤（rebuild_feature/importProject 扫描 src 写 cache.db，重量级归 CI/云主机），
 //   不在 cron 编排内自动全量扫描（L4）；守卫只判可信性，不替快照补索引。
-const targetRoot = worktreeArg ? path.resolve(worktreeArg) : ROOT;
 const coverageProbe = buildCoverageMap(targetRoot);
 let auditResult = null;
 let auditNote = null;
@@ -187,6 +199,9 @@ const record = buildAblationRecord({
 appendRecord(record);
 const all = fs.readFileSync(LEDGER_ABS, 'utf8').split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l));
 const trend = summarizeShadowTrend(all);
+// ⑤ 观察期机制：纯函数守门（连续 holes=0 计数 vs 门槛 N）；本批只接机制+读数，连续 10 次积累归阶段 3/CI。
+//   eligible 仅作读数挂出，不进硬判据、不抬退出码（reading-only）。
+const observation = evaluateObservationWindow(all, OBSERVATION_HOLES_ZERO_RUNS);
 
 const out = {
   triggered: true,
@@ -197,6 +212,7 @@ const out = {
   dry,
   record,
   trend,
+  observation,
   ledger: LEDGER_REL,
   reading_only: true,
 };
