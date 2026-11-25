@@ -25,12 +25,14 @@ import {
   ABLATION_SCENARIO_CLASSES,
   LIGHT_SAMPLE_MAX_FILES,
   LIGHT_SAMPLE_MAX_JOBS,
+  OBSERVATION_HOLES_ZERO_RUNS,
   evaluateTriggers,
   validateSamplingQuota,
   coverageOfScenarios,
   snapshotRefOf,
   buildAblationRecord,
   summarizeShadowTrend,
+  evaluateObservationWindow,
 } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -179,6 +181,69 @@ test('影子趋势：不足两次 insufficient；递减 improving；递增 regre
 
   const flat = summarizeShadowTrend([mk(2, 2), mk(2, 2)]);
   assert.equal(flat.direction, 'flat');
+});
+
+test('观察期窗口：连续 N 次 holes=0 才达标；不足/有洞 ⇒ not-eligible', () => {
+  const zeroRun = (id: string) =>
+    buildAblationRecord({
+      run_id: id,
+      triggered_by: ['night_window'],
+      started_at: '2026-11-24T20:00:00.000Z',
+      snapshot: { commitSha: null, worktree: null, clean: true, isolated: true },
+      mode: 'light',
+      quota: { files: 0, jobs: 1 },
+      holes: [],
+    });
+  const holeRun = (id: string, holes: string[]) =>
+    buildAblationRecord({
+      run_id: id,
+      triggered_by: ['holes_present'],
+      started_at: '2026-11-24T20:00:00.000Z',
+      snapshot: { commitSha: null, worktree: null, clean: true, isolated: true },
+      mode: 'light',
+      quota: { files: 0, jobs: 1 },
+      holes,
+    });
+
+  // 空记录 ⇒ 不足，不冒充达标
+  const empty = evaluateObservationWindow([]);
+  assert.equal(empty.eligible, false);
+  assert.equal(empty.runs, 0);
+  assert.equal(empty.consecutiveZero, 0);
+  assert.equal(empty.reason, 'insufficient-runs');
+
+  // 不足 N 条全零 ⇒ insufficient-runs
+  const few = evaluateObservationWindow([zeroRun('r1'), zeroRun('r2')]);
+  assert.equal(few.eligible, false);
+  assert.equal(few.consecutiveZero, 2);
+  assert.equal(few.reason, 'insufficient-runs');
+
+  // 末尾连续 N 条零、更早有洞 ⇒ eligible（漏选已修复，重新计数达门槛）
+  const withHistory = [holeRun('h0', ['tests/old.ts']), ...Array.from({ length: OBSERVATION_HOLES_ZERO_RUNS }, (_, i) => zeroRun(`z${i}`))];
+  const ok = evaluateObservationWindow(withHistory);
+  assert.equal(ok.eligible, true);
+  assert.equal(ok.consecutiveZero, OBSERVATION_HOLES_ZERO_RUNS);
+  assert.equal(ok.reason, 'eligible');
+
+  // 最近一条有洞 ⇒ hole-in-window，连续段归零（回退条件：出现漏选重新计观察期）
+  const freshHole = [zeroRun('z1'), zeroRun('z2'), holeRun('h1', ['tests/a.test.ts'])];
+  const rh = evaluateObservationWindow(freshHole);
+  assert.equal(rh.eligible, false);
+  assert.equal(rh.consecutiveZero, 0);
+  assert.equal(rh.reason, 'hole-in-window');
+
+  // 末尾连续零但更早有洞 ⇒ hole-in-window，连续段只数末尾零段
+  const trailing = [holeRun('h0', ['tests/b.test.ts']), zeroRun('z1'), zeroRun('z2')];
+  const rt = evaluateObservationWindow(trailing);
+  assert.equal(rt.eligible, false);
+  assert.equal(rt.consecutiveZero, 2);
+  assert.equal(rt.reason, 'hole-in-window');
+
+  // 自定义门槛：N=3 时 3 条零即达标
+  const custom = evaluateObservationWindow([zeroRun('z1'), zeroRun('z2'), zeroRun('z3')], 3);
+  assert.equal(custom.eligible, true);
+  assert.equal(custom.threshold, 3);
+  assert.equal(custom.reason, 'eligible');
 });
 
 test('只读仓：编排入口 / 纯函数导出 / 台账 gitignore / npm script 就位', () => {

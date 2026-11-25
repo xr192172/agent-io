@@ -281,3 +281,60 @@ export function summarizeShadowTrend(records: readonly AblationRunRecord[]): Sha
     : 'flat';
   return { runs: records.length, holes, shadow_coverage: shadow, direction };
 }
+
+/**
+ * L2 连续零 hole 观察期门槛（起步值，已冻结）：连续 N 次 reference run holes=0。
+ * ★ holes=0 是退场必要非充分条件（§M1）：本函数只数连续零洞次数，不背书盲区闭合；
+ *   连续积累本身在阶段 3 / CI 观察期完成，本文件只给可复算的纯语义。
+ */
+export const OBSERVATION_HOLES_ZERO_RUNS = 10;
+
+export type ObservationWindowReason = 'eligible' | 'insufficient-runs' | 'hole-in-window';
+
+export interface ObservationWindowResult {
+  /** 末尾连续 holes=0 的次数（从最后一条往前数，遇任一 holes>0 即中断） */
+  consecutiveZero: number;
+  /** 台账记录总数 */
+  runs: number;
+  /** 零洞门槛 N（L2 起步 10） */
+  threshold: number;
+  /** 连续零洞次数 ≥ N ⇒ true；不足或窗口内有洞 ⇒ false */
+  eligible: boolean;
+  /** 读数口径：eligible=达标；insufficient-runs=记录数/连续零洞不足 N；hole-in-window=末尾连续段之前（或最近一条）存在漏选洞 */
+  reason: ObservationWindowReason;
+}
+
+/**
+ * ⑤ 观察期机制（纯函数，零 IO）：数台账末尾连续 holes=0 的次数，对照 L2 门槛 N。
+ *
+ * 口径：
+ * · 从最后一条记录向前遍历，`holes.length === 0` 计入连续段；遇到第一条 holes>0 即中断；
+ * · `eligible = consecutiveZero >= N`；N ≤0 按 OBSERVATION_HOLES_ZERO_RUNS 起步值；
+ * · 最近一条就有洞 ⇒ consecutiveZero=0，reason='hole-in-window'（回退条件：出现漏选即重新计观察期）；
+ * · 记录为空 ⇒ runs=0，insufficient，不冒充达标。
+ * ★ 本判定只看 holes 计数；unknown 占比 / undetermined 占比 / 边型完备性等并列准入证据不在本函数内。
+ */
+export function evaluateObservationWindow(
+  records: readonly AblationRunRecord[],
+  threshold: number = OBSERVATION_HOLES_ZERO_RUNS,
+): ObservationWindowResult {
+  const N = Number.isFinite(threshold) && threshold > 0 ? Math.floor(threshold) : OBSERVATION_HOLES_ZERO_RUNS;
+  const runs = records.length;
+  let consecutiveZero = 0;
+  let sawHole = false;
+  for (let i = runs - 1; i >= 0; i--) {
+    if ((records[i].holes?.length ?? 0) === 0) {
+      consecutiveZero++;
+    } else {
+      sawHole = true;
+      break;
+    }
+  }
+  const eligible = consecutiveZero >= N;
+  const reason: ObservationWindowReason = eligible
+    ? 'eligible'
+    : sawHole
+      ? 'hole-in-window'
+      : 'insufficient-runs';
+  return { consecutiveZero, runs, threshold: N, eligible, reason };
+}
