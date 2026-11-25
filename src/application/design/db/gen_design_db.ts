@@ -402,7 +402,8 @@ export interface CacheFactsSnapshot {
  * ## 读不到就是读不到
  * 没有 `files` 表（旧库 / 夹具没建索引）⇒ `null`（调用点据此**全量重算**并说出原因）。
  */
-export function snapshotCacheFacts(db: DatabaseSync): CacheFactsSnapshot | null {
+export function snapshotCacheFacts(db: DatabaseSync | null): CacheFactsSnapshot | null {
+  if (!db) return null; // ★ F-②：无 cache.db（clean-clone/CI 派生未建）⇒ 读不到就是读不到，降级 null（不造空库）。
   try {
     const rows = db
       .prepare('SELECT path, content_hash, norm_hash, node_count FROM files ORDER BY path')
@@ -1338,15 +1339,28 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   if (!CHECK) fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const dbPath = path.join(root, '.agent-io', 'cache.db');
-  const db = new DatabaseSync(dbPath, { readOnly: true });
+  // ★ F-②（2026-11-25）：cache.db 是 gitignore 派生符号索引，clean-clone / CI 上不存在。
+  //   readOnly 打开不存在文件会抛 errcode 14（unable to open database file）。既有口径（db.ts:129-131
+  //   注释 + test_coverage 先例）：读不到索引 ⇒ 降级空，**不在无索引项目造空 cache.db**（Windows EBUSY 锁）。
+  //   无索引时符号/边投影为空；门 8 checkDesignDbStructure 只比册侧三样（//source/requirements/
+  //   requirements_calls 调用方），不依赖本库符号 ⇒ 空投影不破坏结构一致性判定。
+  const db: DatabaseSync | null = fs.existsSync(dbPath)
+    ? new DatabaseSync(dbPath, { readOnly: true })
+    : null;
   // ★★★ 2026-10-28（同构漂移修复）：**SQL 由映射表派生**，不再手写列名 ——
   //   手写是漂移入口（实测：实际侧 21 列、设计侧只投影 5 键，`sym_hash` 这种重写锚点整整缺了一个月）。
-  const qSymbols = db.prepare(symbolSelectSql());
-  const qImports = db.prepare('SELECT source, kind, type_only FROM v_imports WHERE file_path = ? ORDER BY line');
-  const qCallsOut = db.prepare("SELECT source, target FROM edges WHERE kind = 'call' AND source LIKE ? ORDER BY target");
-  const qHome = db.prepare(
-    'SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL ORDER BY (file_path = ?) DESC LIMIT 1',
-  );
+  const qSymbols = db ? db.prepare(symbolSelectSql()) : null;
+  const qImports = db
+    ? db.prepare('SELECT source, kind, type_only FROM v_imports WHERE file_path = ? ORDER BY line')
+    : null;
+  const qCallsOut = db
+    ? db.prepare("SELECT source, target FROM edges WHERE kind = 'call' AND source LIKE ? ORDER BY target")
+    : null;
+  const qHome = db
+    ? db.prepare(
+        'SELECT file_path FROM nodes WHERE name = ? AND parent IS NULL ORDER BY (file_path = ?) DESC LIMIT 1',
+      )
+    : null;
 
   // ★★★ 2026-10-28（同构纪律的第二步）：**`reverse_calls` 删掉** —— 它是 `calls` 的一跳反向，
   //   **算得出来**（`calls[].to` 按文件归并即可）⇒ 落盘就是第二份事实，必然烂；
@@ -1386,7 +1400,11 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
   if (!fingerprintUsable) {
     result.fingerprintNote =
       '输入签名**不可用** ⇒ 本次全量现算（' +
-      (facts === null ? 'cache.db 没有 files 表 / 快照读不到' : '投影映射表的 sha 算不出来') +
+      (facts === null
+        ? db === null
+          ? '无 cache.db（clean-clone/CI 派生未建）⇒ 符号/边投影为空'
+          : 'cache.db 没有 files 表 / 快照读不到'
+        : '投影映射表的 sha 算不出来') +
       '）—— 读不到 ≠ 一致';
   }
 
@@ -1468,30 +1486,35 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       let symbols: Array<Record<string, unknown>> = [];
       let imports: Array<Record<string, unknown>> = [];
       let calls: Array<Record<string, unknown>> = [];
-      try {
-        // ★ 2026-10-28：投影走**唯一映射表**（`design_db_projection.ts`）——每列要么投影、要么写明为什么不投影
-        symbols = (qSymbols.all(rel) as Array<Record<string, unknown>>).map(projectSymbolRow);
-        imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
-          source: r.source,
-          kind: r.kind,
-          ...(r.type_only ? { type_only: true } : {}),
-        }));
-        calls = (qCallsOut.all(rel + '#%') as Array<{ source: string; target: string }>).map((r) => ({
-          from: norm(r.source),
-          to: norm(r.target),
-        }));
-        result.dbQueries += 3;
-      } catch (e) {
-        result.problems.push(`${rel}: 读 cache.db 失败（${(e as Error)?.message ?? String(e)}）`);
-        continue;
+      if (db && qSymbols && qImports && qCallsOut) {
+        try {
+          // ★ 2026-10-28：投影走**唯一映射表**（`design_db_projection.ts`）——每列要么投影、要么写明为什么不投影
+          symbols = (qSymbols.all(rel) as Array<Record<string, unknown>>).map(projectSymbolRow);
+          imports = (qImports.all(rel) as Array<{ source: string; kind: string; type_only: number | null }>).map((r) => ({
+            source: r.source,
+            kind: r.kind,
+            ...(r.type_only ? { type_only: true } : {}),
+          }));
+          calls = (qCallsOut.all(rel + '#%') as Array<{ source: string; target: string }>).map((r) => ({
+            from: norm(r.source),
+            to: norm(r.target),
+          }));
+          result.dbQueries += 3;
+        } catch (e) {
+          result.problems.push(`${rel}: 读 cache.db 失败（${(e as Error)?.message ?? String(e)}）`);
+          continue;
+        }
       }
+      // ★ F-②：db=null（无索引）⇒ 三样保持空数组，不记 problem（降级口径，不是读库失败）。
 
       // ★ 设计要求单独一个字段：`calls` 是全量镜像（必然全绿），
       //   `requirements_calls` 才是"设计说必须有"的 —— 契约门必须读它。
       const requirementsCalls: Array<Record<string, unknown>> = [];
       for (const spec of requirementCallsOf(item)) {
-        result.dbQueries += 1;
-        const home = qHome.get(spec.target, spec.from.split('#')[0]) as { file_path?: string } | undefined;
+        const home = qHome
+          ? (qHome.get(spec.target, spec.from.split('#')[0]) as { file_path?: string } | undefined)
+          : undefined;
+        if (qHome) result.dbQueries += 1;
         if (!home) continue;
         requirementsCalls.push({
           from: spec.from,
@@ -1546,7 +1569,7 @@ export function genDesignDb(root: string, opts: GenDesignDbOptions = {}): GenDes
       result.written += 1;
     }
   } finally {
-    db.close();
+    db?.close();
   }
 
   const expected = new Set([...plan.items.keys()].map(outNameOf));
