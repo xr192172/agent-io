@@ -127,6 +127,12 @@ jobs:
         run: npm run design:gen-db
       - name: 总门 · Windows 绑定腿（门名/门数以 verify 自身输出为准）
         run: node scripts/verify.mjs --lane windows
+      # ★ 取证（任务 #188）：设计册判据 unsupported 全落 scripts/mutate.mjs（call-exists 查 files/nodes 表无行）。
+      #   本地不复现（主仓 923 / 隔离复现 663 均收录）⇒ 收录口径差异只能在 runner 侧采。本步只读 dump
+      #   走查集合、索引表集合与差集到 verify-last/index-debug/，不改任何判定；if: always() ⇒ 门红/判不了照样采。
+      - name: 索引收录取证 dump（#188 归因）
+        if: always()
+        run: node scripts/debug-index-dump.mjs
       # ★ 取证（任务 #188）：设计册判据 34 unsupported 的逐条 kind/detail 在 runner 侧门日志里，
       #   汇总行只有计数；`if: always()` ⇒ 闸红/判不了时日志照样上传，供归因闭环。不改任何判定。
       - name: 上传 Windows 门日志明细（unsupported 归因取证）
