@@ -42261,6 +42261,46 @@
         "y": 430,
         "type": "file",
         "path": "scripts/ablation-cron.mjs"
+      },
+      {
+        "id": "file_scripts_lib_gate_caps_mjs",
+        "label": "gate_caps.mjs",
+        "x": 1700,
+        "y": 800,
+        "type": "file",
+        "path": "scripts/lib/gate_caps.mjs"
+      },
+      {
+        "id": "file_scripts_lib_exec_slots_mjs",
+        "label": "exec_slots.mjs",
+        "x": 1700,
+        "y": 870,
+        "type": "file",
+        "path": "scripts/lib/exec_slots.mjs"
+      },
+      {
+        "id": "file_scripts_lib_dag_plan_mjs",
+        "label": "dag_plan.mjs",
+        "x": 1700,
+        "y": 940,
+        "type": "file",
+        "path": "scripts/lib/dag_plan.mjs"
+      },
+      {
+        "id": "file_scripts_lib_concurrency_policy_mjs",
+        "label": "concurrency_policy.mjs",
+        "x": 1700,
+        "y": 1010,
+        "type": "file",
+        "path": "scripts/lib/concurrency_policy.mjs"
+      },
+      {
+        "id": "file_scripts_lib_preempt_guard_mjs",
+        "label": "preempt_guard.mjs",
+        "x": 1700,
+        "y": 1080,
+        "type": "file",
+        "path": "scripts/lib/preempt_guard.mjs"
       }
     ],
     "edges": [
@@ -85936,6 +85976,42 @@
         "expected_deps": [
           "src/infrastructure/analysis/facts/incsel_cron.ts"
         ]
+      },
+      {
+        "id": "file_scripts_lib_gate_caps_mjs",
+        "responsibility": "S-2 门/任务读写能力分类一处权威：17 门 + 六子检查 reads/writes/side_effect/pool/rank/note 登记，未登记 fail-closed 保守串行。",
+        "expected_deps": [],
+        "path": "scripts/lib/gate_caps.mjs"
+      },
+      {
+        "id": "file_scripts_lib_exec_slots_mjs",
+        "responsibility": "S-EXEC 准入原语底座：P-CPU 计数信号量 + P-DB-WRITE 单写者 mutex（占用即抛点名不排队）+ 诊断读数 + 类型标记。",
+        "expected_deps": [
+          "scripts/lib/gate_caps.mjs"
+        ],
+        "path": "scripts/lib/exec_slots.mjs"
+      },
+      {
+        "id": "file_scripts_lib_dag_plan_mjs",
+        "responsibility": "S-1 施工/验证/收口流水线 DAG 编排内核：显式 needs 边、环检测、拓扑分层、写面同层互斥、三态 verdict 聚合。",
+        "expected_deps": [
+          "scripts/lib/gate_caps.mjs"
+        ],
+        "path": "scripts/lib/dag_plan.mjs"
+      },
+      {
+        "id": "file_scripts_lib_concurrency_policy_mjs",
+        "responsibility": "S-6 自适应并发档位策略：RSS/句柄/温度三输入定档、下限保护、退出分类分流、退避防抖。",
+        "expected_deps": [
+          "scripts/lib/gate_caps.mjs"
+        ],
+        "path": "scripts/lib/concurrency_policy.mjs"
+      },
+      {
+        "id": "file_scripts_lib_preempt_guard_mjs",
+        "responsibility": "S-13 插队 + 安全点抢占护栏 + 并行降级显形回退：安全点三条件、非安全点排队、降级挂起/串行对账/mismatch 显形。",
+        "expected_deps": [],
+        "path": "scripts/lib/preempt_guard.mjs"
       }
     ]
   },
