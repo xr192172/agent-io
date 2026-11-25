@@ -155,6 +155,10 @@ docs/*
 !docs/FACTS.json
 !docs/accounting.jsonl
 !docs/frictions.jsonl
+# H 批（Main 裁示）：冻结企划 / 审计映射 / 加速度曲线 / S-EXEC 草案 / E-2 企划 / 审计交接简报
+#   作为只读归档原件入 docs/plans/（内容不改，入库前核 SHA256 与原件一致）；新日期快照/过程稿仍不例外。
+!/docs/plans/
+!/docs/plans/**
 # 内部交接/狗食试产产物
 HANDOVER_DOGFOOD.md
 # 内部后续开发路径规划（含竞品/许可/变现/缺陷审计等内部结论，不入发布仓库）

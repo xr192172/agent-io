@@ -56,6 +56,7 @@ AgentIO 是由目标驱动的程序开发引擎。一个真实开发任务应走
 | `docs/VISION-ORIGINAL.md` | 用户愿景原文 |
 | `docs/RETIRED.md` | 当前仍有效的否决与回炉条件 |
 | `docs/todo.md` | ledger 生成视图；不手改 |
+| `docs/plans/` | 冻结企划 / 审计映射 / 加速度曲线 / S-EXEC 草案 / E-2 企划 / 审计交接简报的只读归档原件（SHA256 与原件一致；历史存档，非当前基线） |
 
 ## 5. 当前下一方向
 
