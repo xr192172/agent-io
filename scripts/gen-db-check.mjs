@@ -54,7 +54,10 @@ const booksForAudit = fs.existsSync(DESIGN_DIR)
         return { feature: f.slice(0, -'.dsl.json'.length), nodes: dsl.geometry?.nodes ?? [] };
       })
   : [];
-const ha = auditHistory(booksForAudit);
+// ★ 侧车与册**同目录解析**：`booksForAudit` 从 cwd 的 `.agent-io/design` 直读册，侧车读端必须
+//   传同一个项目根（baseDir=cwd），不许重走注册表（projects.json 不入库；CI clean-clone 注册表空 ⇒
+//   旧口径落点分叉、侧车 missing ⇒ 棘轮误掉）。单处权威 = `getDesignSheetFile(feature, baseDir)`。
+const ha = auditHistory(booksForAudit, process.cwd());
 
 // 棘轮：**只许升**（掉 = 有人删了历史 ⇒ 那是事故，必须显式 --update-baseline 并写理由）
 const BASELINE = path.join(process.cwd(), 'scripts', 'decision-history-baseline.json');

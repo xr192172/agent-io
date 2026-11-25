@@ -80,11 +80,16 @@ export interface HistoryIndex {
 
 /**
  * 侧车路径：**与设计册同目录** `<baseDir>/.agent-io/design/<feature>.history.jsonl`。
- * ★ 从 `getDesignSheetFile(feature)` 取目录（不在这里再拼一次 `.agent-io/design`）——
+ * ★ 从 `getDesignSheetFile(feature, baseDir)` 取目录（不在这里再拼一次 `.agent-io/design`）——
  *   设计册搬过一次家（`features/` → `design/`），**路径只有一个出处**才不会重演（同 `todoJournalFile`）。
+ *
+ * ★ `baseDir`（项目根）口径：与册的 `booksForAudit` cwd 直读**同目录解析**——门脚本从
+ *   `process.cwd()/.agent-io/design/*.dsl.json` 直读册，侧车必须落在同一目录，不许重走注册表
+ *   （`projects.json` 不入库；CI clean-clone 注册表空 ⇒ 旧口径落点分叉、侧车读不到）。
+ *   缺省 `undefined` ⇒ 维持既有注册表 → 锚点 → 数据家解析（其他运行时读端不传，口径不变）。
  */
-export function historyLogFile(feature: string): string {
-  return path.join(path.dirname(getDesignSheetFile(feature)), `${feature}.history.jsonl`);
+export function historyLogFile(feature: string, baseDir?: string): string {
+  return path.join(path.dirname(getDesignSheetFile(feature, baseDir)), `${feature}.history.jsonl`);
 }
 
 /**
@@ -141,9 +146,10 @@ export function ensureHistoryLog(feature: string): string {
 /**
  * 读回某 feature 的全部历史（按落盘顺序）。
  * ★ 文件不存在 ⇒ `missing: true`（**不是**"没有历史"—— 那要由 `resolveHistory` 结合内联一起判）。
+ * @param baseDir 项目根；传给册同目录解析（门脚本传 cwd）。缺省维持注册表/数据家口径。
  */
-export function readHistoryLog(feature: string): HistoryIndex {
-  const file = historyLogFile(feature);
+export function readHistoryLog(feature: string, baseDir?: string): HistoryIndex {
+  const file = historyLogFile(feature, baseDir);
   const byNode = new Map<string, RawHistoryEntry[]>();
   if (!fs.existsSync(file)) return { byNode, bad_lines: 0, missing: true, lines: 0, clears: 0 };
   let bad = 0;
@@ -183,8 +189,8 @@ export function readHistoryLog(feature: string): HistoryIndex {
 }
 
 /** 一批节点的历史索引（★ 批量读端**只读一次盘**，别在循环里 `readHistoryLog`） */
-export function loadHistoryIndex(feature: string): HistoryIndex {
-  return readHistoryLog(feature);
+export function loadHistoryIndex(feature: string, baseDir?: string): HistoryIndex {
+  return readHistoryLog(feature, baseDir);
 }
 
 /** 历史的来源（★ 四态是**判据**，不是风格：`both` 与 `unreadable` 都必须响亮） */
@@ -297,9 +303,11 @@ export interface HistoryAudit {
 /**
  * 审计一批已经读进来的册（★ 由调用方给 `feature + dsl`，**不在这里枚举目录**：
  * 枚举口径归 `design_line` / 门脚本，本函数只管**判**）。
+ * @param baseDir 项目根；侧车与册同目录解析（门脚本传 cwd，与 `booksForAudit` 直读同目录）。缺省维持注册表口径。
  */
 export function auditHistory(
   books: readonly { feature: string; nodes: readonly { id: string; decision_history?: unknown }[] }[],
+  baseDir?: string,
 ): HistoryAudit {
   const out: HistoryAuditBook[] = [];
   let inlineTotal = 0;
@@ -308,7 +316,7 @@ export function auditHistory(
   let bothTotal = 0;
   const missingBooks: string[] = [];
   for (const b of books) {
-    const idx = readHistoryLog(b.feature);
+    const idx = readHistoryLog(b.feature, baseDir);
     let inline = 0;
     let both = 0;
     const perNode: Record<string, number> = {};
