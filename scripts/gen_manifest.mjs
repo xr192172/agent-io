@@ -196,6 +196,16 @@ const NON_VOLUME_ENTRIES = [
     name: 'ablation-runs.jsonl',
     why: '`scripts/ablation-cron.mjs` 编排、`scripts/ablation-ingest.mjs`（宿主 cron 唯一写者）落的跨 run 观察期台账（append-only：每条 selection/holes/full_red/skipped/影子覆盖读数），`evaluateObservationWindow` 读全部历史数连续零洞；观察期需跨次存活 ⇒ 不能放 scratch；观察期跨机积累 ⇒ 纳入 git 跟踪（force-add，比照 tasks.jsonl）；不是卷，删掉只损失历史趋势与观察期计数',
   },
+  // ★★ 2026-11-26（H3 裁判独立）：规则版本审批 ledger（append-only）。
+  //   为什么不能放 scratch：judge 判定前要拿**最后一条**批准 entry 比对 rules_sha / 册 blob /
+  //   tested_commit；scratch 按卡清理会丢基线 ⇒ 受保护校验退化成"无 entry 拒判"或假基线。
+  //   为什么不是"卷"：它不承载设计真相，只是"哪份尺子被谁在哪批过"的审批记录；删掉只损失批准
+  //   依据可回溯性，不丢源码/册事实。唯一写者 = `scripts/approve-rules.mjs`（单写者，改尺先 entry
+  //   再前移 tag）；纳入 git 跟踪（roots.ts gitignore keep 放行），CI clean-clone 可读最后一条。
+  {
+    name: 'protected-approvals.jsonl',
+    why: 'H3 裁判独立审批 ledger（append-only：每条 approved_at/approver/note/rules_sha/册 blob/book_ref/tested_commit）；`src/infrastructure/rules/protected_rules.ts#verifyProtectedRules` 读最后一条 entry 比对受保护基线，不符 fail-closed 拒判；基线需跨次/跨机存活 ⇒ 不能放 scratch；纳入 git 跟踪（roots.ts keep 放行）；不是卷，删掉损失规则版本批准依据的可回溯性',
+  },
   { name: 'hook', why: 'hook 的**去重状态**目录（`hook-seen-nosession.json`：哪些会话的 hook 已经跑过），随 hook 运行生灭' },
   { name: 'baseline-replay.json', why: '`AGENT_IO_REPLAY_ONLY` 回放的读数，随该轮运行生灭' },
   { name: 'regen-report.json', why: '`scripts/regen-translate.mjs` 的读数（0.8 节：变差就靠它非零退出），随该轮运行生灭' },
