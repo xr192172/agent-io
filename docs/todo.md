@@ -224,7 +224,7 @@ diff_views 对 agent-io 出 2182 条差异，归因：
 | 3.2 | fuzzy 四件 | — |
 | 3.3 | editCodeBody 单文件回滚 | — |
 | 3.4 | db.ts 四处（死导出真删 → `HISTORY-DEAD-EXPORT` 并此） | `HISTORY-DEAD-EXPORT-PRODUCES-OLD-PATH` |
-| 4.1 | 修 CI（删死步骤 archify） | — |
+| 4.1 | 修 CI（删死步骤 archify） | 已删（G1 本批：ci.yml 残留 doctor 步骤 + verify-clean 诊断注记随 e23d3f4d 管线下线一并移除） |
 | 4.2 | 时长棘轮 + test smells | — |
 | 4.3 | 声明覆盖率 | — |
 | 4.5 | 变异分数 | — |

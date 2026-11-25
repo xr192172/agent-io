@@ -24,7 +24,7 @@
  * ## CI 独有的步骤从哪来
  * `ci.yml` 里 `run:` 的命令**扫出来**（不是另抄一份）：已经被本脚本做过的那三条
  * （`npm ci` / `npm run build` / `npm run verify`）跳过，剩下的原样在干净环境里跑
- * —— 这就是 `third_party/archify/... doctor` 那道红进得来的原因（它**不在** `verify` 里）。
+ * —— verify 之外的 CI 步骤若有输入不入库，干净环境里的红也会从这里进得来。
  *
  * ## 退出码（三态，与 verify 的口径不同 —— 这里的红是**预期的读数**，不是失败）
  *   0 = 跑完了（无论几红）；2 = **环境没造起来**（clone 失败 / 保真断言不过）⇒ 没有可信读数
@@ -50,7 +50,7 @@ if (flag('help')) {
   console.log(
     'verify:clean —— 干净 clone 上的门读数（诊断工具，不是门）\n\n' +
       '  npm run verify:clean\n' +
-      '  npm run verify:clean -- --only=archify,设计册,文档与事实   只跑名字含这些子串的步骤（子串匹配）\n' +
+      '  npm run verify:clean -- --only=设计册,文档与事实   只跑名字含这些子串的步骤（子串匹配）\n' +
       '  npm run verify:clean -- --keep                          保留干净 clone（默认跑完删掉）\n' +
       '  npm run verify:clean -- --workdir=D:/work/vc            干净 clone 的落点（★ 不要在系统临时目录下）\n',
   );
@@ -179,7 +179,6 @@ const IGNORED_INPUTS = [
   { probe: '.agent-io/cache.db', label: '符号索引（`fileFacts` / 影响面 / 判据的执行输入）' },
   { probe: '.agent-io/tasks.db', label: '任务卡库' },
   { probe: '.agent-io/COGNITION.txt', label: '认知索引（`cognition:check` 的产物）' },
-  { probe: 'third_party', label: 'archify vendor（CI 的 doctor 步骤跑它）' },
 ];
 
 /** 目录/文件在干净环境里有没有；本地有几份；git 跟踪几个。 */
@@ -232,8 +231,6 @@ const HINTS = {
   '设计册判据':
     '`.agentio-data/projects.json`（项目注册表）不入 git ⇒ CLI 不知道这 3 册属于本仓 ⇒ 回落到 `<storageRoot>/design/` ⇒ 判据 0 条（exit 2）',
   '文档与事实': '`.agent-io/COGNITION.txt` 不入 git，且本地盘上也没有 ⇒ `cognition:check` 必红',
-  'archify vendor 自检（renderer + schema + example 三件套完整）':
-    '`third_party/archify/` 整个目录不在仓里（git 跟踪 0 个文件、本地也不存在）⇒ `MODULE_NOT_FOUND`',
 };
 
 const hintFor = (name) => HINTS[name] ?? '';
