@@ -319,9 +319,11 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
       /* 探测本身出错 ⇒ 当作"不陈旧"，后续判据会如实报 unsupported */
     }
   }
-  const db = getProjectCacheDb(root);
+  let phase = 'open-db';
   try {
+    const db = getProjectCacheDb(root);
     if (stale) {
+      phase = 'fresh-index';
       // ★ 动态 import：`index_freshness` 依赖面很宽，这里只在真的陈旧时用一次
       const { ensureFreshIndex } = await import('../../../infrastructure/index/index_freshness.js');
       await ensureFreshIndex(db, root);
@@ -330,6 +332,7 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
     //   不完整 ⇒ 同步 `backfillChunk` 补齐一轮（复用 backfill 路径，非二次探测 retry 补丁），
     //   再复核；仍不覆盖 / 校验读不出 ⇒ `covers=false`，由判定循环对边表类判据 fail-closed。
     //   #188 补观测：累计 backfill 各批 synced/failed/remaining/total，终态落 walkCount/filesCount/error。
+    phase = 'covers-check';
     const { indexCoversDiskEx, indexedRelativeSet, freshnessScope } = await import(
       '../../../infrastructure/index/index_freshness.js'
     );
@@ -339,6 +342,7 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
       // 同步补齐到覆盖为止；synced=0 停滞或 20 批护栏后退出，再复核交 fail-closed 判定。
       let guard = 0;
       while ((!cov.ok || !cov.covers) && guard++ < 20) {
+        phase = 'backfill';
         const r = await backfillChunk(db, root, { batch: 2000 });
         backfill.batches++;
         backfill.synced += r.synced;
@@ -349,6 +353,7 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
         if (r.remaining === 0 || r.synced === 0) break;
       }
     }
+    phase = 'coverage-report';
     const scope = freshnessScope(root);
     const walkCount = scope.scope.size;
     const filesCount = indexedRelativeSet(db).size;
@@ -362,8 +367,9 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
     }
     return { covers: true, reason: 'ok', missing: 0, walkCount, filesCount, backfill, covOk: true, error: null };
   } catch (e) {
-    // ★ 异常 message 不再静默吞进 `{covers:false,missing:-1}`：带 message 落回执取证，供 CI 归因。
+    // ★ 异常 message + 阶段 + 栈首帧不再静默吞：落回执取证，供 CI windows 归因定位抛锁帧。
     const err = e as Error;
+    const stack = err && err.stack ? String(err.stack).split('\n').slice(0, 4).join('\n') : null;
     return {
       covers: false,
       reason: 'backfill-error',
@@ -372,7 +378,9 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
       filesCount: -1,
       backfill,
       covOk: false,
+      phase,
       error: err && err.message ? err.message : String(e),
+      errorStack: stack,
     };
   }
 }

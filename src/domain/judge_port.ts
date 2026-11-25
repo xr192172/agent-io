@@ -128,6 +128,10 @@ export interface IndexCoverageReport {
   covOk: boolean;
   /** 校验 / 补齐异常 message（不吞）；无异常为 null。 */
   error: string | null;
+  /** 异常抛出所处阶段（open-db / fresh-index / covers-check / backfill / coverage-report），归因定位用。 */
+  phase?: string;
+  /** 异常栈首帧（不吞）；无异常为 null。 */
+  errorStack?: string | null;
 }
 
 /**
