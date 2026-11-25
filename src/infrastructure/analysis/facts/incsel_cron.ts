@@ -349,6 +349,8 @@ export interface ObservationWindowResult {
   classified: Record<RunClass, number>;
   /** 类别合规但落在时间窗外的条数 */
   outsideWindow: number;
+  /** 窗口内足额对照段中带全量红样本（full_red>0）的条数（红哨兵披露，中断连续零段） */
+  redSamples: number;
   /** 零洞门槛 N（L2 起步 10） */
   threshold: number;
   /** 连续零洞次数 ≥ N ⇒ true；不足 / 窗口内有洞 / 无足额对照 ⇒ false */
@@ -404,8 +406,13 @@ export function evaluateObservationWindow(
 
   let consecutiveZero = 0;
   let sawHole = false;
+  let redSamples = 0;
   for (let i = eligible.length - 1; i >= 0; i--) {
-    if ((eligible[i].holes?.length ?? 0) === 0) {
+    const holesN = eligible[i].holes?.length ?? 0;
+    const redN = eligible[i].full_red?.length ?? 0;
+    if (redN > 0) redSamples++;
+    // 真实洞（holes>0）或全量红样本（full_red>0）都中断连续零段：任一真实红/洞 ⇒ 重新计观察期。
+    if (holesN === 0 && redN === 0) {
       consecutiveZero++;
     } else {
       sawHole = true;
@@ -436,6 +443,7 @@ export function evaluateObservationWindow(
     eligibleRuns,
     classified,
     outsideWindow,
+    redSamples,
     threshold: N,
     eligible: eligiblePass,
     reason,

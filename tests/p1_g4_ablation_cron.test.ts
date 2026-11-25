@@ -206,7 +206,7 @@ test('落账类别：dry / untrusted / sampled / full-control 四级从严判定
 test('观察期窗口：仅窗口内足额对照进分母；dry/抽样/非对照/窗外不计零洞段', () => {
   const IN = '2026-11-26T02:00:00+08:00';
   const OUT = '2026-11-20T02:00:00+08:00';
-  const mk = (id: string, over: Partial<{ mode: 'light' | 'full'; finished_at: string | null; clean: boolean; isolated: boolean; holes: string[]; started_at: string }>) =>
+  const mk = (id: string, over: Partial<{ mode: 'light' | 'full'; finished_at: string | null; clean: boolean; isolated: boolean; holes: string[]; full_red: string[]; started_at: string }>) =>
     buildAblationRecord({
       run_id: id,
       triggered_by: ['night_window'],
@@ -216,6 +216,7 @@ test('观察期窗口：仅窗口内足额对照进分母；dry/抽样/非对照
       mode: over.mode ?? 'full',
       quota: { files: 200, jobs: 2 },
       holes: over.holes ?? [],
+      full_red: over.full_red ?? [],
     });
   const fullZero = (id: string) => mk(id, {});
   const fullHole = (id: string, holes: string[]) => mk(id, { holes });
@@ -285,6 +286,19 @@ test('观察期窗口：仅窗口内足额对照进分母；dry/抽样/非对照
   assert.equal(rt.eligible, false);
   assert.equal(rt.consecutiveZero, 2);
   assert.equal(rt.reason, 'hole-in-window');
+
+  // 最近一条带全量红样本（full_red>0）⇒ 红哨兵中断连续段，consecutiveZero 归零，redSamples 披露
+  const freshRed = [fullZero('z1'), fullZero('z2'), mk('red1', { full_red: ['tests/red.test.ts'] })];
+  const rr = evaluateObservationWindow(freshRed);
+  assert.equal(rr.eligible, false);
+  assert.equal(rr.consecutiveZero, 0);
+  assert.equal(rr.redSamples, 1);
+
+  // 末尾连续零但更早有红样本 ⇒ 红中断，连续段只数末尾零段
+  const redTrailing = [mk('red0', { full_red: ['tests/old-red.ts'] }), fullZero('z1'), fullZero('z2')];
+  const rtRed = evaluateObservationWindow(redTrailing);
+  assert.equal(rtRed.eligible, false);
+  assert.equal(rtRed.consecutiveZero, 2);
 
   // 自定义门槛：N=3 时 3 条零即达标
   const custom = evaluateObservationWindow([fullZero('z1'), fullZero('z2'), fullZero('z3')], 3);
