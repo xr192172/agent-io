@@ -297,10 +297,24 @@ function countIndexBehindDisk(root: string, rels: readonly string[]): number {
  * · 先做**便宜探测**（`indexStaleFor` 只算目标文件的内容 hash，不扫全仓）：不陈旧就一次都不刷；
  * · 刷新失败 / 仍判不了 ⇒ **保持 `unsupported` 并如实报**（仍然红，但红得有理：说明索引真的修不动）。
  */
-async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<void> {
+/**
+ * 判定前索引覆盖校验结果（#188 时序根因修，2026-11-26）。
+ * · `covers=true`：索引覆盖磁盘，边表/符号事实可判；
+ * · `covers=false`：保鲜 + 同步补齐后仍未覆盖磁盘（或覆盖校验读不出）⇒ 边表类判据
+ *   fail-closed 拒绝判定（不拿缺行边表下结论）。`missing=-1` 表示读不出/数不准。
+ */
+interface IndexCoverage {
+  covers: boolean;
+  missing: number;
+}
+
+/** 事实源是派生边表、整库覆盖与否决定其可信度的判据 kind（未覆盖时 fail-closed）。 */
+const EDGE_TABLE_KINDS = ['call-exists', 'edge-exists', 'edge-absent', 'domain-independent'];
+
+async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[]): Promise<IndexCoverage> {
   // ★ `Expectation` 是联合类型：只有一部分 kind 带 `path`（edge-* 是 from/to）⇒ 只收带 path 的
   const rels = judgedFilesOf(items);
-  if (!rels.length) return;
+  if (!rels.length) return { covers: true, missing: 0 };
   let stale = false;
   for (const rel of rels) {
     try {
@@ -312,13 +326,33 @@ async function ensureIndexFreshForJudge(root: string, items: readonly JudgeItem[
       /* 探测本身出错 ⇒ 当作"不陈旧"，后续判据会如实报 unsupported */
     }
   }
-  if (!stale) return;
+  const db = getProjectCacheDb(root);
   try {
-    // ★ 动态 import：`index_freshness` 依赖面很宽，这里只在真的陈旧时用一次
-    const { ensureFreshIndex } = await import('../../../infrastructure/index/index_freshness.js');
-    await ensureFreshIndex(getProjectCacheDb(root), root);
+    if (stale) {
+      // ★ 动态 import：`index_freshness` 依赖面很宽，这里只在真的陈旧时用一次
+      const { ensureFreshIndex } = await import('../../../infrastructure/index/index_freshness.js');
+      await ensureFreshIndex(db, root);
+    }
+    // ★★ #188 时序根因修：判定前用唯一权威 `indexCoversDiskEx` 复核整库是否覆盖磁盘。
+    //   不完整 ⇒ 同步 `backfillChunk` 补齐一轮（复用 backfill 路径，非二次探测 retry 补丁），
+    //   再复核；仍不覆盖 / 校验读不出 ⇒ `covers=false`，由判定循环对边表类判据 fail-closed。
+    const { indexCoversDiskEx } = await import('../../../infrastructure/index/index_freshness.js');
+    const { backfillChunk } = await import('../../../infrastructure/index/index_backfill.js');
+    let cov = indexCoversDiskEx(db, root);
+    if (!cov.ok || !cov.covers) {
+      // 同步补齐到覆盖为止；synced=0 停滞或 20 批护栏后退出，再复核交 fail-closed 判定。
+      let guard = 0;
+      while ((!cov.ok || !cov.covers) && guard++ < 20) {
+        const r = await backfillChunk(db, root, { batch: 2000 });
+        cov = indexCoversDiskEx(db, root);
+        if (r.remaining === 0 || r.synced === 0) break;
+      }
+    }
+    if (!cov.ok) return { covers: false, missing: -1 };
+    return { covers: cov.covers, missing: cov.covers ? 0 : -1 };
   } catch {
-    /* 刷新尽力而为：失败就让它照旧报 unsupported（不掩盖） */
+    /* 刷新/补齐尽力而为：失败就让它照旧 fail-closed（不掩盖） */
+    return { covers: false, missing: -1 };
   }
 }
 
@@ -924,8 +958,10 @@ export async function judgeExpectations(
       `[judge] 索引落后于磁盘 ⇒ 本次已按磁盘现算（${indexBehind} 个文件）\n`,
     );
   }
-  // ★ 先保鲜、后判（判据见 ensureIndexFreshForJudge：索引是派生数据，先修它永远安全）
-  await ensureIndexFreshForJudge(root, items);
+  // ★ 先保鲜、后判（判据见 ensureIndexFreshForJudge：索引是派生数据，先修它永远安全）。
+  //   #188 时序根因修：返回整库覆盖状态；未覆盖 ⇒ 边表类判据在循环里 fail-closed 拒绝判定。
+  const coverage = await ensureIndexFreshForJudge(root, items);
+  const indexUncovered = !coverage.covers;
   const out: ExpectationItem[] = [];
   // ★★★ P1：evidence 派生（唯一出口 push 内完成）—— verdict 参数逐字不动，只在 item 上多挂一层标注
   const evidenceOf = (it: JudgeItem): EvidenceMark => {
@@ -1008,6 +1044,13 @@ export async function judgeExpectations(
         push(it, res.verdict, res.detail);
         continue;
       }
+    }
+    // ★★ #188 时序根因修：索引未覆盖磁盘时，边表类判据 fail-closed —— 边表事实可能缺行，
+    //   "查无 ≠ 不存在"，不拿缺行边表判 pass/fail，单列 unsupported 明示（比照 V3 untrusted 不得 exit0）。
+    if (indexUncovered && EDGE_TABLE_KINDS.includes(e.kind)) {
+      const why = coverage.missing < 0 ? '覆盖校验读不出' : `缺 ${coverage.missing} 个文件`;
+      push(it, 'unsupported', `索引未覆盖磁盘（${why}）⇒ 边表事实不可信，fail-closed 拒绝判定`);
+      continue;
     }
     switch (e.kind) {
       case 'file-exists': {

@@ -70,6 +70,13 @@ export interface FreshnessReport {
    * 常态增量（索引已覆盖磁盘的既有文件改动）仍守 100 上限保性能；脱节才放开，非一刀切抬上限。
    */
   backfilled?: boolean;
+  /**
+   * ★★ 覆盖复核后仍缺收录的磁盘文件数（2026-11-26 · #188 时序根因修）：
+   *   一轮增量/脱节 backfill 走完后，再用唯一权威 {@link indexCovers} 复核库内集合是否
+   *   覆盖磁盘走查集合；仍未收录的磁盘文件计入本字段。>0 ⇒ 索引未覆盖磁盘，判定侧
+   *   对依赖边表的判据 fail-closed（拒绝拿缺行边表下结论），不冒充完整。
+   */
+  uncovered?: number;
   /** ★ 本轮**重新打开**（resolved→pending）待重解析的引用条数 —— 手工改名/删符号后，
    *  引用方的边会被 FK 级联删掉且不会自己重建（漏报）；这里把它们放回待解析队列。 */
   refsReopened: number;
@@ -103,6 +110,7 @@ function emptyReport(): FreshnessReport {
     failed: 0,
     skipped_adds: 0,
     backfilled: false,
+    uncovered: 0,
     refsReopened: 0,
     bootstrapped: 0,
     selfWriteHits: 0,
@@ -948,7 +956,29 @@ export async function ensureFreshIndex(
         /* 解析失败不阻断：pending 留待下轮 */
       }
     }
-    report.state = report.skipped_adds > 0 ? 'partial' : 'ready';
+
+    // ★★ #188 时序根因修（2026-11-26）：**覆盖复核 + 同步补齐**。
+    //   一轮增量/脱节 backfill 走完后，再用唯一权威 {@link indexCovers} 复核库内集合是否
+    //   覆盖磁盘走查集合；仍未收录的磁盘文件（syncFile 失败/漏网）同步再补一轮（脱节态
+    //   不受 100 上限）。复核后仍缺 ⇒ `report.uncovered` 如实报数，判定侧据此 fail-closed，
+    //   不拿缺行的边表/符号下结论，也不冒充完整。
+    const diskRels = absFiles.map((a) => path.relative(root, a).split(path.sep).join('/'));
+    let coveredNow = indexedRelativeSet(db);
+    let stillMissing = diskRels.filter((rel) => !coveredNow.has(rel));
+    if (stillMissing.length) {
+      for (const rel of stillMissing) {
+        try {
+          await syncFile(db, root, path.join(root, rel));
+        } catch {
+          report.failed++;
+        }
+      }
+      coveredNow = indexedRelativeSet(db);
+      stillMissing = diskRels.filter((rel) => !coveredNow.has(rel));
+    }
+    report.uncovered = stillMissing.length;
+
+    report.state = report.skipped_adds > 0 || report.uncovered > 0 ? 'partial' : 'ready';
     report.ms = Date.now() - t0;
     return report;
   } catch {
