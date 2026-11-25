@@ -147,7 +147,7 @@ const noCacheSel = args.includes('--no-cache');
 let SEL = null;
 
 // ════════════════════════════════════════════════════════════════════════
-// ★ #92 项①：`--audit-ablation` —— 真实对照审计入口（转发 incsel-audit.mjs，不内联重算全量 verdicts）。
+// ★ #92 批 · 条目①：`--audit-ablation` —— 真实对照审计入口（转发 incsel-audit.mjs，不内联重算全量 verdicts）。
 //   一处权威：对照判定住 incsel_ablation.ts，编排住 incsel-audit.mjs；本 flag 只做进程转发 + 回执透传。
 //   给定后不跑主测试套件：spawn audit 取 JSON 回执，退出码沿用 audit（对照模式 holes>0 ⇒ 1；非对照 ⇒ 0）。
 //   透传 `--changed` / `--no-cache`；audit 全量逐文件跑是重量级，调用方显式知情。
