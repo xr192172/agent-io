@@ -32,7 +32,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const FP_REL = '.agent-io/toolchain-fingerprint.json';
@@ -41,13 +41,30 @@ const asJson = argv.includes('--json');
 const record = argv.includes('--record');
 
 /**
+ * esbuild 可选二进制包名：`@esbuild/<platform>-<arch>`，按运行平台推导。
+ *
+ * ★ 2026-11-25（CI-fix C1）：原先硬编码 `@esbuild/win32-x64` ⇒ Linux runner 上这道断言
+ *   必红（linux 装的是 `@esbuild/linux-x64`，win32 包根本不会被 npm 装上）。平台二进制是
+ *   optionalDependency，**只断言当前平台那一份**；别平台的包不在本机出现是正常的，不判红。
+ *
+ * @param {string} platform 进程平台（默认 process.platform）
+ * @param {string} arch 进程架构（默认 process.arch）
+ * @returns {string} 对应 esbuild 可选包名
+ */
+export function esbuildOptionalPkg(platform = process.platform, arch = process.arch) {
+  const a = arch === 'x64' ? 'x64' : arch === 'arm64' ? 'arm64' : arch;
+  return `@esbuild/${platform}-${a}`;
+}
+
+/**
  * ★ 关键包清单 —— 每一个都是"缺了就有大量东西静默挂掉"的那种。
  * ★ 判据（加新条目时必须能答）：**它缺了，哪一个门/哪一批测试会红，而那个红看起来像什么？**
  *   答不出 ⇒ 别加（否则清单会变成"凡依赖都列一遍"的噪音）。
  */
+const esbuildBinPkg = esbuildOptionalPkg();
 const CRITICAL = [
   { pkg: 'esbuild', why: 'tsx 的底座；缺 ⇒ 一切 dynamic import *.ts 挂 ⇒ 测试门整片红' },
-  { pkg: '@esbuild/win32-x64', why: 'esbuild 的 Windows 平台二进制（optional）；实测被 npm 当 extraneous 剪掉过' },
+  { pkg: esbuildBinPkg, why: `esbuild 的 ${process.platform}/${process.arch} 平台二进制（optional）；实测被 npm 当 extraneous 剪掉过` },
   { pkg: 'tsx', why: 'tests/ 与 CLI 的 TS 直跑入口；缺 ⇒ 测试门与多数探针挂' },
   { pkg: 'typescript', why: '「ts 类型」门靠它；缺 ⇒ 那道门直接失效' },
   { pkg: 'tree-sitter', why: '解析内核；缺 ⇒ 判据面大面积 unsupported（会被读成"判不了"而不是"环境坏了"）' },
@@ -104,6 +121,7 @@ function fingerprint() {
   return { ok: true, dirs: Object.keys(map).length, map, links };
 }
 
+function main() {
 const results = CRITICAL.map((c) => ({ ...c, r: resolvable(c.pkg) }));
 const broken = results.filter((x) => !x.r.ok);
 const fp = fingerprint();
@@ -215,3 +233,8 @@ if (asJson) {
   console.log(`✓ 工具链完整：${CRITICAL.length}/${CRITICAL.length} 个关键包都可解析`);
 }
 process.exit(broken.length ? 1 : 0);
+}
+
+// ★ 仅在被直接执行时跑 main；被测试 import 时不触发断言/退出（纯函数 esbuildOptionalPkg 可单独对拍）。
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();
+
