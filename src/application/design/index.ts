@@ -97,6 +97,7 @@ export async function judgeBookReceipt(input: {
   const { judgeExpectations } = await import('./intent/expectations.js');
   const { staleJudgeCaveat } = await import('../../domain/stale_verdict.js');
   const { checkStaleBuild } = await import('../observe/runtime/stale_check.js');
+  const { verifyProtectedRules } = await import('../../infrastructure/rules/protected_rules.js');
   const feature = String(input.feature ?? '');
   if (!feature) throw new Error('design_line action=judge 需要 feature');
   // ★★★ 2026-11-25（P3 施工批 D 根因修）：册锚点必须由调用方 `project_dir` 显式下传，
@@ -120,6 +121,15 @@ export async function judgeBookReceipt(input: {
   //   ⇒ 判据静默全红（本机之所以绿，只因 win32 下那两个字符串恰好相等 —— 这道门从没在别机器上跑绿过）。
   //   原写法 `String(a.project_dir ?? '')` 也不再留：空串不是「没给」，是「给了个无效值」。
   const root = requireProjectRoot({ project_dir: input.project_dir, 'dsl.source_root': dsl.source_root });
+  // ★★★ H3 裁判独立：判定前校验受保护规则基线（rules_sha / 册 blob / tag == 审批 ledger）。
+  //   受保护环境下任一不符 ⇒ fail-closed 拒判（不拿未审批的尺子下结论）；隔离夹具 / 未引导基线
+  //   ⇒ protected=false 不强制，指纹照常记入回执。
+  const protectedCheck = verifyProtectedRules(root);
+  if (!protectedCheck.ok) {
+    throw new Error(
+      `受保护规则校验未通过（fail-closed 拒判）：\n  - ${protectedCheck.reasons.join('\n  - ')}`,
+    );
+  }
   // ★★★ T-#INC-JUDGE-SEL（2026-11-17）：**选量入口** —— `changed`（仓库相对路径数组）。
   //
   // ## 缺省 = 全量（向后兼容，行为逐字不变）
@@ -176,6 +186,10 @@ export async function judgeBookReceipt(input: {
       sheet: sheetAbs,
       tally,
       items: rep.items,
+      // ★ H3 双版本分记：rules_sha = 裁判核/清单版本指纹；tested_commit = 被测 HEAD；protected = 是否受基线管理。
+      rules_sha: protectedCheck.rulesSha,
+      tested_commit: protectedCheck.testedCommit,
+      protected: protectedCheck.protected,
       // ★ 只有选量模式才带本字段（全量回执的形状逐字不变）；读端据此知道"这次没有全判"。
       ...(sel
         ? {

@@ -316,6 +316,10 @@ async function judgeOne(feature, target, changed = null) {
     // ★ T-#INC-JUDGE-SEL（2026-11-17）：CLI 的**选量读数**（只有选量模式才在回执里）。
     //   缺省 `null` = 本次是全量 —— 全量时**一律** null（不猜"没给就是全量选中"）。
     selection: selectionOf(rec.selection),
+    // ★ H3 双版本分记：裁判版本指纹 / 被测提交 / 是否受基线管理（随每册回执带出）。
+    rules_sha: rec.rules_sha ?? null,
+    tested_commit: rec.tested_commit ?? null,
+    protected: rec.protected ?? false,
     // ★ 2026-11-17：执行核在**本进程内**跑（不再经 CLI 退出码）—— 走到这里就是拿到了完整回执 ⇒ ok=true
     ok: true,
   };
@@ -461,6 +465,10 @@ async function judgeBooks(features, target, prefix, opts = {}) {
   let totalJudged = 0;
   const byKind = {};
   const allItems = [];
+  // ★ H3 双版本分记：同一主仓规则版本一致，取首册非空值汇总到读数。
+  let rulesSha = null;
+  let testedCommit = null;
+  let protectedFlag = false;
   // 选量汇总（跨册相加）；`sheetsWithoutSelection` 用来抓"要了选量但 CLI 没回读数"
   const sel = { selected: 0, total: 0, hit: 0, always: 0, unselected: 0, changed: 0, sheets: 0, sheetsWithoutSelection: [], whyFull: [] };
   for (const f of features) {
@@ -490,6 +498,9 @@ async function judgeBooks(features, target, prefix, opts = {}) {
     //   **单册判据被清空**时，只要别册还有料就照绿。每册必须自己判过东西。
     // ★★ T-#INC-JUDGE-SEL 补一个例外（**只在选量模式**）：该册本次**一条都没命中**是合法结果，
     //   此时"判了 0 条"不是红，而是"这册本次不需要判" —— 但**绝不是通过**（标 ○ + 文字说清）。
+    if (!rulesSha && r.rules_sha) rulesSha = r.rules_sha;
+    if (!testedCommit && r.tested_commit) testedCommit = r.tested_commit;
+    if (r.protected) protectedFlag = true;
     const selectedZero = Boolean(changed && r.selection && r.selection.selected === 0);
     const emptyBook = judged === 0 && !selectedZero;
     const isBad = r.fail > 0 || r.unsupported > 0 || !r.ok || emptyBook;
@@ -511,7 +522,7 @@ async function judgeBooks(features, target, prefix, opts = {}) {
     for (const b of r.bad.slice(0, 5)) console.log(`       ${prefix}· ${b}`);
     if (r.bad.length > 5) console.log(`       ${prefix}· …另有 ${r.bad.length - 5} 条`);
   }
-  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems, selection: changed ? sel : null };
+  return { books: features.length, judged: totalJudged, pass: totalPass, bad, byKind, items: allItems, selection: changed ? sel : null, rules_sha: rulesSha, tested_commit: testedCommit, protected: protectedFlag };
 }
 
 const { externals: extArgs, changed: changedRaw } = parseArgs(process.argv.slice(2));
@@ -951,6 +962,10 @@ if (repo.selection) {
         judged: repo.judged,
         pass: repo.pass,
         by_kind: repo.byKind,
+        // ★ H3 双版本分记：裁判规则指纹 / 被测提交 / 是否受审批基线管理。
+        rules_sha: repo.rules_sha,
+        tested_commit: repo.tested_commit,
+        protected: repo.protected,
       },
       null,
       2,

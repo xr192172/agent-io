@@ -218,6 +218,8 @@ export function gitignoreRules(): { ignore: string[]; keep: string[] } {
   }
   // sqlite 的三个伴生文件（-wal / -shm）跟着主库一起忽略
   ignore.push(`${DATA_DIR_NAME}/*.db*`);
+  // ★ H3 裁判独立：规则版本审批 ledger（append-only，意图数据不可重建）⇒ 随仓移交。
+  keep.push(`${DATA_DIR_NAME}/protected-approvals.jsonl`);
   return { ignore: [...new Set(ignore)].sort(), keep: [...new Set(keep)].sort() };
 }
 
