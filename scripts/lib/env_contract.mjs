@@ -170,3 +170,42 @@ export function gatesForLane(contract, lane) {
   }
   return out;
 }
+
+/**
+ * 车道汇总退出码政策（CI-fix O-1 修法 a · 防稀释护栏）。
+ *
+ * ## 职责
+ * 只改**车道聚合退出码**哪些门计入；逐门自身 PASS/FAIL/SKIP 三态判定（§13.5）不动。
+ * · `laneSet === null`（未传 `--lane`，本地全量默认）：全部门计入，现状逐字不变。
+ * · 车道模式：**仅 manifest gates 节声明的本车道门**计入 fail/skip；manifest 声明的车道外门
+ *   从汇总退出码排除（预期排除，本车道不运行），单列 `offLane` 不折 PASS 也不计码。
+ * · **防稀释护栏**：车道内任何 SKIP/unsupported 仍判红（退 2）——不得把车道内 unexpected SKIP
+ *   也排除（防 SKIP 凑绿 loopholes）。
+ *
+ * ## 退出码
+ * 车道内 FAIL ⇒ 1；车道内 SKIP/unsupported（无 FAIL）⇒ 2；车道内全 PASS ⇒ 0；车道外门不计。
+ *
+ * @param {Array<{name:string, state:'PASS'|'FAIL'|'SKIP'}>} done 逐门三态（与 verify.mjs done 同形）
+ * @param {Set<string>|null} laneSet 本车道收录门名集合；null = 非车道全量模式
+ */
+export function aggregateLane(done, laneSet) {
+  const inLane = [];
+  const offLane = [];
+  for (const d of done ?? []) {
+    const inside = laneSet === null || laneSet.has(d.name);
+    (inside ? inLane : offLane).push(d);
+  }
+  const failNames = inLane.filter((d) => d.state === 'FAIL').map((d) => d.name);
+  const skipNames = inLane.filter((d) => d.state === 'SKIP').map((d) => d.name);
+  const code = failNames.length > 0 ? 1 : skipNames.length > 0 ? 2 : 0;
+  return {
+    code,
+    fail: failNames.length,
+    skip: skipNames.length,
+    inLane: inLane.length,
+    offLane: offLane.length,
+    failNames,
+    skipNames,
+    offLaneNames: offLane.map((d) => d.name),
+  };
+}

@@ -52,7 +52,7 @@ import { changedPathsOf } from './lib/changed_set.mjs';
 // ★★ T-#INC-VERIFY：门级继承（只读门输入指纹 → 复用上次 verdict，带显式「继承」读数）。
 //   实现只住这一处 lib；本文件只接线 + 打印，不另写判定（0.9.1）。
 import { loadStore as loadInheritance, planGate as planInheritanceGate, recordGate as recordInheritanceGate } from './lib/verify_inheritance.mjs';
-import { loadContract, gatesForLane, gateSpec } from './lib/env_contract.mjs';
+import { loadContract, gatesForLane, gateSpec, aggregateLane } from './lib/env_contract.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -972,8 +972,6 @@ function main() {
     console.log(`${C.y}★ --lane ${lane}：车道子集（契约 gates 收录 ${laneSet.size}/${gates.length} 门；其余门 SKIP-unsupported 单列）${C.x}\n`);
   }
 
-  let fail = 0;
-  let skip = 0;
   const tail = [];
   /** @type {Array<{name:string, state:string}>} 逐门结果 —— 汇总行要按它点门名（0.7） */
   const done = [];
@@ -1024,7 +1022,6 @@ function main() {
     //   现在的形状：摘要一行一门（`gateReading` 唯一实现）· 失败门的**完整输出**落盘 · 明细区印头几条失败原文。
     //   ★ 不调阈值的取舍：4000 是**拍出来的窗口**，抬到 40000 只是把下一次的洞挖深。
     if (r.state === 'FAIL') {
-      fail++;
       const where = reading.logRel ?? '（落盘失败，见下）';
       const head = reading.failures.length
         ? `      ${reading.failures
@@ -1036,7 +1033,6 @@ function main() {
       tail.push(`${C.r}── ${g.name} 失败明细 ──${C.x}\n${head}${reading.how ? `\n      ${reading.how}` : ''}`);
     }
     if (r.state === 'SKIP') {
-      skip++;
       // ★ 门的 SKIP 输出也要看得见：子门用退出码 2 报 unsupported 时，**「缺什么」就写在它的输出里**。
       //   只打一句「门自报 unsupported」等于把原因丢掉（0.12：失败必须与「没有」可区分）。
       if (r.out) {
@@ -1066,24 +1062,32 @@ function main() {
   if (tail.length) console.log(tail.join('\n\n') + '\n');
 
   const total = gates.filter((g) => g.kind === 'gate').length;
-  const namesOf = (state) => done.filter((d) => d.state === state).map((d) => d.name);
+  // ★ CI-fix O-1 修法 a：车道汇总退出码政策见 env_contract#aggregateLane。
+  //   车道模式仅 manifest 声明本车道门计入 fail/skip；车道外门单列 offLane 不计码（预期排除）。
+  //   防稀释护栏：车道内任何 SKIP/unsupported 仍判红（退 2），不随车道外门一并排除。
+  //   逐门三态（§13.5）未动，这里只改聚合退出码哪些门计入。
+  const agg = aggregateLane(done, laneSet);
   // ★★★ 2026-11-03（批次 0 · 0.7）：**最后一行必须自己就够用** —— 失败（或没跑成）的**门名**写在这一行里。
   //   为什么：输出被截断时（CI 日志尾部 / 终端只留最后几行），`N 道门失败` 这一句**点不出是哪一道**
   //   ⇒ 红过之后无法查因（实测：提交后第一次 verify 报 1 道门失败，明细被截断，门名没留下）。
   //   不变量：**截断只许截门的输出，不许截门名** —— 门名同时出现在 ① 逐门状态行 ② 明细区标题 ③ 这一行。
   //   ★ 为什么不是「把明细留在最后」：明细长度不可控（一道门能吐几十 KB），把名字押在它后面等于押在截断上。
-  const line = fail
-    ? `${C.r}${fail} 道门失败${C.x}：${namesOf('FAIL').join(' · ')}`
-    : skip
-      ? `${C.y}${skip} 道门没跑成（SKIP）${C.x}：${namesOf('SKIP').join(' · ')}`
+  const line = agg.fail
+    ? `${C.r}${agg.fail} 道门失败${C.x}：${agg.failNames.join(' · ')}`
+    : agg.skip
+      ? `${C.y}${agg.skip} 道门没跑成（SKIP）${C.x}：${agg.skipNames.join(' · ')}`
       : `${C.g}全部 ${total} 道门通过${C.x}`;
+  // ★ 车道外预期排除门单列（不折 PASS、不计退出码；看得见本车道未运行哪些门）。
+  if (laneSet && agg.offLane > 0) {
+    console.log(`${C.d}· 车道外预期排除 ${agg.offLane} 道门（manifest 未收录本车道，不计入退出码）：${agg.offLaneNames.join(' · ')}${C.x}`);
+  }
   // ★ 退出码说明**放在汇总行之前**：汇总行必须是最后一行（否则 SKIP 时门名又被挤掉了）。
-  if (skip && !fail) console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：有门没跑成，不等于"没问题"。${C.x}`);
+  if (agg.skip && !agg.fail) console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：车道内有门没跑成，不等于"没问题"。${C.x}`);
   // ★★ R21：门名与明细**各给一条出路** —— 门名在汇总行里（不许被截断），完整明细在磁盘上。
-  if (fail) console.log(`${C.d}明细：${GATE_LOG_REL}/<门序号>-<门名>.log（每个失败门一份，完整、不截断）${C.x}`);
+  if (agg.fail) console.log(`${C.d}明细：${GATE_LOG_REL}/<门序号>-<门名>.log（每个失败门一份，完整、不截断）${C.x}`);
   console.log(line);
-  if (fail) return 1;
-  if (skip) return 2;
+  if (agg.fail) return 1;
+  if (agg.skip) return 2;
   return 0;
 }
 
