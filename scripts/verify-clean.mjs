@@ -343,7 +343,14 @@ const HANDLED = new Map([
   ['npm ci', { short: '①已跑', why: '① 造环境时已用同一条 `npm ci` 装过依赖' }],
   ['npm run build', { short: '①已跑', why: '① 造环境时已用同一条 `npm run build` 构建过' }],
   ['npm run verify', { short: '③复放', why: '③ 由 GATES 逐门复放（同一个 `run()`，只是拆成逐门读数）' }],
+  ['node scripts/verify.mjs', { short: '③复放', why: '③ 由 GATES 逐门复放（同一个 `run()`；`--lane` 车道子集不改变复放口径）' }],
 ]);
+/** 命令前缀匹配：`node scripts/verify.mjs --lane linux` 这类带子参数的命令也归同一处置。 */
+function handledOf(run) {
+  if (!run) return undefined;
+  for (const [k, v] of HANDLED) if (run === k || run.startsWith(`${k} `)) return v;
+  return undefined;
+}
 
 /**
  * 扫 ci.yml 的 `run:` 步骤。
@@ -409,7 +416,7 @@ for (const s of ci.steps) {
   seen.add(key);
   const cwdRel = s.cwd ? s.cwd.replace('${{ matrix.module }}', ci.modules[0] ?? '?') : null;
   const resolvable = !s.cwd || (!s.cwd.includes('matrix.module') || ci.modules.length === 1);
-  ciOnly.push({ name: s.name ?? s.run, run: s.run, cwd: cwdRel, resolvable, if: s.if ?? null, handled: HANDLED.get(s.run) });
+  ciOnly.push({ name: s.name ?? s.run, run: s.run, cwd: cwdRel, resolvable, if: s.if ?? null, handled: handledOf(s.run) });
 }
 if (!ciOnly.length) {
   // 0.12：读不到 ≠ 没有

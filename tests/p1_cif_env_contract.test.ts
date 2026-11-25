@@ -19,10 +19,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadContract, validateContract, toolSpec } from '../scripts/lib/env_contract.mjs';
+import { loadContract, validateContract, toolSpec, gateSpec, gatesForLane } from '../scripts/lib/env_contract.mjs';
+import { GATES } from '../scripts/verify.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
+
+/** GATES 定型后的门名清单（函数门先调用定型；与 verify.mjs 同一权威表）。 */
+const gateNames = GATES.map((g) => (typeof g === 'function' ? g(ROOT).name : g.name));
 
 test('① 仓根契约可加载且结构合规', () => {
   const c = loadContract(ROOT);
@@ -71,4 +75,33 @@ test('⑥ 突变把守：平台引用未登记工具 ⇒ validateContract 点名
   mutant.platforms.linux.tools.push('rust');
   const problems = validateContract(mutant);
   assert.ok(problems.some((p) => p.includes('rust')), `应点名未登记工具 rust，实得 ${problems.join('；')}`);
+});
+
+test('⑦ gates 登记与 GATES 门名一一对应（无漏登/多登）', () => {
+  const c = loadContract(ROOT);
+  assert.deepEqual(Object.keys(c.gates).sort(), [...gateNames].sort());
+});
+
+test('⑧ 车道归属：测试门仅 windows；cache/tasks.db 门不入 CI lane；Go 两门 needs=go', () => {
+  const c = loadContract(ROOT);
+  assert.deepEqual(gateSpec(c, '测试').lanes, ['windows']);
+  for (const n of ['派生条目要求权', '索引可信度', '任务镜像对账']) {
+    assert.deepEqual(gateSpec(c, n).lanes, [], `${n} 不应进任何 CI 车道`);
+  }
+  assert.deepEqual(gateSpec(c, 'Go 编译').needs, ['go']);
+  assert.deepEqual(gateSpec(c, 'Go 静态检查').needs, ['go']);
+  assert.deepEqual(gateSpec(c, '设计 DB 结构').derived, ['design_db']);
+  const linux = gatesForLane(c, 'linux');
+  assert.ok(linux.has('ts 类型'));
+  assert.ok(!linux.has('测试'));
+  const win = gatesForLane(c, 'windows');
+  assert.ok(win.has('测试'));
+});
+
+test('⑨ 突变把守：门 lanes 引用未登记平台 ⇒ validateContract 点名', () => {
+  const c = loadContract(ROOT);
+  const mutant = JSON.parse(JSON.stringify(c));
+  mutant.gates['ts 类型'].lanes.push('darwin');
+  const problems = validateContract(mutant);
+  assert.ok(problems.some((p) => p.includes('darwin')), `应点名未登记平台 darwin，实得 ${problems.join('；')}`);
 });

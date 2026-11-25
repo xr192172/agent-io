@@ -23,6 +23,8 @@ const TOOL_KEYS = ['node', 'npm', 'git', 'java', 'maven', 'go'];
 const PLATFORM_KEYS = ['windows', 'linux'];
 const DERIVED_KEYS = ['design_db', 'cache_db', 'tasks_db'];
 const DERIVED_CI = new Set(['in-repo', 'bootstrap', 'unsupported']);
+/** gates 节每门允许的子键；lanes/needs/derived 必须是数组 */
+const GATE_KEYS = ['lanes', 'needs', 'derived', 'note'];
 
 /** 读仓根契约；文件缺失 / JSON 坏 / 结构不符都抛错（fail-closed，不回退内置默认）。 */
 export function loadContract(root = ROOT) {
@@ -122,10 +124,49 @@ export function validateContract(contract) {
       if (typeof d.in_repo !== 'boolean') problems.push(`derived.${k}.in_repo 必须是布尔`);
     }
   }
+
+  const gates = contract.gates;
+  if (!gates || typeof gates !== 'object') {
+    problems.push('缺 gates 段');
+  } else {
+    for (const [gate, spec] of Object.entries(gates)) {
+      if (!gate || typeof gate !== 'string') { problems.push('gates 键必须是非空字符串（门名）'); continue; }
+      if (!spec || typeof spec !== 'object') { problems.push(`gates.${gate} 缺登记`); continue; }
+      for (const k of Object.keys(spec)) {
+        if (!GATE_KEYS.includes(k)) problems.push(`gates.${gate}.${k} 是未登记子键`);
+      }
+      if (!Array.isArray(spec.lanes)) problems.push(`gates.${gate}.lanes 必须是数组`);
+      else for (const l of spec.lanes) {
+        if (!PLATFORM_KEYS.includes(l)) problems.push(`gates.${gate}.lanes 引用未登记平台 ${l}`);
+      }
+      if (!Array.isArray(spec.needs)) problems.push(`gates.${gate}.needs 必须是数组`);
+      else for (const t of spec.needs) {
+        if (!TOOL_KEYS.includes(t)) problems.push(`gates.${gate}.needs 引用未登记工具 ${t}`);
+      }
+      if (!Array.isArray(spec.derived)) problems.push(`gates.${gate}.derived 必须是数组`);
+      else for (const d of spec.derived) {
+        if (!DERIVED_KEYS.includes(d)) problems.push(`gates.${gate}.derived 引用未登记派生库 ${d}`);
+      }
+    }
+  }
   return problems;
 }
 
 /** 取某工具的契约登记（未登记返回 null，调用方按 fail-closed 处置）。 */
 export function toolSpec(contract, name) {
   return contract?.tools?.[name] ?? null;
+}
+
+/** 取某道门的车道/needs/derived 登记（未登记返回 null）。 */
+export function gateSpec(contract, name) {
+  return contract?.gates?.[name] ?? null;
+}
+
+/** 某车道应跑的门名集合；lanes 未登记 ⇒ 空集（fail-closed，不默认全量）。 */
+export function gatesForLane(contract, lane) {
+  const out = new Set();
+  for (const [name, spec] of Object.entries(contract?.gates ?? {})) {
+    if (Array.isArray(spec?.lanes) && spec.lanes.includes(lane)) out.add(name);
+  }
+  return out;
 }

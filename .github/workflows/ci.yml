@@ -50,7 +50,7 @@ jobs:
           #   而 setup-go 的 `cache` **默认就是 true**，此时它会去找 go.sum，找不到就**让步骤失败**：
           #     "Restore cache failed: Dependencies file is not found ... Supported file pattern: go.sum"
           #   ⚠ 我第一版改法是"去掉 cache-dependency-path"，那只是让它回退到默认查找 ⇒ **照样失败**
-          #   （这次真跑 CI 才暴露：本地 `go build`/`go vet` 全绿，看不出这个差别）。
+          #     （这次真跑 CI 才暴露：本地 `go build`/`go vet` 全绿，看不出这个差别）。
           cache: false
       - name: 编译
         run: go build ./...
@@ -59,26 +59,19 @@ jobs:
         run: go test ./...
         working-directory: ${{ matrix.module }}
 
-  # ─── 总门（2026-10-05 接入）：npm run verify ───
+  # ─── 总门 · 跨平台子集车道（方案 B：linux） ───
   #
-  # ★ 为什么单独一个 job，而不是塞进 node-test：
-  #   `verify` 的 Go 两道门需要 Go 工具链，而 node-test 的矩阵里没有 setup-go
-  #   ⇒ 放那里两道 Go 门会 SKIP，而 **verify 在有门 SKIP 时返回 2**（刻意区别于 0）
-  #   ⇒ 那个 job 会永远红。**这正是 verify 三态设计的用意：跑不了要说成跑不了。**
+  # ★ 2026-11-25（CI-fix 方案 B）：原单 verify job（ubuntu 全量）拆成两条车道。门→车道归属
+  #   唯一权威 = 仓根 `env-contract.json` 的 `gates` 节；本 job 跑 `--lane linux` 收录的跨平台
+  #   子集（tsc / 工具链 / Go 两门 / 纯 TS 契约与判据 / 结构门…），车道外的门记 SKIP-unsupported
+  #   单列（既有三态诚实口径，不折 PASS，不是 SKIP 凑绿）。
   #
-  # ★ 它在 CI 上**新增**的覆盖（其余与既有 job 重叠）：
-  #   · mcp_scan          —— 全部工具的入参/出参签名（坏签名 ⇒ LLM 一定调错）
-  #     ★ 2026-10-13：这里原写"59 个工具" —— **手维护的数字已经漂了**（实测 69）⇒ **删掉数字**，
-  #       别改成 69（会再漂）。真值看 `TOOL_DEFS`；`verify` 自己会打印当次总数。
-  #   ★ 2026-10-13 更正：原写"另含 measure_b_contract（b 项契约占位符）"—— **那道门已于
-  #     2026-10-12（T195）撤除**（本仓不再自养门；见 `scripts/verify.mjs` 同处注释）⇒ 别再照旧注释找它。
-  #   另含 tsc（node-test 的 build 已覆盖）与 Go build/vet（go-test 已覆盖）。
-  #   ★ **不重加已被裁掉的门**：ci.yml 原注释记载 2026-10-05 移除了「契约变更 / README 工具数 /
-  #     能力矩阵 / STALE BUILD」等零依赖闸门（用户裁定"不再自养门"）—— verify **不含**它们。
-  #   ★ 也不含 `go test`（那由 go-test job 负责）⇒ **verify 不是"全部检查"，是"提交前的总门"**。
-  #   ★ 当次门数/名称一律以 `verify` 的输出为准（**本注释不写死门数** —— 它已经漂过一次：
-  #     原写"五门"（含 b 项契约），撤成四门后注释没跟）。
-  verify:
+  # ★ 过渡期测试门整体归 windows 绑定腿（Java/Maven 夹具与 spawn 腿需本机工具链）；本 linux 腿
+  #   不跑测试门，ubuntu 测试覆盖缺口属 deferred（测试文件级 lane 豁免留后批专卡，见回执隔离清单）。
+  #
+  # ★ 派生库口径（规划 §3.2）：design-db 是设计册纯投影，CI 由 `design:gen-db` bootstrap；
+  #   cache.db / tasks.db 归本机/云主机探针，CI 诚实 unsupported（对应门 lanes=[]，本 job SKIP 单列）。
+  verify-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,16 +83,47 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
-          # ★ 同 go-test：仓里没有 go.sum（该 module 纯标准库）⇒ 必须显式关掉缓存，
-          #   否则 setup-go 默认去找 go.sum、找不到就让本步骤失败。
+          # ★ 同 go-test：仓里没有 go.sum（该 module 纯标准库）⇒ 必须显式关掉缓存。
           cache: false
       - run: npm ci
-      # ★ 必须先 build：`mcp_scan` 那道门要读 `dist/src/presentation/cli/cli.js`
-      #   （它故意走 CLI 入口而不是直接调 `invokeTool`，因为 CLI 不做 zod 校验 ——
-      #     守卫有没有接上，只有走 CLI 入口才看得见 ⇒ 这个 dist 依赖是**设计如此**，不是将就）。
-      #   ⚠ 我第一版 verify job 只跑 `npm ci` 就直接 verify ⇒ CI 上没有 dist ⇒ 那道门必然失败。
-      #   **本地跑不出来**：本地一路都在 build，dist 一直在。
+      # ★ 必须先 build：`MCP 工具签名` 那道门读 dist/ CLI 入口（设计如此，不是将就）。
       - name: 构建（mcp_scan 需要 dist/）
         run: npm run build
-      - name: 总门（★ 门名/门数以 verify 自身输出为准 —— 本仓刻意不在此写死）
-        run: npm run verify
+      # ★ design-db 纯投影 bootstrap（gitignored 派生，CI 可由册确定性重建）。
+      - name: Bootstrap design-db 投影
+        run: npm run design:gen-db
+      - name: 总门 · linux 跨平台子集（门名/门数以 verify 自身输出为准）
+        run: node scripts/verify.mjs --lane linux
+
+  # ─── 总门 · Windows 绑定腿（方案 B：windows-latest） ───
+  #
+  # ★ Windows-only 门诚实归位：Java/Maven 夹具、spawn 形态等平台绑定腿在此真跑（不 SKIP 凑绿）。
+  #   工具链与 `env-contract.json` tools 节同源：node 22 / go stable / java 17 / maven。
+  #   过渡期测试门归本腿；cache.db / tasks.db 相关门在本腿同样 unsupported 单列（本机活态，CI 不重建）。
+  verify-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-maven@v5
+        with:
+          maven-version: "3.9.9"
+      - run: npm ci
+      - name: 构建（mcp_scan 需要 dist/）
+        run: npm run build
+      - name: Bootstrap design-db 投影
+        run: npm run design:gen-db
+      - name: 总门 · Windows 绑定腿（门名/门数以 verify 自身输出为准）
+        run: node scripts/verify.mjs --lane windows

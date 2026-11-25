@@ -52,6 +52,7 @@ import { changedPathsOf } from './lib/changed_set.mjs';
 // ★★ T-#INC-VERIFY：门级继承（只读门输入指纹 → 复用上次 verdict，带显式「继承」读数）。
 //   实现只住这一处 lib；本文件只接线 + 打印，不另写判定（0.9.1）。
 import { loadStore as loadInheritance, planGate as planInheritanceGate, recordGate as recordInheritanceGate } from './lib/verify_inheritance.mjs';
+import { loadContract, gatesForLane, gateSpec } from './lib/env_contract.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -948,6 +949,29 @@ function main() {
   // 惰性门在此刻定型（元素可能是函数）；此后一律按定型后的数组走。
   const gates = GATES.map((g) => (typeof g === 'function' ? g(ROOT) : g));
 
+  // ── CI 车道子集（`--lane <linux|windows>`，方案 B）─────────────────────────────
+  // 未给 ⇒ 全量（本地默认行为逐字不变）。给定车道时：契约 gates 节未收录该车道的门记
+  // SKIP-unsupported 单列（复用既有三态，**不折 PASS**；这是诚实口径，不是 SKIP 凑绿）。
+  // 契约未登记的门 ⇒ fail-closed 响亮红（GATES 与契约漂移，不静默归入任何车道）。
+  const laneIdx = process.argv.indexOf('--lane');
+  const lane = laneIdx >= 0 ? process.argv[laneIdx + 1] ?? '' : '';
+  let laneSet = null;
+  if (lane) {
+    const laneContract = loadContract(ROOT);
+    const knownLanes = Object.keys(laneContract.platforms ?? {});
+    if (!knownLanes.includes(lane)) {
+      console.error(`${C.r}✗ --lane ${JSON.stringify(lane)} 未在契约 platforms 登记（${knownLanes.join('/')}）⇒ 拒绝跑（fail-closed，不猜车道）${C.x}`);
+      return 1;
+    }
+    const unregistered = gates.map((g) => g.name).filter((n) => !gateSpec(laneContract, n));
+    if (unregistered.length) {
+      console.error(`${C.r}✗ 契约 gates 未登记这些门（漂移 fail-closed）：${unregistered.join(' · ')}${C.x}`);
+      return 1;
+    }
+    laneSet = gatesForLane(laneContract, lane);
+    console.log(`${C.y}★ --lane ${lane}：车道子集（契约 gates 收录 ${laneSet.size}/${gates.length} 门；其余门 SKIP-unsupported 单列）${C.x}\n`);
+  }
+
   let fail = 0;
   let skip = 0;
   const tail = [];
@@ -967,7 +991,10 @@ function main() {
     // ★ 门级继承：只作用于 INHERITABLE 白名单里的只读门；写面门恒走 run(g) 串行全量。
     let r;
     let inherited = null;
-    if (inhEnabled) {
+    if (laneSet && !laneSet.has(g.name)) {
+      // ★ 车道子集外的门：不 spawn、不继承，记 SKIP-unsupported 单列（三态诚实口径，不折 PASS）。
+      r = { state: 'SKIP', why: `车道 ${lane} 未收录（env-contract gates 登记）⇒ unsupported 单列`, out: '' };
+    } else if (inhEnabled) {
       const plan = planInheritanceGate(ROOT, g, inhStore);
       inhPlans.push(plan);
       if (plan.decision === 'inherit') {

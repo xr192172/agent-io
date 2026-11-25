@@ -72,5 +72,24 @@
       "ci": "unsupported",
       "note": "任务卡库（.agent-io/tasks.db）同上，CI 不重建"
     }
+  },
+  "gates": {
+    "ts 类型": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "node/tsc，跨平台" },
+    "工具链完整": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "关键 optional 包按当前平台解析，跨平台" },
+    "MCP 工具签名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "走 dist/ CLI 入口；dist 由 npm run build 产出" },
+    "Go 编译": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "observe-lang-go，纯标准库无 go.sum" },
+    "Go 静态检查": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "go vet，同上" },
+    "实现夹具": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "cardStanding 行为分支纯 TS 夹具" },
+    "设计 DB 结构": { "lanes": ["linux", "windows"], "needs": [], "derived": ["design_db"], "note": "只读 design-db 投影；CI 由 design:gen-db bootstrap" },
+    "设计册判据": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "judge-all 读册 + dist" },
+    "判据突变": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "mutate 反向夹具" },
+    "文档与事实": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "散文/事实对齐门" },
+    "测试": { "lanes": ["windows"], "needs": [], "derived": [], "note": "过渡期整体归 Windows 绑定腿：Java/Maven 夹具与 spawn 腿需本机工具链；ubuntu 腿测试覆盖缺口 deferred（测试文件级 lane 豁免留后批专卡）" },
+    "结构意图": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "文件/目录归属门，只读入库册" },
+    "无卡写账": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "write_log 三本账棘轮" },
+    "派生条目要求权": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db 签名；CI 无索引重建 ⇒ unsupported 单列，归本机/云主机探针（deferred 打磨）" },
+    "索引可信度": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db；CI 诚实 unsupported，不凑绿（deferred 打磨）" },
+    "任务镜像对账": { "lanes": [], "needs": [], "derived": ["tasks_db"], "note": "依赖 tasks.db 单写者活态；CI 不重建 ⇒ unsupported 单列（deferred 打磨）" },
+    "结案投影点名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "报告区，只读册" }
   }
 }
