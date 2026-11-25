@@ -73,26 +73,39 @@
       "note": "任务卡库（.agent-io/tasks.db）同上，CI 不重建"
     }
   },
+  "protected_gates": [
+    "ts 类型",
+    "工具链完整",
+    "MCP 工具签名",
+    "Go 编译",
+    "Go 静态检查",
+    "实现夹具",
+    "设计 DB 结构",
+    "设计册判据",
+    "文档与事实",
+    "结构意图",
+    "结案投影点名"
+  ],
   "gates": {
     "ts 类型": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "node/tsc，跨平台" },
     "工具链完整": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "关键 optional 包按当前平台解析，跨平台" },
     "MCP 工具签名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "semantic 模式：坏签名守卫 / 线上工具数=注册数 / 孤立集 / dist 新鲜 / top10 明细；走 dist/ CLI 入口" },
-    "MCP 工具面开销": { "lanes": [], "needs": [], "derived": [], "note": "surface 模式：wire 字节 / 工具数 ≤ 基线棘轮；跨 Node 环境 ±6B 噪声弱代理，CI offLane 不计码，本地全量仍强制核 byte" },
+    "MCP 工具面开销": { "lanes": [], "needs": [], "derived": [], "note": "surface 模式：wire 字节 / 工具数 ≤ 基线棘轮；跨 Node 环境 ±6B 噪声弱代理，CI offLane 不计码，本地全量仍强制核 byte", "exclusion": { "reason": "跨 Node 环境 wire 序列化有 ±6B 噪声（ubuntu/Node24 与本地 Node22），surface byte 棘轮在 CI 异环境必误报", "alternative": "本地全量（laneSet=null）强制核 byte；坏签名守卫 / 孤立集等语义项归车道内「MCP 工具签名」门", "expires": "P3：跨宿主可重放证据齐备、byte 棘轮异环境噪声消除后再评估入 CI 车道" } },
     "Go 编译": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "observe-lang-go，纯标准库无 go.sum" },
     "Go 静态检查": { "lanes": ["linux", "windows"], "needs": ["go"], "derived": [], "note": "go vet，同上" },
     "实现夹具": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "cardStanding 行为分支纯 TS 夹具" },
     "设计 DB 结构": { "lanes": ["linux", "windows"], "needs": [], "derived": ["design_db"], "note": "只读 design-db 投影；CI 由 design:gen-db bootstrap；requirements_calls 调用方索引对账归下一道车道外门" },
-    "设计 DB 调用对账": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "requirements_calls 调用方索引对账（target 落点解析走 qHome）；CI 无 cache.db ⇒ 降级空误报，offLane 不计码；本地全量仍强制核" },
+    "设计 DB 调用对账": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "requirements_calls 调用方索引对账（target 落点解析走 qHome）；CI 无 cache.db ⇒ 降级空误报，offLane 不计码；本地全量仍强制核", "exclusion": { "reason": "依赖 cache.db 调用方索引，CI 无索引 ⇒ qHome=null，target 落点解析降级空，按陈旧误报", "alternative": "本地全量强制核；索引重建入 CI 后再归位车道", "expires": "P3：CI 索引（cache.db）重建或索引可信度闭环后评估" } },
     "设计册判据": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "judge-all 读册 + dist" },
-    "判据突变": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "mutate 反向夹具；CI 无 cache.db ⇒ 样本 facts 判不了/三态摆动，offLane 不计码；本地全量 laneSet=null 仍强制核" },
+    "判据突变": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "mutate 反向夹具；CI 无 cache.db ⇒ 样本 facts 判不了/三态摆动，offLane 不计码；本地全量 laneSet=null 仍强制核", "exclusion": { "reason": "mutate 反向夹具依赖 cache.db 样本 facts，CI 无索引 ⇒ 样本判不了、三态摆动", "alternative": "本地全量强制核；独立 mutate 腿在隔离副本跑", "expires": "P3：索引入 CI、样本 facts 可在 CI 稳定判定后评估" } },
     "文档与事实": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "入库快照对账（lint:prose 散文 · manifest:check 卷表）；CI 可判，车道内。派生现算子项归「文档派生投影」门车道外" },
-    "文档派生投影": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "派生现算对账（gen-facts 数字 · cognition · ledger 视图 · doc:check 投影块）；CI 无派生落盘 ⇒ 现算空/陈旧误报，offLane 不计码；本地全量仍强制核" },
-    "测试": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "CI 无派生 ⇒ TAP 失败行解析不出/用例漂移，offLane 不计码；独立 node-test windows 腿已 success（核心测试绿）；本地全量仍强制核。测试文件级 lane 豁免留后批专卡" },
+    "文档派生投影": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "派生现算对账（gen-facts 数字 · cognition · ledger 视图 · doc:check 投影块）；CI 无派生落盘 ⇒ 现算空/陈旧误报，offLane 不计码；本地全量仍强制核", "exclusion": { "reason": "派生现算（gen-facts / cognition / ledger / doc:check）依赖 cache.db 与派生落盘，CI 无派生 ⇒ 现算空或陈旧，与入库快照三向不符必红", "alternative": "本地全量强制核；入库快照对账（lint:prose 散文 · manifest:check 卷表）归车道内「文档与事实」门", "expires": "P3：派生投影可在 CI 自举对账后评估" } },
+    "测试": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "CI 无派生 ⇒ TAP 失败行解析不出/用例漂移，offLane 不计码；独立 node-test windows 腿已 success（核心测试绿）；本地全量仍强制核。测试文件级 lane 豁免留后批专卡", "exclusion": { "reason": "CI 无派生 ⇒ TAP 失败行解析不出 / 用例漂移，用例计数与基线不可比", "alternative": "独立 node-test windows 腿已 success（核心测试绿）；本地全量强制核", "expires": "P3：测试文件级 lane 豁免专卡落地、TAP 解析在 CI 稳定后评估" } },
     "结构意图": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "文件/目录归属门，只读入库册" },
-    "无卡写账": { "lanes": [], "needs": [], "derived": ["tasks_db"], "note": "write_log 三本账棘轮；CI 无 tasks.db ⇒ 读不到账按 0 行计，判「没有写账」而非「零无卡写」，offLane 不计码；本地全量仍强制核" },
-    "派生条目要求权": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db 签名；CI 无索引重建 ⇒ unsupported 单列，归本机/云主机探针（deferred 打磨）" },
-    "索引可信度": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db；CI 诚实 unsupported，不凑绿（deferred 打磨）" },
-    "任务镜像对账": { "lanes": [], "needs": [], "derived": ["tasks_db"], "note": "依赖 tasks.db 单写者活态；CI 不重建 ⇒ unsupported 单列（deferred 打磨）" },
+    "无卡写账": { "lanes": [], "needs": [], "derived": ["tasks_db"], "note": "write_log 三本账棘轮；CI 无 tasks.db ⇒ 读不到账按 0 行计，判「没有写账」而非「零无卡写」，offLane 不计码；本地全量仍强制核", "exclusion": { "reason": "依赖 tasks.db 单写者活态，CI 不重建 ⇒ 读不到账按 0 行计（读不到 ≠ 没有无卡写）", "alternative": "本地全量强制核；tasks.db 活态对账腿在隔离副本跑", "expires": "P3：tasks.db 活态可在 CI 重建或对账腿落地后评估" } },
+    "派生条目要求权": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db 签名；CI 无索引重建 ⇒ unsupported 单列，归本机/云主机探针（deferred 打磨）", "exclusion": { "reason": "依赖 cache.db 签名，CI 无索引重建 ⇒ 无法对账，诚实 unsupported", "alternative": "本机 / 云主机探针跑；本地全量强制核", "expires": "deferred：CI 索引重建方案落地后再评估（阶段边界后打磨）" } },
+    "索引可信度": { "lanes": [], "needs": [], "derived": ["cache_db"], "note": "依赖 cache.db；CI 诚实 unsupported，不凑绿（deferred 打磨）", "exclusion": { "reason": "依赖 cache.db 活态索引，CI 不重建 ⇒ 索引可信度无法在 CI 判定", "alternative": "本机 / 云主机探针跑；本地全量强制核", "expires": "deferred：CI 索引自举方案落地后再评估" } },
+    "任务镜像对账": { "lanes": [], "needs": [], "derived": ["tasks_db"], "note": "依赖 tasks.db 单写者活态；CI 不重建 ⇒ unsupported 单列（deferred 打磨）", "exclusion": { "reason": "依赖 tasks.db 单写者活态，CI 不重建 ⇒ 任务镜像无法对账", "alternative": "本机 / 云主机探针跑；本地全量强制核", "expires": "deferred：tasks.db 活态入 CI 方案落地后再评估" } },
     "结案投影点名": { "lanes": ["linux", "windows"], "needs": [], "derived": [], "note": "报告区，只读册" }
   }
 }

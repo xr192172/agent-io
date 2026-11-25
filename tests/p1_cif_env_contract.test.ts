@@ -106,3 +106,31 @@ test('⑨ 突变把守：门 lanes 引用未登记平台 ⇒ validateContract �
   const problems = validateContract(mutant);
   assert.ok(problems.some((p) => p.includes('darwin')), `应点名未登记平台 darwin，实得 ${problems.join('；')}`);
 });
+
+test('⑩ H4：车道外门缺 exclusion 三要素 ⇒ validateContract 点名', () => {
+  const c = loadContract(ROOT);
+  const mutant = JSON.parse(JSON.stringify(c));
+  delete mutant.gates['测试'].exclusion;
+  const problems = validateContract(mutant);
+  assert.ok(problems.some((p) => p.includes('测试') && p.includes('exclusion')), `应点名「测试」缺排除登记，实得 ${problems.join('；')}`);
+});
+
+test('⑪ H4：exclusion 缺键 / 空串 ⇒ validateContract 点名', () => {
+  const c = loadContract(ROOT);
+  const mutant = JSON.parse(JSON.stringify(c));
+  mutant.gates['测试'].exclusion = { reason: 'x', alternative: '', expires: 'P3' };
+  const problems = validateContract(mutant);
+  assert.ok(problems.some((p) => p.includes('alternative')), `应点名 alternative 空串，实得 ${problems.join('；')}`);
+});
+
+test('⑫ H4：受保护集引用未登记门 / 受保护门被移出所有车道 ⇒ validateContract 点名', () => {
+  const c = loadContract(ROOT);
+  const unknown = JSON.parse(JSON.stringify(c));
+  unknown.protected_gates.push('不存在的门');
+  assert.ok(validateContract(unknown).some((p) => p.includes('不存在的门')));
+
+  const moved = JSON.parse(JSON.stringify(c));
+  moved.gates['ts 类型'].lanes = [];
+  const problems = validateContract(moved);
+  assert.ok(problems.some((p) => p.includes('ts 类型') && p.includes('不得移出')), `应点名受保护门移出车道，实得 ${problems.join('；')}`);
+});

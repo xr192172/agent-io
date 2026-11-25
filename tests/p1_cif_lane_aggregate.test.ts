@@ -22,7 +22,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadContract, gatesForLane, aggregateLane } from '../scripts/lib/env_contract.mjs';
+import { loadContract, gatesForLane, aggregateLane, validateContract } from '../scripts/lib/env_contract.mjs';
 import { GATES } from '../scripts/verify.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -96,25 +96,44 @@ test('④ 非车道模式（laneSet=null）全部门计入，现状不变', () =
   assert.equal(allPass.code, 0);
 });
 
-test('突变牙：车道内门被误标车道外（manifest 篡改）⇒ 护栏被绕过，车道内 SKIP 错误排除 ⇒ code 0', () => {
+test('突变牙：受保护门被误标车道外（manifest 篡改）⇒ 契约校验 fail-closed 点名（不进聚合层凑绿）', () => {
   const innerSkip = 'ts 类型';
   // 正确契约：该门在 linux 车道内，SKIP 必须判红。
   const good = gatesForLane(c, 'linux');
   const d = doneWith({ [innerSkip]: 'SKIP' });
-  const goodAgg = aggregateLane(d, good);
-  assert.equal(goodAgg.code, 2, '正确契约下车道内 SKIP 应退 2');
+  assert.equal(aggregateLane(d, good).code, 2, '正确契约下车道内 SKIP 应退 2');
 
-  // 突变：manifest gates 把该门 lanes 改空（误标车道外）⇒ gatesForLane 不再收录它。
+  // 突变：受保护门 lanes 改空（误标车道外）⇒ 契约层 validateContract 点名拒绝（H4 护栏），
+  // 不把它放行进聚合层被错误排除成 offLane 凑 RC0。
   const mutant = JSON.parse(JSON.stringify(c));
   mutant.gates[innerSkip].lanes = [];
-  const bad = gatesForLane(mutant, 'linux');
-  assert.ok(!bad.has(innerSkip), '突变后该门应被移出 linux 车道');
-  const badAgg = aggregateLane(d, bad);
-  // 护栏被绕过：车道内 SKIP 被错误归入 offLane，code 退化成 0 —— 这正是防稀释要挡的 loopholes。
-  assert.equal(badAgg.code, 0, '突变态：SKIP 被错误排除（错误 RC0，实证护栏依赖 manifest 车道登记一致）');
-  assert.ok(badAgg.offLaneNames.includes(innerSkip));
+  const problems = validateContract(mutant);
+  assert.ok(
+    problems.some((p) => p.includes(innerSkip) && p.includes('不得移出')),
+    `应点名受保护门 ${innerSkip} 移出所有车道，实得 ${problems.join('；')}`,
+  );
 
   // 还原正确契约 ⇒ 护栏恢复，code 2 绿。
   const restored = aggregateLane(d, good);
   assert.equal(restored.code, 2);
+});
+
+test('⑤ 空车道（laneSet 空集）⇒ fail-closed 退 2，不许空车道凑绿', () => {
+  const d = doneWith();
+  const a = aggregateLane(d, new Set());
+  assert.equal(a.emptyLane, true);
+  assert.equal(a.code, 2, `空车道应退 2，实得 code=${a.code}`);
+});
+
+test('⑥ 应跑门漏跑（missingInRun）⇒ 退 2 并单列差集，不折 PASS', () => {
+  // 车道内应跑两门；done 只出现一门，另一门漏跑。
+  const expected = new Set(['ts 类型', '工具链完整']);
+  const d = [{ name: 'ts 类型', state: 'PASS' }];
+  const a = aggregateLane(d, expected);
+  assert.deepEqual(a.missingInRun, ['工具链完整']);
+  assert.equal(a.code, 2, `漏跑应退 2，实得 code=${a.code}`);
+  // 全部门都在 done ⇒ 无 missing。
+  const full = aggregateLane([{ name: 'ts 类型', state: 'PASS' }, { name: '工具链完整', state: 'PASS' }], expected);
+  assert.deepEqual(full.missingInRun, []);
+  assert.equal(full.code, 0);
 });

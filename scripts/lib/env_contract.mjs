@@ -24,7 +24,9 @@ const PLATFORM_KEYS = ['windows', 'linux'];
 const DERIVED_KEYS = ['design_db', 'cache_db', 'tasks_db'];
 const DERIVED_CI = new Set(['in-repo', 'bootstrap', 'unsupported']);
 /** gates 节每门允许的子键；lanes/needs/derived 必须是数组 */
-const GATE_KEYS = ['lanes', 'needs', 'derived', 'note'];
+const GATE_KEYS = ['lanes', 'needs', 'derived', 'note', 'exclusion'];
+/** offLane 排除登记三要素：原因 / 替代手段 / 到期 */
+const EXCLUSION_KEYS = ['reason', 'alternative', 'expires'];
 
 /** 读仓根契约；文件缺失 / JSON 坏 / 结构不符都抛错（fail-closed，不回退内置默认）。 */
 export function loadContract(root = ROOT) {
@@ -147,6 +149,39 @@ export function validateContract(contract) {
       else for (const d of spec.derived) {
         if (!DERIVED_KEYS.includes(d)) problems.push(`gates.${gate}.derived 引用未登记派生库 ${d}`);
       }
+      // H4 成员资格护栏：车道外门（lanes=[]）必须登记排除三要素（原因 / 替代 / 到期），
+      // 不得静默移出车道；若给了 exclusion，三键必须齐全且非空字符串。
+      const offLane = Array.isArray(spec.lanes) && spec.lanes.length === 0;
+      if (offLane && spec.exclusion == null) {
+        problems.push(`gates.${gate} 车道外（lanes=[]）缺 exclusion 排除登记（reason/alternative/expires）`);
+      }
+      if (spec.exclusion != null) {
+        if (typeof spec.exclusion !== 'object' || Array.isArray(spec.exclusion)) {
+          problems.push(`gates.${gate}.exclusion 必须是对象`);
+        } else {
+          for (const k of Object.keys(spec.exclusion)) {
+            if (!EXCLUSION_KEYS.includes(k)) problems.push(`gates.${gate}.exclusion.${k} 是未登记排除键`);
+          }
+          for (const k of EXCLUSION_KEYS) {
+            const v = spec.exclusion[k];
+            if (typeof v !== 'string' || v.trim() === '') problems.push(`gates.${gate}.exclusion.${k} 必须是非空字符串`);
+          }
+        }
+      }
+    }
+  }
+
+  // H4 受保护门身份集：核心 / 语义门必须在 ≥1 车道 inLane，不得被静默移出凑绿。
+  const protectedGates = contract.protected_gates;
+  if (!Array.isArray(protectedGates)) {
+    problems.push('protected_gates 必须是数组');
+  } else {
+    for (const name of protectedGates) {
+      const spec = gates?.[name];
+      if (!spec) { problems.push(`protected_gates 引用未登记门 ${name}`); continue; }
+      if (!Array.isArray(spec.lanes) || spec.lanes.length === 0) {
+        problems.push(`受保护门 ${name} 不得移出所有 CI 车道（lanes 不得为空）`);
+      }
     }
   }
   return problems;
@@ -191,19 +226,35 @@ export function gatesForLane(contract, lane) {
 export function aggregateLane(done, laneSet) {
   const inLane = [];
   const offLane = [];
+  // H4 护栏：车道模式下 laneSet 为空集 ⇒ 无门可跑（契约把全部门移出本车道），fail-closed 拒绝，
+  // 不许空车道凑 RC0。null（本地全量）不受此限。
+  const emptyLane = laneSet !== null && laneSet.size === 0;
   for (const d of done ?? []) {
     const inside = laneSet === null || laneSet.has(d.name);
     (inside ? inLane : offLane).push(d);
   }
   const failNames = inLane.filter((d) => d.state === 'FAIL').map((d) => d.name);
   const skipNames = inLane.filter((d) => d.state === 'SKIP').map((d) => d.name);
-  const code = failNames.length > 0 ? 1 : skipNames.length > 0 ? 2 : 0;
+  // 差集：本车道应跑（laneSet）里实际没出现在 done 的门 ⇒ 披露为 missing（防漏跑不响）。
+  const doneNames = new Set((done ?? []).map((d) => d.name));
+  const missingInRun = laneSet === null ? [] : [...laneSet].filter((n) => !doneNames.has(n));
+  const code = emptyLane
+    ? 2
+    : failNames.length > 0
+      ? 1
+      : skipNames.length > 0 || missingInRun.length > 0
+        ? 2
+        : 0;
   return {
     code,
     fail: failNames.length,
     skip: skipNames.length,
     inLane: inLane.length,
     offLane: offLane.length,
+    emptyLane,
+    expected: laneSet === null ? null : [...laneSet],
+    missingInRun,
+    inLaneNames: inLane.map((d) => d.name),
     failNames,
     skipNames,
     offLaneNames: offLane.map((d) => d.name),

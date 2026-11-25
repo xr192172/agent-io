@@ -1016,6 +1016,11 @@ function main() {
       return 1;
     }
     laneSet = gatesForLane(laneContract, lane);
+    // H4 护栏：本车道应跑门集为空 ⇒ 契约把全部门移出本车道（漂移/误标），fail-closed 拒绝，不许空车道凑绿。
+    if (laneSet.size === 0) {
+      console.error(`${C.r}✗ --lane ${lane} 契约收录 0 道门（全部门被移出本车道）⇒ 拒绝跑（fail-closed，空车道不凑绿）${C.x}`);
+      return 1;
+    }
     console.log(`${C.y}★ --lane ${lane}：车道子集（契约 gates 收录 ${laneSet.size}/${gates.length} 门；其余门 SKIP-unsupported 单列）${C.x}\n`);
   }
 
@@ -1127,6 +1132,10 @@ function main() {
   // ★ 车道外预期排除门单列（不折 PASS、不计退出码；看得见本车道未运行哪些门）。
   if (laneSet && agg.offLane > 0) {
     console.log(`${C.d}· 车道外预期排除 ${agg.offLane} 道门（manifest 未收录本车道，不计入退出码）：${agg.offLaneNames.join(' · ')}${C.x}`);
+  }
+  // ★ H4 差集披露：本车道应跑但未出现在本轮 done 的门（漏跑），单列并不折 PASS。
+  if (laneSet && agg.missingInRun.length > 0) {
+    console.log(`${C.y}· 车道内应跑却未执行 ${agg.missingInRun.length} 道（漏跑，不计绿）：${agg.missingInRun.join(' · ')}${C.x}`);
   }
   // ★ 退出码说明**放在汇总行之前**：汇总行必须是最后一行（否则 SKIP 时门名又被挤掉了）。
   if (agg.skip && !agg.fail) console.log(`${C.y}⇒ 退出码 2（刻意区别于 0）：车道内有门没跑成，不等于"没问题"。${C.x}`);
