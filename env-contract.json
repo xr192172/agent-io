@@ -33,7 +33,7 @@
       "required": false,
       "command": "mvn",
       "version": null,
-      "ci": { "setup": "setup-maven" }
+      "ci": { "setup": "runner-preinstalled", "note": "windows-latest 镜像预装 Maven（mvn 在 PATH）；无第三方 setup action —— actions/setup-maven 仓库不存在（F-① 已删该死 step）" }
     },
     "go": {
       "required": false,

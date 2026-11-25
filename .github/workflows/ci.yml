@@ -117,9 +117,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: actions/setup-maven@v5
-        with:
-          maven-version: "3.9.9"
+      # ★ F-①（2026-11-25）：原 `actions/setup-maven@v5` 步骤删除 —— 该 action 仓库不存在
+      #   （Actions 报 "Unable to resolve action actions/setup-maven, repository not found"，job 2s 失败）。
+      #   windows-latest 镜像预装 Maven（mvn 在 PATH），无需第三方 setup action；java 17 由上面 setup-java 提供。
       - run: npm ci
       - name: 构建（mcp_scan 需要 dist/）
         run: npm run build
