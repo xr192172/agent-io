@@ -323,4 +323,13 @@ if (miss) {
     outText;
 }
 process.stdout.write(outText.endsWith('\n') ? outText : outText + '\n');
+// ★ #188 连接生命周期：CLI 是短生命周期子进程（judge-all 经 runCli spawnSync 起 get_dsl 等），
+//   退出前显式 checkpoint+close 项目缓存连接，避免 -wal/-shm 句柄残留与下一轮 WAL recovery 竞态。
+//   资源清理（非第二份保鲜口径）；失败吞掉，不改退出码。
+try {
+  const { closeAllProjectCacheDbs } = await import('../../infrastructure/index/db.js');
+  closeAllProjectCacheDbs();
+} catch {
+  /* 收尾清理不阻断退出 */
+}
 process.exit(r.isError ? 1 : 0);

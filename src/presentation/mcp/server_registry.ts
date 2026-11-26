@@ -1081,7 +1081,12 @@ export async function invokeTool(
   //   ★ 两种来源都会走到这里：① 无可用索引却不许冷启（T238）；② **走了一趟但超出补全上限**
   //     ⇒ `state:'partial'`（T246）—— ★ 后者才是最阴的那一格："库在、但不全"被当成完整。
   let freshnessFailure = '';
-  if (rootArg && !def.noAutoFresh) {
+  // ★ #188：CLI 是短生命周期子进程（judge-all 经 runCli spawnSync 起 get_dsl 等）。其非设计册写工具
+  //   在子进程内同步写保鲜（ensureStage 补链）会与父进程 backfill 跨进程争写同一 WAL 库（SQLite 单写者）。
+  //   CLI 面这类工具前置只走 hasLiveIndex 探活，不 ensureStage 写；索引新鲜度由父进程 backfill / MCP 常驻面
+  //   保证，陈旧由 staleIndexWarning 兜底标注。MCP / HTTP 常驻面的逐调用保鲜行为不变。
+  const cliNoFreshWrite = via === 'cli' && def.writes === false;
+  if (rootArg && !def.noAutoFresh && !cliNoFreshWrite) {
     try {
       if (hasLiveIndex(rootArg) && !isBackfillRunning(rootArg)) {
         // ★★★ T221（2026-10-13）：**改走统一机制**（原先直调 `ensureProjectIndex` ✗）——
