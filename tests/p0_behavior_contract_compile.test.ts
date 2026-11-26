@@ -73,6 +73,24 @@ function dropPilotProject(root: string): void {
   fs.rmSync(root, { recursive: true, force: true });
 }
 
+/**
+ * ★★★ 2026-11-26（#188 测试隔离）：在**临时工程**上跑一段用例，建索引后交付 root，收尾连库带目录清掉。
+ *
+ * 为什么不能拿主仓根 REPO 当 `project_dir`：项目库 `<root>/.agent-io/cache.db` 跟 **project_dir** 走
+ * （项目本地，A 方案），测试注入的 `AGENT_IO_HOME` 只隔离跨项目 shared 角色，**不隔离项目库**。
+ * 用例若以 REPO 为 project_dir，worker 就会打开并写主仓 cache.db，与同 runner 的判据门 judge-all
+ * 跨进程争写同一 WAL（单写者）⇒ `database is locked`。故被测项目一律用临时工程，不触主仓库。
+ */
+async function withPilotProject(fn: (root: string) => Promise<void>): Promise<void> {
+  const root = makePilotProject();
+  try {
+    await ensureProjectIndex(root);
+    await fn(root);
+  } finally {
+    dropPilotProject(root);
+  }
+}
+
 test('① 正向可比：契约 pass；改错目标函数 ⇒ 同一契约 fail；改回 ⇒ pass', async () => {
   const root = makePilotProject();
   try {
@@ -99,9 +117,11 @@ test('① 正向可比：契约 pass；改错目标函数 ⇒ 同一契约 fail�
 
 test('② 反证：expect 换成错值 ⇒ 必须 fail（比较换成恒等/只判没抛 ⇒ 这条红）', async () => {
   const wrong = { ...PILOT, id: 'pilot-wrong-expect', cases: [{ given: ['src\\a.ts'], expect: 'src\\\\a.ts' }] };
-  const rep = await compileBehaviorContracts([wrong], { project_dir: REPO });
-  assert.equal(rep.fail, 1, `错期望必须判 fail（否则比较没有牙）：${rep.items[0].detail}`);
-  assert.equal(rep.pass, 0);
+  await withPilotProject(async (root) => {
+    const rep = await compileBehaviorContracts([wrong], { project_dir: root });
+    assert.equal(rep.fail, 1, `错期望必须判 fail（否则比较没有牙）：${rep.items[0].detail}`);
+    assert.equal(rep.pass, 0);
+  });
 });
 
 test('③ 反向二：无独立预期 ⇒ unsupported@1，且不许自动填 expect', async () => {
@@ -112,27 +132,31 @@ test('③ 反向二：无独立预期 ⇒ unsupported@1，且不许自动填 exp
   assert.equal(plan.expectation, undefined, '没有独立预期时不许拿运行观察值凑一个期望（§9.5.7 边界）');
 
   // 端到端：结论只能是 unsupported，且回执里没有填好的 expectation
-  const rep = await compileBehaviorContracts([{ ...PILOT, id: 'no-expectation', cases: [] }], { project_dir: REPO });
-  assert.equal(rep.pass, 0);
-  assert.equal(rep.items[0].verdict, 'unsupported');
-  assert.equal(rep.items[0].stage_no, 1);
-  assert.equal(rep.items[0].expectation, undefined);
-  assert.equal(rep.skipped.length, 1, '编译期挡下的必须**具名**进 skipped');
+  await withPilotProject(async (root) => {
+    const rep = await compileBehaviorContracts([{ ...PILOT, id: 'no-expectation', cases: [] }], { project_dir: root });
+    assert.equal(rep.pass, 0);
+    assert.equal(rep.items[0].verdict, 'unsupported');
+    assert.equal(rep.items[0].stage_no, 1);
+    assert.equal(rep.items[0].expectation, undefined);
+    assert.equal(rep.skipped.length, 1, '编译期挡下的必须**具名**进 skipped');
+  });
 });
 
 test('④ 反向三：主体缺失点名「第 2 步」，且分母一条都不剔', async () => {
   const ghost = { ...PILOT, id: 'ghost-subject', subject: { symbol: 'noSuchFunctionAtAll_xyz' } };
-  const rep = await compileBehaviorContracts([PILOT, ghost], { project_dir: REPO });
+  await withPilotProject(async (root) => {
+    const rep = await compileBehaviorContracts([PILOT, ghost], { project_dir: root });
 
-  assert.equal(rep.input, 2, '分母恒等于**入参条数**');
-  assert.equal(rep.checked + rep.skipped.length, rep.input, 'input === checked + skipped（跳过的都在 skipped 里，不是被剔掉）');
+    assert.equal(rep.input, 2, '分母恒等于**入参条数**');
+    assert.equal(rep.checked + rep.skipped.length, rep.input, 'input === checked + skipped（跳过的都在 skipped 里，不是被剔掉）');
 
-  const item = rep.items.find((x) => x.contract_id === 'ghost-subject');
-  assert.ok(item, '缺主体的契约必须**在回执里**，不能被静默丢弃');
-  assert.equal(item.verdict, 'unsupported');
-  assert.equal(item.stage_no, 2, `要点名第 2 步（解析主体），实得 ${item.stage_no}`);
-  assert.match(String(item.stage), /^2 解析主体/);
-  assert.ok(rep.skipped.some((s) => s.contract_id === 'ghost-subject'), '跳过要**具名**');
+    const item = rep.items.find((x) => x.contract_id === 'ghost-subject');
+    assert.ok(item, '缺主体的契约必须**在回执里**，不能被静默丢弃');
+    assert.equal(item.verdict, 'unsupported');
+    assert.equal(item.stage_no, 2, `要点名第 2 步（解析主体），实得 ${item.stage_no}`);
+    assert.match(String(item.stage), /^2 解析主体/);
+    assert.ok(rep.skipped.some((s) => s.contract_id === 'ghost-subject'), '跳过要**具名**');
+  });
 
   // 运行期那一半（DB 有定义但导出不可达）也归到第 2 步 —— 归因唯一住处是 attributeRunFailure
   assert.equal(attributeRunFailure('行为基线跑不了 ⇒ 判不了：top-level function not found: x').stage_no, 2);
@@ -143,21 +167,25 @@ test('⑤ 裁定4：expect 非字符串 ⇒ unsupported@4（不许走到核里�
   const numExpect = { ...PILOT, id: 'num-expect', cases: [{ given: ['src\\a.ts'], expect: 5 }] };
   assert.equal(compileGate(numExpect, FACTS_OK), 'unsupported@4');
 
-  const rep = await compileBehaviorContracts([numExpect], { project_dir: REPO });
-  assert.equal(rep.items[0].verdict, 'unsupported');
-  assert.equal(rep.items[0].stage_no, 4);
-  assert.match(rep.items[0].detail, /不是字符串/);
+  await withPilotProject(async (root) => {
+    const rep = await compileBehaviorContracts([numExpect], { project_dir: root });
+    assert.equal(rep.items[0].verdict, 'unsupported');
+    assert.equal(rep.items[0].stage_no, 4);
+    assert.match(rep.items[0].detail, /不是字符串/);
+  });
 });
 
 test('⑥ ④不新建测试体系：编译器结论与现有 behavior-cases 执行核逐条一致', async () => {
-  const rep = await compileBehaviorContracts([PILOT], { project_dir: REPO });
-  const item = rep.items[0];
-  assert.equal(item.verdict, 'pass');
-  assert.ok(item.expectation, '产物必须回带 —— 它才是"现有 behavior-cases 输入"');
-  const direct = await judgeExpectations(REPO, [
-    { node_id: 'pilot', node_label: 'pilot', expectation: item.expectation as unknown as Expectation },
-  ]);
-  assert.equal(direct.items[0].verdict, item.verdict, '同一个产物的结论必须与直接喂核一致（否则就是另造了一个 runner）');
+  await withPilotProject(async (root) => {
+    const rep = await compileBehaviorContracts([PILOT], { project_dir: root });
+    const item = rep.items[0];
+    assert.equal(item.verdict, 'pass');
+    assert.ok(item.expectation, '产物必须回带 —— 它才是"现有 behavior-cases 输入"');
+    const direct = await judgeExpectations(root, [
+      { node_id: 'pilot', node_label: 'pilot', expectation: item.expectation as unknown as Expectation },
+    ]);
+    assert.equal(direct.items[0].verdict, item.verdict, '同一个产物的结论必须与直接喂核一致（否则就是另造了一个 runner）');
+  });
 });
 
 test('⑥b §9.5.3 是 8 步不是 7 步（报文用「第 N 步」定位失败）', () => {

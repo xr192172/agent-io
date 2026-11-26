@@ -62,8 +62,11 @@ import fs from 'node:fs';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { collectTestFiles } from './lib/test_files.mjs';
+// 注：目录名权威在 `src/infrastructure/data_dir.ts`（DATA_DIR_NAME）；本脚本是纯 node 主进程、不经 tsx，
+// 不便回引 src 的 .ts，故按 gc.mjs 同惯例在脚本侧钉同名字面量（改动目录名须两处同步）。
+const DATA_DIR_NAME = '.agent-io';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
@@ -97,6 +100,9 @@ let tot = { tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0 };
 let totStatic = 0;
 let registryClean = null;
 const registryPolluters = [];
+/** ★ #188 乙护栏：主仓项目库（`.agent-io/cache.db*`）跑前/跑后指纹；worker 触主仓库即红（观测护栏，不改路径） */
+let repoDbClean = null;
+const repoDbPolluters = [];
 /** 真册探针结果（顶部默认；早期 fail-closed 回执不踩 TDZ） */
 let REAL = { ok: false, file: '', why: '' };
 
@@ -493,15 +499,19 @@ function runOne(rel, slot = 0) {
     //   ⇒ 修法不是"再写一套 spec 解析"（那会让门的口径跟着 Node 版本漂，且是第二把尺），
     //     而是**要 TAP**：`--test-reporter tap` 在仓基线 Node 22 与本机 Node 24 上都存在。
     const childEnv = scrubNpmLifecycle({ ...process.env, [INJECT_VAR]: testDataHome(rel, slot) });
-    const child = spawn(process.execPath, ['--import', 'tsx', '--test', '--test-reporter', 'tap', rel], {
-      cwd: ROOT,
-      // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
-      shell: false,
-      // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
-      // ★ D-S1-b：剥除外层 npm 脚本身份变量（见 NPM_LIFECYCLE_KEYS 注释），自钉值仍由 spread 保留
-      env: childEnv,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const teardownHelper = pathToFileURL(path.join(ROOT, 'tests', 'helpers', 'test-project-db-teardown.ts')).href;
+    const child = spawn(
+      process.execPath,
+      ['--import', 'tsx', '--import', teardownHelper, '--test', '--test-reporter', 'tap', rel],
+      {
+        cwd: ROOT,
+        // ★ shell:false（`process.execPath` 在 Windows 上含空格，经 cmd 会被截断 —— 见 verify.mjs 的 ts 门）
+        shell: false,
+        // ★ 2026-10-30：每文件一个自己的数据根（见 RUN_HOME_ROOT 那段论证）
+        // ★ D-S1-b：剥除外层 npm 脚本身份变量（见 NPM_LIFECYCLE_KEYS 注释），自钉值仍由 spread 保留
+        env: childEnv,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
     child.stdout.on('data', (s) => {
@@ -594,6 +604,43 @@ function fingerprint(file) {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// ★★★ #188 乙护栏：主仓项目库（`<ROOT>/.agent-io/cache.db*`）跑前/跑后指纹。
+//
+// 病：项目库按 project_dir 落项目本地；某用例若以主仓根为 project_dir，worker 就会打开并写主仓
+// cache.db/-wal/-shm，与同 runner 判据门跨进程争写同一 WAL（单写者）⇒ `database is locked`。
+// 本护栏是**观测**口径（不改路径解析）：跑前/跑后各拍一次主仓 db 三件套指纹，判真写 ⇒ 门红点名
+// 是哪次测试触的主仓库。判脏口径（避免把只读打开误判成写）：
+//   · `cache.db`：存在性翻转 / 体积变化 ⇒ 脏（真写库或建库）；
+//   · `cache.db-wal`：存在且 **size > 0** ⇒ 脏（有未 checkpoint 的写帧）；size 0 边车是只读打开副产物；
+//   · `cache.db-shm`：只读打开也会建 32KB 共享内存边车，不单独判脏（仅记录）。
+// ════════════════════════════════════════════════════════════════════════
+const REPO_DB_FILES = ['cache.db', 'cache.db-wal', 'cache.db-shm'];
+
+/** 主仓项目库三件套指纹（exists+size；不读内容，避免大 WAL 全量哈希 IO）。不存在 ⇒ exists:false。 */
+function repoDbFingerprint() {
+  const dir = path.join(ROOT, DATA_DIR_NAME);
+  const out = {};
+  for (const name of REPO_DB_FILES) {
+    try {
+      const st = statSync(path.join(dir, name));
+      out[name] = { exists: true, size: st.size, mtime: st.mtimeMs };
+    } catch {
+      out[name] = { exists: false, size: -1, mtime: -1 };
+    }
+  }
+  return out;
+}
+
+/** 前后指纹判脏 ⇒ 返回第一个真写的文件名；干净 ⇒ null。口径见上方段注（shm 不单独判；wal 仅 >0 帧判）。 */
+function repoDbChanged(before, after) {
+  const dbB = before['cache.db'], dbA = after['cache.db'];
+  if (dbB.exists !== dbA.exists || dbB.size !== dbA.size) return 'cache.db';
+  const wA = after['cache.db-wal'];
+  if (wA.exists && wA.size > 0) return 'cache.db-wal';
+  return null;
+}
+
 const filesAll = testFiles();
 let files = filesAll;
 
@@ -668,11 +715,15 @@ REAL = probeRealRegistryFile();
 const realBefore = REAL.ok ? fingerprint(REAL.file) : { sha: '<probe-failed>', mtime: -1 };
 /** 哪一次测试把它改了（逐步比对：第一次变的那一刻点名，再以新值为下一段的基线） */
 let realCursor = realBefore;
+// ★ #188 乙护栏：主仓项目库跑前指纹（跑完必须 exists/size 不变；见上面 repoDbFingerprint 段）
+const repoDbBefore = repoDbFingerprint();
+let repoDbCursor = repoDbBefore;
 say(
   REAL.ok
     ? `${C.d}★ 产者护栏：真册 ${REAL.file} sha=${realBefore.sha.slice(0, 12)}（跑完必须不变）${C.x}`
     : `${C.r}★ 产者护栏：**问不到**真册路径（${REAL.why}）⇒ 跑完会判红（判不了 ≠ 没污染）${C.x}`,
 );
+say(`${C.d}★ 主仓项目库护栏：${path.join(ROOT, DATA_DIR_NAME)} 下 cache.db* 跑完必须不变（触主仓库即红）${C.x}`);
 say('');
 
 let bad = 0;
@@ -719,6 +770,10 @@ function buildJson(exitCode) {
   if (PARALLEL) registry.degraded = true;
   if (Array.isArray(registryPolluters) && registryPolluters.length) registry.polluters = registryPolluters;
   if (REAL && !REAL.ok && REAL.why) registry.note = REAL.why;
+  // ★ #188 乙护栏：主仓项目库前后指纹结论 + 点名（并行档降级）
+  const repoDb = { clean: typeof repoDbClean === 'boolean' ? repoDbClean : null };
+  if (PARALLEL) repoDb.degraded = true;
+  if (Array.isArray(repoDbPolluters) && repoDbPolluters.length) repoDb.polluters = repoDbPolluters;
   return {
     files: fileRecords,
     summary: {
@@ -727,6 +782,7 @@ function buildJson(exitCode) {
       skipped: tot.skipped, todo: tot.todo, staticDeclared: totStatic,
     },
     registry,
+    repoDb,
     jobs,
     mode: explicitList.length > 0 || filter !== '' || SEL !== null ? 'subset' : 'full',
     topSlow: topSlow(),
@@ -742,7 +798,7 @@ function finish(exitCode) {
     } catch (e) {
       process.stdout.write(JSON.stringify({
         files: [], summary: { files: 0, tests: 0, pass: 0, fail: 0, skipped: 0, todo: 0, staticDeclared: 0 },
-        registry: { clean: null }, jobs, mode: 'full', topSlow: [], exitCode,
+        registry: { clean: null }, repoDb: { clean: null }, jobs, mode: 'full', topSlow: [], exitCode,
         error: String(e?.message ?? e),
       }) + '\n');
     }
@@ -857,6 +913,13 @@ if (PARALLEL) {
         realCursor = now;
       }
     }
+    // ★ #188 乙护栏：这个文件跑完后，主仓项目库变了没有？（变了点名；并行档判不了是谁，同真册护栏降级口径）
+    const repoNow = repoDbFingerprint();
+    const repoHit = repoDbChanged(repoDbCursor, repoNow);
+    if (repoHit) {
+      repoDbPolluters.push({ rel, file: repoHit, before: repoDbCursor[repoHit], after: repoNow[repoHit] });
+      repoDbCursor = repoNow;
+    }
     reportRun(f, stat, r);
   }
 }
@@ -912,13 +975,33 @@ if (!REAL.ok) {
     `${C.g}✓ 产者护栏：真册 sha256 前后一致（${realBefore.sha.slice(0, 12)}）⇒ 这轮测试一条登记都没写进真数据仓${C.x}`,
   );
 }
+
+// ★ #188 乙护栏收口：主仓项目库前后指纹比对（exists+size；变了 ⇒ 门红，观测不改路径）。
+const repoDbAfter = repoDbFingerprint();
+repoDbClean = repoDbChanged(repoDbBefore, repoDbAfter) === null;
+if (!repoDbClean) {
+  const repoWho = PARALLEL
+    ? `    ★ **并行模式（--jobs ${jobs}）无法点名触主仓库的测试** —— 逐文件切指纹要有确定顺序。\n` +
+      `      ⇒ 请用 \`node scripts/run-tests.mjs --jobs 1\` 复跑点名（逐文件归因）。`
+    : `    ★ 是哪一次测试触的主仓库（逐步比对，第一次变的那一刻）：\n` +
+      repoDbPolluters.map((p) => `      · ${p.rel}：${p.file} ${JSON.stringify(p.before)} → ${JSON.stringify(p.after)}`).join('\n');
+  say(
+    `${C.r}✗ 主仓项目库护栏红：测试 worker 触写了主仓 \`${DATA_DIR_NAME}/cache.db*\` —— 会与同 runner 判据门争写同一 WAL（#188 锁竞争根因）${C.x}\n` +
+      `    目录：${path.join(ROOT, DATA_DIR_NAME)}\n` +
+      `    前=${JSON.stringify(repoDbBefore)}\n    后=${JSON.stringify(repoDbAfter)}\n` +
+      repoWho +
+      `\n    ★ 怎么办：该用例改用临时工程做 project_dir（别拿主仓根当被测项目），收尾 closeProjectCacheDb；项目库不得落主仓。`,
+  );
+} else {
+  say(`${C.g}✓ 主仓项目库护栏：cache.db* 前后一致 ⇒ 这轮测试没触主仓项目库${C.x}`);
+}
 if (files.length === 0) {
   say(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
   finish(1);
 }
-if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryClean) {
+if (bad || tot.fail || tot.skipped || tot.todo || tot.tests === 0 || !registryClean || !repoDbClean) {
   say(
-    `${C.r}⇒ 测试门红：${bad} 个文件没通过${registryClean ? '' : ' · 真注册表被写（产者护栏）'}（详见上面的 ✗ 行）${C.x}`,
+    `${C.r}⇒ 测试门红：${bad} 个文件没通过${registryClean ? '' : ' · 真注册表被写（产者护栏）'}${repoDbClean ? '' : ' · 主仓项目库被触写（乙护栏）'}（详见上面的 ✗ 行）${C.x}`,
   );
   finish(1);
 }

@@ -28,7 +28,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { ensureProjectIndex } from '../src/infrastructure/index/index_freshness.js';
-import { closeAllProjectCacheDbs, getProjectCacheDb } from '../src/infrastructure/index/db.js';
+import { closeAllProjectCacheDbs, getProjectCacheDb, projectCacheDbPath } from '../src/infrastructure/index/db.js';
 import { makeTempHome, rmRf } from './helpers/i1_fixture.js';
 
 const TMP = makeTempHome();
@@ -45,9 +45,9 @@ function makeProject(name: string): string {
   return proj;
 }
 
-/** 项目库派生文件路径（与 `rootsOf(root).cache.path` 同口径）。 */
+/** 项目库派生文件路径（与 `projectCacheDbPath(root)` 同口径，落项目本地 `.agent-io/cache.db`）。 */
 function cacheFiles(proj: string): { db: string; wal: string; shm: string } {
-  const db = path.join(proj, '.agent-io', 'cache.db');
+  const db = projectCacheDbPath(proj);
   return { db, wal: `${db}-wal`, shm: `${db}-shm` };
 }
 
