@@ -61,11 +61,16 @@ for (let i = 0; i < argv.length; i++) {
 const LEDGER_REL = path.join('.agent-io', 'ablation-runs.jsonl');
 const LEDGER_ABS = path.join(ROOT, LEDGER_REL);
 
-function git(args) {
+/**
+ * git 探测：返回成败与取值（B-M1）。git 不可用 / 非 git 仓 / 非零退出 ⇒ ok=false，
+ * 由调用方落 `unprovable` 显式档，不用空串冒充已钉。
+ */
+function gitProbe(args, cwd = ROOT) {
   try {
-    return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', shell: false }).trim();
+    const value = execFileSync('git', args, { cwd, encoding: 'utf8', shell: false }).trim();
+    return { ok: value !== '', value: value || null };
   } catch {
-    return '';
+    return { ok: false, value: null };
   }
 }
 
@@ -98,9 +103,15 @@ const last = readLastRecord();
 const holesLast = Number(last?.holes?.length ?? 0);
 const lastCommit = last?.snapshot?.commit_sha ?? null;
 const commitsSinceLast = lastCommit
-  ? Number(git(['rev-list', '--count', `${lastCommit}..HEAD`]) || '0')
+  ? Number(gitProbe(['rev-list', '--count', `${lastCommit}..HEAD`]).value ?? '0')
   : 0;
-const headSha = git(['rev-parse', 'HEAD']) || null;
+// B-M1：收据身份钉被测副本内容 —— HEAD commit ref + 内容树哈希（HEAD^{tree}）双取；
+// 任一取不到 ⇒ sha_status=unprovable（显式档），不用空 ref 冒充已钉。
+const headProbe = gitProbe(['rev-parse', 'HEAD']);
+const treeProbe = headProbe.ok ? gitProbe(['rev-parse', 'HEAD^{tree}']) : { ok: false, value: null };
+const commitSha = headProbe.ok ? headProbe.value : null;
+const treeSha = treeProbe.ok ? treeProbe.value : null;
+const shaStatus = headProbe.ok && treeProbe.ok ? 'pinned' : 'unprovable';
 // 隔离快照干净度判副本（--worktree 指向的独立 worktree）；活树自身的未提交改动不影响快照判定。
 const targetRoot = worktreeArg ? path.resolve(worktreeArg) : ROOT;
 const clean = gitIn(targetRoot, ['status', '--porcelain']).length === 0;
@@ -132,10 +143,11 @@ if (!quota.ok) {
 
 // 隔离快照守卫（① 干净快照 / 独立 worktree，禁活树）
 const snapshot = snapshotRefOf({
-  commitSha: headSha,
+  commitSha,
   worktreePath: worktreeArg,
   clean,
   liveWorktree: ROOT,
+  shaStatus,
 });
 if (!dry && !snapshot.isolated) {
   process.stderr.write(`ablation-cron: 隔离拒跑：${snapshot.reasons.join('；')}\n`);
@@ -172,13 +184,16 @@ if (!dry) {
 }
 
 const now = new Date().toISOString();
+const idSha = shaStatus === 'pinned' && commitSha ? commitSha.slice(0, 12) : 'unprovable';
 const record = buildAblationRecord({
-  run_id: `ablation:${headSha?.slice(0, 12) ?? 'unpinned'}:${now}`,
+  run_id: `ablation:${idSha}:${now}`,
   triggered_by: eval_.fired,
   started_at: now,
   finished_at: dry ? null : now,
   snapshot: {
-    commit_sha: headSha,
+    commit_sha: commitSha,
+    tree_sha: treeSha,
+    sha_status: shaStatus,
     worktree: worktreeArg ?? null,
     clean,
     isolated: snapshot.isolated,

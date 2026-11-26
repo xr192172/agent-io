@@ -34,6 +34,7 @@ import {
   snapshotRefOf,
   buildAblationRecord,
   classifyRunClass,
+  pinnedBaseSha,
   summarizeShadowTrend,
   evaluateObservationWindow,
 } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
@@ -114,6 +115,80 @@ test('隔离快照：干净独立 worktree ⇒ 隔离；活树/脏树/缺路径�
   const noTree = snapshotRefOf({ commitSha: null, worktreePath: null, clean: true, liveWorktree: live });
   assert.equal(noTree.isolated, false);
   assert.match(noTree.reasons.join(';'), /worktree/);
+});
+
+test('B-M1 快照身份：pinned 钉 commit+树哈希；git 取不到 ⇒ unprovable 显式档（不冒充已钉）', () => {
+  const live = '/home/dev/agent-io';
+  const pinned = snapshotRefOf({
+    commitSha: 'abc123', worktreePath: '/tmp/wt', clean: true, liveWorktree: live, shaStatus: 'pinned',
+  });
+  assert.equal(pinned.sha_status, 'pinned');
+  assert.match(pinned.snapshot_id, /^snapshot:abc123/);
+
+  // 显式 unprovable：身份无法证明，独立 snapshot_id 档，不用空 ref 冒充
+  const unprovable = snapshotRefOf({
+    commitSha: null, worktreePath: '/tmp/wt', clean: true, liveWorktree: live, shaStatus: 'unprovable',
+  });
+  assert.equal(unprovable.sha_status, 'unprovable');
+  assert.equal(unprovable.snapshot_id, 'snapshot:unprovable');
+
+  // 缺省推导：有 commitSha ⇒ pinned；无 ⇒ unprovable（向后兼容旧入参）
+  const inferredPinned = snapshotRefOf({ commitSha: 'def456', worktreePath: '/tmp/wt', clean: true, liveWorktree: live });
+  assert.equal(inferredPinned.sha_status, 'pinned');
+  const inferredNone = snapshotRefOf({ commitSha: null, worktreePath: '/tmp/wt', clean: true, liveWorktree: live });
+  assert.equal(inferredNone.sha_status, 'unprovable');
+});
+
+test('B-M1 台账记录：tree_sha / sha_status 落账并序列化往返；缺档按 commit_sha 推导', () => {
+  const rec = buildAblationRecord({
+    run_id: 'ablation:abc123:sha',
+    triggered_by: ['night_window'],
+    started_at: '2026-11-26T02:00:00.000Z',
+    snapshot: {
+      commit_sha: 'abc123',
+      tree_sha: 'treehash000111222333',
+      sha_status: 'pinned',
+      worktree: '/tmp/wt',
+      clean: true,
+      isolated: true,
+    },
+    mode: 'light',
+    quota: { files: 5, jobs: 1 },
+  });
+  assert.equal(rec.snapshot.tree_sha, 'treehash000111222333');
+  assert.equal(rec.snapshot.sha_status, 'pinned');
+
+  const back = JSON.parse(JSON.stringify(rec));
+  assert.equal(back.snapshot.tree_sha, 'treehash000111222333');
+  assert.equal(back.snapshot.sha_status, 'pinned');
+
+  // 旧夹具缺 tree_sha/sha_status：缺省 tree_sha=null，档位按 commit_sha 推导不报错
+  const legacy = buildAblationRecord({
+    run_id: 'ablation:legacy:1',
+    triggered_by: ['night_window'],
+    started_at: '2026-11-26T02:05:00.000Z',
+    snapshot: { commit_sha: 'legacy99', worktree: '/tmp/wt', clean: true, isolated: true },
+    mode: 'light',
+    quota: { files: 0, jobs: 1 },
+  });
+  assert.equal(legacy.snapshot.tree_sha, null);
+  assert.equal(legacy.snapshot.sha_status, 'pinned');
+
+  const noSha = buildAblationRecord({
+    run_id: 'ablation:nosha:1',
+    triggered_by: ['night_window'],
+    started_at: '2026-11-26T02:06:00.000Z',
+    snapshot: { commit_sha: null, worktree: null, clean: true, isolated: true },
+    mode: 'light',
+    quota: { files: 0, jobs: 1 },
+  });
+  assert.equal(noSha.snapshot.sha_status, 'unprovable');
+
+  // 底座轮数口径：pinned 计入；unprovable 不计；旧行缺档位按 commit_sha 兼容计入
+  assert.equal(pinnedBaseSha(rec), 'abc123');
+  assert.equal(pinnedBaseSha(noSha), null);
+  assert.equal(pinnedBaseSha({ snapshot: { commit_sha: 'legacy01', sha_status: undefined, worktree: null, clean: true, isolated: true, tree_sha: null } }), 'legacy01');
+  assert.equal(pinnedBaseSha({ snapshot: { commit_sha: 'should-not-count', sha_status: 'unprovable', worktree: null, clean: true, isolated: true, tree_sha: null } }), null);
 });
 
 test('台账记录：字段齐全；holes>0 ⇒ widen_required；reading_only；序列化往返', () => {

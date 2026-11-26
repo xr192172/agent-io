@@ -12,9 +12,10 @@
  *   只进台账，不抬退出码、不进 verify 硬判据）。
  *
  * ## 底座变更标记（≥1 轮底座变更）
- * · record 的 `snapshot.commit_sha` 标识本轮底座快照；ingest 回执打印台账内 **distinct commit_sha
- *   轮数**（首条即基线轮；出现 ≥2 个不同 sha ⇒ 已跨过一轮底座变更）。本脚本只计数披露，不据此
- *   进退码（观察期窗口评估属 `evaluateObservationWindow` 的读数口径）。
+ * · record 的 `snapshot.commit_sha`（pinned 档）标识本轮底座快照；ingest 回执打印台账内
+ *   **distinct pinned commit_sha 轮数**（首条即基线轮；出现 ≥2 个不同 sha ⇒ 已跨过一轮底座变更）。
+ * · B-M1：`sha_status=unprovable`（git 不可用 / 取不到内容指纹）的记录不进底座轮数计数；
+ *   `tree_sha` 为内容树哈希（HEAD^{tree}）随账披露。本脚本只计数披露，不据此进退码。
  *
  * 用法：
  *   node --import tsx scripts/ablation-ingest.mjs --artifact <json 文件> [--root <dir>] [--json]
@@ -28,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyRunClass } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
+import { classifyRunClass, pinnedBaseSha } from '../src/infrastructure/analysis/facts/incsel_cron.ts';
 
 const RUN_CLASSES = ['dry', 'untrusted', 'sampled', 'full-control'];
 
@@ -106,6 +107,9 @@ function validate(record) {
   if (!Array.isArray(record.triggered_by)) reasons.push('triggered_by 非数组');
   if (record.reading_only !== true) reasons.push('reading_only 必须为 true（对照读数不进硬判据）');
   if (record.snapshot == null || typeof record.snapshot !== 'object') reasons.push('snapshot 非对象');
+  if (record.snapshot.sha_status != null && !['pinned', 'unprovable'].includes(record.snapshot.sha_status)) {
+    reasons.push(`sha_status=${record.snapshot.sha_status} 不在闭集 pinned/unprovable`);
+  }
   if (record.run_class != null && !RUN_CLASSES.includes(record.run_class)) {
     reasons.push(`run_class=${record.run_class} 不在闭集 ${RUN_CLASSES.join('/')}`);
   }
@@ -154,7 +158,7 @@ let bad;
 try {
   ({ records: existing, bad } = readLedgerRecords());
   const seenRunIds = new Set(existing.map((r) => r?.run_id).filter(Boolean));
-  const distinctBases = new Set(existing.map((r) => r?.snapshot?.commit_sha).filter((v) => v != null));
+  const distinctBases = new Set(existing.map(pinnedBaseSha).filter((v) => v != null));
 
   const skipped = seenRunIds.has(record.run_id);
   if (skipped) {
@@ -180,7 +184,8 @@ try {
 }
 
 const after = [...existing, record];
-const afterBases = new Set(after.map((r) => r?.snapshot?.commit_sha).filter((v) => v != null));
+const afterBases = new Set(after.map(pinnedBaseSha).filter((v) => v != null));
+const snapStatus = record.snapshot.sha_status ?? (record.snapshot.commit_sha ? 'pinned' : 'unprovable');
 const out = {
   ingested: true,
   run_id: record.run_id,
@@ -188,6 +193,8 @@ const out = {
   run_class: record.run_class,
   triggered_by: record.triggered_by,
   base_sha: record.snapshot.commit_sha,
+  base_sha_status: snapStatus,
+  tree_sha: record.snapshot.tree_sha ?? null,
   ledger: LEDGER_REL,
   records: after.length,
   base_sha_rounds: afterBases.size,

@@ -103,6 +103,14 @@ export type RunMode = 'light' | 'full';
  */
 export type RunClass = 'dry' | 'untrusted' | 'sampled' | 'full-control';
 
+/**
+ * 快照身份可证明性档位（B-M1 诚实收据）：
+ * · `pinned`：git 可用且 HEAD commit + 内容树哈希均取到，被测副本身份可证明；
+ * · `unprovable`：git 不可用 / 非 git 仓 / 取 HEAD 或树哈希失败 ⇒ 副本身份无法证明，
+ *   不得用空 ref 或旧指针冒充已钉；该档不进底座轮数计数。
+ */
+export type SnapshotShaStatus = 'pinned' | 'unprovable';
+
 /** 观察期窗口长度 K（周），已冻结：2 周。 */
 export const OBSERVATION_WINDOW_DAYS = 14;
 
@@ -171,6 +179,8 @@ export interface SnapshotRef {
   snapshot_id: string;
   isolated: boolean;
   reasons: string[];
+  /** 快照身份可证明性档位；unprovable 表示副本身份未能取到内容指纹。 */
+  sha_status: SnapshotShaStatus;
 }
 
 /**
@@ -182,6 +192,7 @@ export function snapshotRefOf(input: {
   worktreePath: string | null;
   clean: boolean;
   liveWorktree: string;
+  shaStatus?: SnapshotShaStatus;
 }): SnapshotRef {
   const reasons: string[] = [];
   const worktree = String(input.worktreePath ?? '').replace(/\\/g, '/');
@@ -189,8 +200,25 @@ export function snapshotRefOf(input: {
   if (!input.clean) reasons.push('快照不干净（活工作树有未提交改动）');
   if (!worktree) reasons.push('缺独立 worktree 路径');
   else if (live && worktree === live) reasons.push('worktree 就是活工作树（禁在活树跑）');
-  const snapshot_id = input.commitSha ? `snapshot:${input.commitSha.slice(0, 12)}` : 'snapshot:unpinned';
-  return { snapshot_id, isolated: reasons.length === 0, reasons };
+  // 缺省档位：有 commitSha ⇒ pinned；无 ⇒ unprovable（显式档优先于缺省推导）。
+  const shaStatus: SnapshotShaStatus = input.shaStatus ?? (input.commitSha ? 'pinned' : 'unprovable');
+  const snapshot_id = shaStatus === 'unprovable'
+    ? 'snapshot:unprovable'
+    : input.commitSha ? `snapshot:${input.commitSha.slice(0, 12)}` : 'snapshot:unpinned';
+  return { snapshot_id, isolated: reasons.length === 0, reasons, sha_status: shaStatus };
+}
+
+/** 台账快照身份字段（cron 采集、ingest 落账共用；纯语义不绑定采集手段）。 */
+export interface AblationSnapshot {
+  /** HEAD commit ref sha；git 不可用时为 null。 */
+  commit_sha: string | null;
+  /** 被测副本内容树哈希（`HEAD^{tree}`，git 原生跟踪文件内容树指纹）；取不到为 null。 */
+  tree_sha: string | null;
+  /** 快照身份可证明性档位；unprovable 不进底座轮数计数。 */
+  sha_status: SnapshotShaStatus;
+  worktree: string | null;
+  clean: boolean;
+  isolated: boolean;
 }
 
 /** 一条周期参考运行的结构化台账记录（append-only JSONL 落盘由脚本侧完成）。 */
@@ -200,12 +228,7 @@ export interface AblationRunRecord {
   triggered_by: AblationTriggerKind[];
   started_at: string;
   finished_at: string | null;
-  snapshot: {
-    commit_sha: string | null;
-    worktree: string | null;
-    clean: boolean;
-    isolated: boolean;
-  };
+  snapshot: AblationSnapshot;
   preemption: { preempted: boolean; reason: string | null };
   mode: RunMode;
   quota: { files: number; jobs: number };
@@ -230,7 +253,14 @@ export interface AblationRecordInput {
   triggered_by: readonly AblationTriggerKind[];
   started_at: string;
   finished_at?: string | null;
-  snapshot: { commit_sha: string | null; worktree: string | null; clean: boolean; isolated: boolean };
+  snapshot: {
+    commit_sha: string | null;
+    tree_sha?: string | null;
+    sha_status?: SnapshotShaStatus;
+    worktree: string | null;
+    clean: boolean;
+    isolated: boolean;
+  };
   preemption?: { preempted: boolean; reason: string | null };
   mode: RunMode;
   quota: { files: number; jobs: number };
@@ -264,12 +294,32 @@ export function classifyRunClass(record: {
   return 'full-control';
 }
 
+/**
+ * 底座轮数计数口径（B-M1）：返回身份可证明（pinned）的 commit_sha；
+ * `unprovable` 档返回 null（不进底座轮数，避免空档/旧指针虚增轮数）。
+ * 旧台账行缺 `sha_status` 字段时按 commit_sha 非 null 兼容计入（向后兼容）。
+ */
+export function pinnedBaseSha(record: { snapshot?: AblationSnapshot | null } | null | undefined): string | null {
+  const snap = record?.snapshot;
+  if (!snap) return null;
+  if (snap.sha_status === 'unprovable') return null;
+  return snap.commit_sha ?? null;
+}
+
 /** 装配一条台账记录（纯函数；排序归一，未知字段不进记录）。 */
 export function buildAblationRecord(input: AblationRecordInput): AblationRunRecord {
   const holes = [...(input.holes ?? [])].sort();
   const list = (v: readonly string[] | undefined) => [...(v ?? [])].sort();
   const finishedAt = input.finished_at ?? null;
-  const snapshot = { ...input.snapshot };
+  const inSnap = input.snapshot;
+  const snapshot: AblationSnapshot = {
+    commit_sha: inSnap.commit_sha ?? null,
+    tree_sha: inSnap.tree_sha ?? null,
+    sha_status: inSnap.sha_status ?? (inSnap.commit_sha ? 'pinned' : 'unprovable'),
+    worktree: inSnap.worktree ?? null,
+    clean: !!inSnap.clean,
+    isolated: !!inSnap.isolated,
+  };
   const runClass = input.run_class ?? classifyRunClass({ finished_at: finishedAt, snapshot, mode: input.mode });
   return {
     schema: 1,
