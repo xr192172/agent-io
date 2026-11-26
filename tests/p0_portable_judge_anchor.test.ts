@@ -47,8 +47,8 @@ function pin(p: string, ms: number): void {
   fs.utimesSync(p, new Date(ms), new Date(ms));
 }
 
-/** 夹具册：一个 file 节点 + 一条 `file-exists src/foo.ts`（判据只看**夹具根**里有没有这个文件） */
-function sheet(sourceRoot?: string): unknown {
+/** 夹具册：一个 file 节点 + 一条 `file-exists` 判据（判据只看**夹具根**里有没有这个文件） */
+function sheet(sourceRoot?: string, expectPath = 'src/foo.ts'): unknown {
   return {
     feature: FEATURE,
     ...(sourceRoot ? { source_root: sourceRoot } : {}),
@@ -58,9 +58,9 @@ function sheet(sourceRoot?: string): unknown {
           id: 'n0',
           label: 'n0',
           type: 'file',
-          path: 'src/foo.ts',
+          path: expectPath,
           decision: {
-            expectations: [{ kind: 'file-exists', path: 'src/foo.ts', why: '夹具：判据只看夹具根里有没有这个文件' }],
+            expectations: [{ kind: 'file-exists', path: expectPath, why: '夹具：判据只看夹具根里有没有这个文件' }],
           },
         },
       ],
@@ -87,7 +87,7 @@ function runJudgeAll(root: string): { status: number | null; out: string } {
 
 const tail = (s: string, n = 1800): string => (s.length <= n ? s : `…（截断，仅尾部）\n${s.slice(-n)}`);
 
-test('judge 的路径锚：异机 source_root 不许左右判定（改后绿 / 去 source_root 仍绿 / 删文件必红 / 判的不是这份册必红）', () => {
+test('judge 的路径锚：异机 source_root 与注册表 decoy 都不许左右判定（改后绿 / 去 source_root 仍绿 / 删文件必红 / 注册表指 decoy 仍按根册判）', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentio-anchor-'));
   const foo = path.join(root, 'src', 'foo.ts');
   const sheetFile = path.join(root, '.agent-io', 'design', `${FEATURE}.dsl.json`);
@@ -152,14 +152,23 @@ test('judge 的路径锚：异机 source_root 不许左右判定（改后绿 / �
     assert.match(c.out, /fail:n0/, `必须红在判据上（fail:n0）:\n${tail(c.out)}`);
     assert.doesNotMatch(c.out, /不是同一份/, `这一态不许走"册不重合"那条路（那是另一条判据）:\n${tail(c.out)}`);
 
-    // ── ④ 对照 C：CLI 判的**是另一份册**（注册表指到 decoy）⇒ 必须红，且点名「不是同一份」
-    //    改前这里是**假绿**：守卫比 `root`，而 judge 的 root = 本脚本传的 `'.'` ⇒ 恒等 ⇒ 防线静默消失。
+    // ── ④ 对照 C（2026-11-26 P4 前置 · Main 裁 option 1 重写攻击向量）：注册表指到 decoy 项目根 ⇒
+    //    judge 仍按**显式 project_dir** 根册判，不被注册表左右（`fe40d843` 锚点根治不变量）。
+    //    历史反例（`fe40d843` 之前的注册表回落模型）：注册表指 decoy 曾真红「不是同一份」（迁移册 observed 在案）；
+    //    `fe40d843`（11-25 P3 施工批 D）把册锚改为显式 project_dir 前插锚、不回落注册表/dataHome，该端到端向量退役。
+    //    新不变量：注册表 decoy 条目被忽略，judge 读本仓根册（src/foo.ts 在）判绿；decoy 册判据改指根下不存在的
+    //    `src/decoy-only.ts` —— 若 judge 误读 decoy 册必红 fail:n0；读根册则 pass=1。
+    //    守卫比 sheet（judge-all.mjs sheetMismatch）**保留作纵深**：防回执缺 sheet 字段 / 未来实现改回注册表 / 外部布局错位；本向量不再强测它端到端命中。
     fs.renameSync(`${foo}.bak`, foo);
     pin(foo, Date.now() - 600_000);
+    j(path.join(root, 'decoy', '.agent-io', 'design', `${FEATURE}.dsl.json`), sheet(undefined, 'src/decoy-only.ts'));
     pointCliAt(path.join(root, 'decoy'));
     const d = runJudgeAll(root);
-    assert.notEqual(d.status, 0, `CLI 判的是另一份册时必须红（否则"副本里判绿"的防线又消失了）:\n${tail(d.out)}`);
-    assert.match(d.out, /不是同一份/, `必须点名"判的不是这一份册"（比的是回执里的 sheet）:\n${tail(d.out)}`);
+    assert.equal(d.status, 0, `显式 project_dir 锚点下注册表 decoy 条目不许左右判定（exit 应 0）:\n${tail(d.out)}`);
+    assert.match(d.out, /pass=1/, `应按夹具根册判过 1 条:\n${tail(d.out)}`);
+    assert.match(d.out, /0 册有红/, `应 0 册有红:\n${tail(d.out)}`);
+    assert.doesNotMatch(d.out, /不是同一份/, `显式锚点下 decoy 注册表条目被忽略，不应走 sheetMismatch:\n${tail(d.out)}`);
+    assert.doesNotMatch(d.out, /fail:n0/, `判的应是根册（src/foo.ts 在），不是 decoy 册（decoy-only.ts 缺）:\n${tail(d.out)}`);
   } finally {
     rmRf(root);
   }
