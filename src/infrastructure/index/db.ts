@@ -45,6 +45,121 @@ export function inTransaction(db: Database): boolean {
   return (txDepth.get(db as unknown as object) ?? 0) > 0;
 }
 
+// ─────────────────────────────────────────────────────────────
+// 锁诊断登记（#188 归因 · 只读观测）
+//
+// 抛锁 / 开库异常时落一份诊断快照到 `.agent-io/scratch/verify-last/`，随门日志 artifact 上传。
+// ★ 只采观测字段（进程 / 连接 / PRAGMA / 文件状态 / heavy.lock holder），不改判定口径、阈值、护栏、放行；
+//   诊断本身抛错一律吞掉，绝不二次抛异常干扰主流程。
+// ─────────────────────────────────────────────────────────────
+
+interface OpenDbRecord {
+  tag: string;
+  file: string;
+  db: Database;
+  openedAt: string;
+}
+
+/** 进程内全部已开索引库连接（池化 openDb 入口；其他模块直开的连接不在本登记内）。 */
+const openRegistry: OpenDbRecord[] = [];
+
+function pragmaScalar(db: Database, name: string): unknown {
+  try {
+    const row = db.prepare(`PRAGMA ${name}`).get() as Record<string, unknown> | undefined;
+    if (!row) return null;
+    const vals = Object.values(row);
+    return vals.length ? vals[0] : null;
+  } catch (e) {
+    return `unavailable: ${String((e as Error)?.message ?? e)}`;
+  }
+}
+
+function fileStatSafe(p: string): Record<string, unknown> {
+  try {
+    if (!fs.existsSync(p)) return { exists: false };
+    const s = fs.statSync(p);
+    return { exists: true, size: s.size, mtime: s.mtimeMs };
+  } catch (e) {
+    return { exists: false, error: String((e as Error)?.message ?? e) };
+  }
+}
+
+function dbFileOf(db: Database): string | null {
+  return openRegistry.find((r) => r.db === db)?.file ?? null;
+}
+
+/**
+ * 抛锁 / 开库异常诊断快照（只读观测）。落 JSON 到 verify-last；不吞原错、不改判定。
+ * @param db 抛错连接（可为 null：openDb 尚未拿到实例时）
+ * @param label 抛错位置标签（beginBatch / openDb …）
+ * @param err 原始异常
+ */
+export function captureLockDiagnostics(db: Database | null, label: string, err?: unknown): void {
+  try {
+    const dbFile = db ? dbFileOf(db) : null;
+    const root = dbFile ? path.dirname(path.dirname(dbFile)) : process.cwd();
+    const agentDir = path.join(root, DATA_DIR_NAME);
+    const heavyLock = path.join(agentDir, 'heavy.lock');
+    let heavy: unknown = null;
+    try {
+      if (fs.existsSync(heavyLock)) heavy = JSON.parse(fs.readFileSync(heavyLock, 'utf8'));
+    } catch {
+      heavy = 'unreadable';
+    }
+
+    const instances = openRegistry.map((r) => ({
+      file: r.file,
+      tag: r.tag,
+      openedAt: r.openedAt,
+      inTransaction: inTransaction(r.db),
+      txDepth: txDepth.get(r.db as unknown as object) ?? 0,
+      pragmas: {
+        journal_mode: pragmaScalar(r.db, 'journal_mode'),
+        busy_timeout: pragmaScalar(r.db, 'busy_timeout'),
+        foreign_keys: pragmaScalar(r.db, 'foreign_keys'),
+        temp_store: pragmaScalar(r.db, 'temp_store'),
+      },
+      database_list: (() => {
+        try {
+          return r.db.prepare('PRAGMA database_list').all();
+        } catch (e) {
+          return `unavailable: ${String((e as Error)?.message ?? e)}`;
+        }
+      })(),
+    }));
+
+    const diag = {
+      capturedAt: new Date().toISOString(),
+      label,
+      pid: process.pid,
+      ppid: process.ppid,
+      cwd: process.cwd(),
+      argv: process.argv,
+      execPath: process.execPath,
+      platform: process.platform,
+      nodeVersion: process.version,
+      heavyHolderEnv: process.env.AGENT_IO_HEAVY_HOLDER ?? null,
+      heavyLock,
+      targetDb: dbFile,
+      walFiles: dbFile
+        ? { db: fileStatSafe(dbFile), wal: fileStatSafe(`${dbFile}-wal`), shm: fileStatSafe(`${dbFile}-shm`) }
+        : null,
+      openDbCount: openRegistry.length,
+      instances,
+      error: err
+        ? { message: String((err as Error)?.message ?? err), errcode: (err as { errcode?: number })?.errcode ?? null }
+        : null,
+    };
+
+    const outDir = path.join(agentDir, 'scratch', 'verify-last');
+    fs.mkdirSync(outDir, { recursive: true });
+    const outFile = path.join(outDir, `lock-diag-${label}-${process.pid}-${Date.now()}.json`);
+    fs.writeFileSync(outFile, JSON.stringify(diag, null, 2));
+  } catch {
+    /* 诊断本身不许二次抛 */
+  }
+}
+
 /**
  * 开一层批量事务（最外层真正 BEGIN，嵌套只加深度）
  *
@@ -74,7 +189,15 @@ export function inTransaction(db: Database): boolean {
 export function beginBatch(db: Database): void {
   const key = db as unknown as object;
   const d = txDepth.get(key) ?? 0;
-  if (d === 0) db.exec('BEGIN IMMEDIATE');
+  if (d === 0) {
+    try {
+      db.exec('BEGIN IMMEDIATE');
+    } catch (e) {
+      // ★ #188 归因：抛锁时落诊断快照（进程/连接/PRAGMA/文件状态/heavy.lock），不吞原错。
+      if (/locked|busy/i.test(String((e as Error)?.message ?? ''))) captureLockDiagnostics(db, 'beginBatch', e);
+      throw e;
+    }
+  }
   txDepth.set(key, d + 1);
 }
 
@@ -494,6 +617,7 @@ function humanizeDbOpenFailure(e: unknown, dbFile: string): Error {
 export function openDb(dbFile: string = requireDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
+  openRegistry.push({ tag: 'openDb', file: dbFile, db, openedAt: new Date().toISOString() });
   db.exec('PRAGMA journal_mode = WAL');
   /**
    * ★★★ 2026-11-17：**temp_store = MEMORY** —— `unable to open database file` 的真因
@@ -535,6 +659,8 @@ export function openDb(dbFile: string = requireDbFile()): Database {
     if (cacheSchemaIsCurrent(db)) return db;
     return alignCacheSchema(db);
   } catch (e) {
+    // ★ #188 归因：开库/对齐抛锁时落诊断快照，不吞原错。
+    captureLockDiagnostics(db, 'openDb', e);
     throw humanizeDbOpenFailure(e, dbFile);
   }
 }
@@ -663,6 +789,7 @@ export function closeAllProjectCacheDbs(): void {
     }
   }
   projectCachePool.clear();
+  for (let i = openRegistry.length - 1; i >= 0; i--) openRegistry.splice(i, 1);
 }
 
 /** 关闭单个项目的池化缓存连接（收尾删项目/临时目录前释放文件句柄，Windows EBUSY） */
@@ -676,5 +803,7 @@ export function closeProjectCacheDb(projectRoot: string): void {
       /* 已关闭 */
     }
     projectCachePool.delete(key);
+    const ri = openRegistry.findIndex((r) => r.db === db);
+    if (ri >= 0) openRegistry.splice(ri, 1);
   }
 }
