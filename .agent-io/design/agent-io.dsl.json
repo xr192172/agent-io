@@ -42365,6 +42365,46 @@
         },
         "arch_layer": "core",
         "path": "scripts/approve-rules.mjs"
+      },
+      {
+        "id": "file_scripts_lib_gate_dag_view_mjs",
+        "label": "gate_dag_view.mjs",
+        "x": 1700,
+        "y": 1220,
+        "type": "file",
+        "path": "scripts/lib/gate_dag_view.mjs",
+        "decision": {
+          "summary": "S-1 静态调度结构视图：现役门 → DAG 静态枚举对账，执行仍串行（一期）。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/lib/gate_dag_view.mjs",
+              "why": "7f3f361d 已落盘；入册补结构归属，消结构意图门缺口"
+            }
+          ],
+          "updated_at": "2026-11-26T09:43:28.410Z",
+          "agent": "main"
+        }
+      },
+      {
+        "id": "file_scripts_lib_sheet_guard_mjs",
+        "label": "sheet_guard.mjs",
+        "x": 1700,
+        "y": 1290,
+        "type": "file",
+        "path": "scripts/lib/sheet_guard.mjs",
+        "decision": {
+          "summary": "册身份纵深守卫纯函数：回执册与本次检查册归一后必须同处，缺字段/不等即 fail-closed 点名。",
+          "expectations": [
+            {
+              "kind": "file-exists",
+              "path": "scripts/lib/sheet_guard.mjs",
+              "why": "1cac937f 已落盘；入册补结构归属，消结构意图门缺口"
+            }
+          ],
+          "updated_at": "2026-11-26T09:43:28.835Z",
+          "agent": "main"
+        }
       }
     ],
     "edges": [
@@ -86487,6 +86527,35 @@
           "dist/src/infrastructure/rules/protected_rules.js"
         ],
         "path": "scripts/approve-rules.mjs"
+      },
+      {
+        "id": "file_scripts_lib_gate_dag_view_mjs",
+        "path": "scripts/lib/gate_dag_view.mjs",
+        "responsibility": "S-1 现役门 → 静态调度结构视图（一期结构接线，执行仍串行）：把现役 GATES 门名登记进 dag_plan DAG 并跑结构校验，产出分层/只读并发候选/写面/重活排他/隔离临时写/未登记名单与结构致命问题、写面同层提示；只做静态枚举对账，不 spawn 子进程、不派发并发、不改现役 verdict。",
+        "expected_apis": [
+          {
+            "signature": "buildGateView(gates)",
+            "notes": "源码现取导出（commit 7f3f361d）；cache.db 索引未含本批新文件，待 importProject 重建后可回填 from:cache.db@ts"
+          }
+        ],
+        "expected_deps": [
+          "scripts/lib/dag_plan.mjs",
+          "scripts/lib/gate_caps.mjs"
+        ]
+      },
+      {
+        "id": "file_scripts_lib_sheet_guard_mjs",
+        "path": "scripts/lib/sheet_guard.mjs",
+        "responsibility": "册身份纵深守卫纯函数：回执 rec.sheet 与本次检查 wantSheet 归一后必须同处；缺 sheet 字段/路径不等即 fail-closed 判不通过并点名，比较仍走 path_identity.samePath 唯一实现，供 judge-all 直调把守纵深红路径。",
+        "expected_apis": [
+          {
+            "signature": "guardSheetMismatch({ feature, rec, wantSheet })",
+            "notes": "源码现取导出（commit 7f3f361d）；cache.db 索引未含本批新文件，待 importProject 重建后可回填 from:cache.db@ts"
+          }
+        ],
+        "expected_deps": [
+          "scripts/lib/path_identity.mjs"
+        ]
       }
     ]
   },
@@ -86548,15 +86617,15 @@
       "count": 34
     }
   ],
-  "_dsl_rev": 2982,
+  "_dsl_rev": 2986,
   "_sync": {
-    "saved_at": "2026-11-25T20:06:14.115Z",
+    "saved_at": "2026-11-26T09:43:28.912Z",
     "source": "design_sheet",
     "feature": "agent-io",
     "scanRev": 1793000997137,
-    "age": 2636176978,
+    "age": 2685211775,
     "dbSchemaVersion": 17,
-    "via": "derived:project_actual_fields"
+    "via": "edit_dsl:edit_dsl"
   },
   "overlay_global": {
     "title": "agent-io 本体（自举狗食：用 agent-io 收敛 agent-io）",
