@@ -71,6 +71,24 @@ const DATA_DIR_NAME = '.agent-io';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const C = { r: '\x1b[31m', g: '\x1b[32m', y: '\x1b[33m', d: '\x1b[90m', b: '\x1b[1m', x: '\x1b[0m' };
 
+// ★ #188 句柄回收钩子 helper：worker beforeExit 关闭池化项目库连接（见 tests/helpers/teardown 头注）。
+//   helper 不是被测对象，是测试基础设施，且自身 `../../src/infrastructure/index/db.js` 依赖链锚其自身位置；
+//   夹具把 runner 拷进独立根时，拷贝件 ROOT 漂移 ⇒ 按拷贝件位置找 helper 会落在夹具根（无 src 链）⇒ ERR_MODULE_NOT_FOUND。
+//   ⇒ 定位优先级：env `AGENT_IO_TEST_TEARDOWN_HELPER`（夹具外层注入主仓真 helper 绝对路径）> 脚本所在主仓 ROOT 默认位。
+//   两者都不存在 ⇒ null：主进程启动阶段 fail-closed 响亮报错，不静默起 worker（回收契约丢不得，不许把缺失折成"跳过钩子"）。
+const TEARDOWN_HELPER_VAR = 'AGENT_IO_TEST_TEARDOWN_HELPER';
+const TEARDOWN_HELPER_REL = path.join('tests', 'helpers', 'test-project-db-teardown.ts');
+function resolveTeardownHelper() {
+  const fromEnv = (process.env[TEARDOWN_HELPER_VAR] ?? '').trim();
+  if (fromEnv) {
+    const p = path.resolve(fromEnv);
+    if (existsSync(p)) return p;
+  }
+  const def = path.join(ROOT, TEARDOWN_HELPER_REL);
+  return existsSync(def) ? def : null;
+}
+const TEARDOWN_HELPER = resolveTeardownHelper();
+
 const args = process.argv.slice(2);
 const fi = args.indexOf('--filter');
 const filter = fi >= 0 ? (args[fi + 1] ?? '') : '';
@@ -198,6 +216,13 @@ if (AUDIT_ABLATION) {
 //   用 HOME 则"测试自己的声明永远赢"，没钉的那几个才落到这里。
 const RUN_HOME_ROOT = mkdtempSync(path.join(os.tmpdir(), 'agent-io-tests-home-'));
 const INJECT_VAR = process.env.AGENT_IO_DATA_ROOT?.trim() ? 'AGENT_IO_DATA_ROOT' : 'AGENT_IO_HOME';
+
+// ★ fail-closed：回收钩子 helper 定位不到 ⇒ 响亮报错收口，不起 worker（不把缺失折成"跳过钩子"静默丢契约）。
+if (!TEARDOWN_HELPER) {
+  say(`${C.r}✗ 句柄回收钩子 helper 缺失：默认位 ${path.join(ROOT, TEARDOWN_HELPER_REL)} 不存在；env ${TEARDOWN_HELPER_VAR}=${process.env[TEARDOWN_HELPER_VAR] || '<未设>'} 也未解析到存在文件。${C.x}`);
+  say(`${C.r}  夹具把 runner 拷进独立根时，须经 ${TEARDOWN_HELPER_VAR} 注入主仓真 helper 绝对路径（helper 的 src 依赖链锚其自身位置，不能随夹具根漂移）。${C.x}`);
+  finish(1);
+}
 /**
  * ★ D-S1-b（跨文件污染 F18）：测试子进程是**全新测试运行时**，剥掉外层 npm run-script 的身份变量。
  *
@@ -509,7 +534,7 @@ function runOne(rel, slot = 0) {
       [INJECT_VAR]: testDataHome(rel, slot),
       [OPEN_SNAPSHOT_VAR]: snapFile,
     });
-    const teardownHelper = pathToFileURL(path.join(ROOT, 'tests', 'helpers', 'test-project-db-teardown.ts')).href;
+    const teardownHelper = pathToFileURL(TEARDOWN_HELPER).href;
     const child = spawn(
       process.execPath,
       ['--import', 'tsx', '--import', teardownHelper, '--test', '--test-reporter', 'tap', rel],

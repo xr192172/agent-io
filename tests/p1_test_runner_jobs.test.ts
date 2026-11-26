@@ -52,6 +52,9 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUN_TESTS = path.join(REPO, 'scripts', 'run-tests.mjs');
+// 回收钩子 helper 锚主仓真实位置：夹具根无 src 依赖链，经 env 把主仓真 helper 指给内层 runner。
+const TEARDOWN_HELPER = path.join(REPO, 'tests', 'helpers', 'test-project-db-teardown.ts');
+const TEARDOWN_HELPER_VAR = 'AGENT_IO_TEST_TEARDOWN_HELPER';
 
 /** 去 ANSI（门的输出是彩色的；判据只认文字） */
 const plain = (s: string): string => String(s ?? '').replace(/\x1b\[[0-9;]*m/g, '');
@@ -86,6 +89,7 @@ function runRunner(root: string, extraArgs: string[] = []): { status: number | n
   //   同一坑见 `p0_no_false_green_gates.test.ts` 的 `run()`（那里也是这么修的）。
   const base: NodeJS.ProcessEnv = { ...process.env };
   delete base.NODE_TEST_CONTEXT;
+  base[TEARDOWN_HELPER_VAR] = TEARDOWN_HELPER;
   const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'run-tests.mjs'), ...extraArgs], {
     cwd: root,
     encoding: 'utf8',
@@ -288,6 +292,7 @@ test('⑧ `--jobs 1`（默认档）必须是**实时逐文件打印**（不是"�
     writeTestFile(root, 'b_slow.test.ts', 700);
     const base: NodeJS.ProcessEnv = { ...process.env };
     delete base.NODE_TEST_CONTEXT;
+    base[TEARDOWN_HELPER_VAR] = TEARDOWN_HELPER;
     const t0 = Date.now();
     const chunks: Array<{ at: number; text: string }> = [];
     const child = spawn(process.execPath, [path.join(root, 'scripts', 'run-tests.mjs')], { cwd: root, env: base });

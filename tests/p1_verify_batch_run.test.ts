@@ -21,6 +21,9 @@ import { fileURLToPath } from 'node:url';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VERIFY = path.join(REPO, 'scripts', 'verify-changed.mjs');
 const RUN_TESTS = path.join(REPO, 'scripts', 'run-tests.mjs');
+// 回收钩子 helper 锚主仓真实位置：夹具根无 src 依赖链，经 env 把主仓真 helper 指给内层 runner。
+const TEARDOWN_HELPER = path.join(REPO, 'tests', 'helpers', 'test-project-db-teardown.ts');
+const TEARDOWN_HELPER_VAR = 'AGENT_IO_TEST_TEARDOWN_HELPER';
 
 const src = fs.readFileSync(VERIFY, 'utf8');
 
@@ -137,6 +140,7 @@ function envFor(dir: string, counters: string): NodeJS.ProcessEnv {
   for (const k of Object.keys(e)) if (k.startsWith('AGENT_IO_')) delete e[k];
   e.AGENT_IO_VERIFY_CHANGED_ROOT = dir;
   e.PERF_COUNTERS = counters;
+  e[TEARDOWN_HELPER_VAR] = TEARDOWN_HELPER;
   delete e.NODE_TEST_CONTEXT;
   return e;
 }

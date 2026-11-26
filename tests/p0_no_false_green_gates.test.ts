@@ -23,6 +23,9 @@ const JUDGE_ALL = path.resolve('scripts/judge-all.mjs');
 const RUN_TESTS = path.resolve('scripts/run-tests.mjs');
 /** ⑦ R39 用：MANIFEST 卷表的**唯一住处**是那个脚本自己 —— 本证真跑它，不在这里抄第二份卷表 */
 const GEN_MANIFEST = path.resolve('scripts/gen_manifest.mjs');
+// 回收钩子 helper 锚主仓真实位置：夹具根无 src 依赖链，经 env 把主仓真 helper 指给内层 runner。
+const TEARDOWN_HELPER = path.resolve('tests/helpers/test-project-db-teardown.ts');
+const TEARDOWN_HELPER_VAR = 'AGENT_IO_TEST_TEARDOWN_HELPER';
 
 /**
  * 跑一个脚本，回 `{status, out}`（out = stdout+stderr 合并）。
@@ -34,6 +37,7 @@ const GEN_MANIFEST = path.resolve('scripts/gen_manifest.mjs');
 function run(script: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = {}): { status: number | null; out: string } {
   const base: NodeJS.ProcessEnv = { ...process.env };
   delete base.NODE_TEST_CONTEXT;
+  base[TEARDOWN_HELPER_VAR] = TEARDOWN_HELPER;
   const r = spawnSync(process.execPath, [script, ...args], {
     cwd,
     encoding: 'utf8',

@@ -16,6 +16,9 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RUN_TESTS = path.join(REPO, 'scripts', 'run-tests.mjs');
+// 回收钩子 helper 锚主仓真实位置：夹具根无 src 依赖链，经 env 把主仓真 helper 指给内层 runner（见 runner TEARDOWN_HELPER_VAR）。
+const TEARDOWN_HELPER = path.join(REPO, 'tests', 'helpers', 'test-project-db-teardown.ts');
+const TEARDOWN_HELPER_VAR = 'AGENT_IO_TEST_TEARDOWN_HELPER';
 
 const plain = (s: string): string => String(s ?? '').replace(/\x1b\[[0-9;]*m/g, '');
 
@@ -35,6 +38,7 @@ function write(root: string, name: string, body: string): void {
 function run(root: string, args: string[]): { status: number | null; out: string; json: Record<string, any> | null } {
   const base: NodeJS.ProcessEnv = { ...process.env };
   delete base.NODE_TEST_CONTEXT;
+  base[TEARDOWN_HELPER_VAR] = TEARDOWN_HELPER;
   const r = spawnSync(process.execPath, [path.join(root, 'scripts', 'run-tests.mjs'), ...args], {
     cwd: root, encoding: 'utf8', shell: false, maxBuffer: 16 * 1024 * 1024, env: base,
   });
