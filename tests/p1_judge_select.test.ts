@@ -224,7 +224,9 @@ test('选量⑦ · 路径归一：判据侧给反斜杠、changed 侧给 `./` �
 // ══════════════════════════════════════════════════════════════════════════
 type Fixture = { home: string; project: string; feature: string; dispose: () => void };
 
-/** 一套隔离夹具：临时 dataHome（AGENT_IO_HOME）+ 临时项目 + 一份带 4 条判据的册 */
+/** 一套隔离夹具：临时 dataHome（AGENT_IO_HOME）+ 临时项目 + 一份带 4 条判据的册。
+ *  ★ 册落点 = `<project>/.agent-io/design`（与 judge 的显式 `project_dir` 锚点同根；
+ *    2026-11-25 起 judge 钉 `project_dir` 前插锚、不再回落注册表 / dataHome，册落 dataHome 会读不到）。 */
 function makeFixture(): Fixture {
   const home = makeTempHome();
   const project = fs.mkdtempSync(path.join(os.tmpdir(), 'judge-select-'));
@@ -268,7 +270,7 @@ function makeFixture(): Fixture {
     semantic: { files: [] },
     todos: [],
   };
-  const dir = path.join(home, '.agent-io', 'design');
+  const dir = path.join(project, '.agent-io', 'design');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, `${feature}.dsl.json`), JSON.stringify(dsl, null, 2), 'utf-8');
   return {
@@ -378,7 +380,7 @@ test('选量⑨ · 端到端：不传 changed ⇒ 回执里没有 selection 字�
 test('选量⑩ · 端到端：collectExpectations 的条数 = 回执 total（分母与收集端同源）', () => {
   const fx = makeFixture();
   try {
-    const dsl = JSON.parse(fs.readFileSync(path.join(fx.home, '.agent-io', 'design', `${fx.feature}.dsl.json`), 'utf-8'));
+    const dsl = JSON.parse(fs.readFileSync(path.join(fx.project, '.agent-io', 'design', `${fx.feature}.dsl.json`), 'utf-8'));
     const collected = collectExpectations(dsl as never);
     assert.equal(collected.length, 4, '夹具应当有 4 条判据（夹具坏了先修夹具）');
     const sel = selectExpectationsForChanged(collected as never, ['src/b.ts'], {
