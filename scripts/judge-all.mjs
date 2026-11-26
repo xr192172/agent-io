@@ -43,8 +43,8 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-// ★ 路径身份（软链/大小写/斜杠归一）：唯一实现——册身份守卫必须用它（见下方 wantSheet 注释）
-import { samePath } from './lib/path_identity.mjs';
+// ★ 路径身份（软链/大小写/斜杠归一）：册身份比较的唯一实现，由 sheet_guard 守卫消费（见下方 wantSheet 注释）
+import { guardSheetMismatch } from './lib/sheet_guard.mjs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 // ★ 重活排他锁（R75）—— 唯一实现在 `scripts/lib/heavy_lock.mjs`（verify / mutate / judge-all 共用一份）
 import { acquireHeavyLock } from './lib/heavy_lock.mjs';
@@ -273,7 +273,8 @@ async function judgeOne(feature, target, changed = null) {
   //   （`D:\Projects\ai\agentio\...`）⇒ 判不等 ⇒ 假红「册不重合 ⇒ 这册的读数不算数」，
   //   14 门里的判据门直接判 0 条。软链/大小写/斜杠都交给唯一实现 path_identity。
   const wantSheet = path.join(target.designDir, `${feature}.dsl.json`);
-  if (!rec.sheet || !samePath(rec.sheet, wantSheet)) {
+  const guard = guardSheetMismatch({ feature, rec, wantSheet });
+  if (!guard.ok) {
     return {
       feature,
       pass: 0,
@@ -282,7 +283,7 @@ async function judgeOne(feature, target, changed = null) {
       bad: [],
       perKind: {},
       ok: false,
-      sheetMismatch: `CLI 判的册 = ${rec.sheet ?? '(回执里没有 sheet 字段)'}，与本次检查的 ${wantSheet} 不是同一份`,
+      sheetMismatch: guard.sheetMismatch,
     };
   }
   const tally = rec.tally ?? {};

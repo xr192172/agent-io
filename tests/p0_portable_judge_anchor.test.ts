@@ -123,9 +123,8 @@ test('judge 的路径锚：异机 source_root 与注册表 decoy 都不许左右
     pin(path.join(root, 'dist', 'src', 'foo.js'), Date.now());
     j(sheetFile, sheet(FOREIGN));
     pointCliAt(root);
-    // 对照 C 用：另一份册 + 它自己的 src/foo.ts（判据这份现成满足 ⇒ 改前这里是**假绿**）
-    j(path.join(root, 'decoy', '.agent-io', 'design', `${FEATURE}.dsl.json`), sheet());
-    w(path.join(root, 'decoy', 'src', 'foo.ts'), 'export const a = 1;\n');
+    // ④ 对照 C 的 decoy 册在下方新向量段现造（判据指根下不存在的 src/decoy-only.ts）；
+    // 历史反例（fe40d843 前注册表回落模型）下曾用 decoy/src/foo.ts 满足旧判据，锚点根治后该文件不再被触达。
 
     // ── ① 改后绿：册里留着异机绝对路径，判定仍按调用方给的 project_dir
     const a = runJudgeAll(root);
