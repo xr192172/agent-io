@@ -86685,6 +86685,10 @@
     {
       "path": "tests/fixtures/java-proj/tools/MyBatisMapperDump.java",
       "reason": "Java 测试夹具工具类（exec_java_tool 调用的 dump 程序，属于夹具不属于本仓源码）"
+    },
+    {
+      "path": "tests/helpers/test-project-db-teardown.ts",
+      "reason": "测试 worker 退出回收钩子（run-tests.mjs 以 --import 预加载的测试辅助夹具，beforeExit 关闭项目库连接；无产品 API，不进设计册）"
     }
   ]
 }
