@@ -874,6 +874,59 @@ function writeGateLog(root, idx, name, out) {
   }
 }
 
+/**
+ * #188 锁争用归因：门 FAIL 且输出命中 locked/busy 时，在**主进程存活瞬间**快照持库进程。
+ *
+ * 此前进程树/句柄枚举挂在 CI 收尾步骤（各门已退出之后），撞锁瞬间存活的 node 已退、取不到。
+ * 现提前到门 FAIL 返回后立即采：① node 进程树（PID/PPID/命令行，CIM）；② 持 cache.db 句柄进程
+ * （handle64，路径由 `AGENT_IO_HANDLE64` 注入；CI 前置步骤下载，本地缺则记 unavailable）。
+ * 只读观测，不改判定口径/阈值/护栏/放行；非 win32、工具不可用、取证自身抛错一律吞掉，不阻断门结论。
+ */
+function captureLockHolders(root, gateName, out) {
+  if (process.platform !== 'win32') return;
+  if (!/locked|busy/i.test(String(out ?? ''))) return;
+  const dir = path.join(root, GATE_LOG_REL);
+  const stamp = new Date().toISOString();
+  try {
+    mkdirSync(dir, { recursive: true });
+    // ① 进程树：CIM 查 node.exe（主进程 verify 此刻仍存活，judge 子进程刚抛锁退出）。
+    const treeFile = path.join(dir, 'lock-holders-process-tree.txt');
+    try {
+      const ps = spawnSync(
+        'pwsh',
+        [
+          '-NoProfile',
+          '-Command',
+          "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId,ParentProcessId,CommandLine | Format-List",
+        ],
+        { encoding: 'utf8', shell: false, timeout: 15000 },
+      );
+      writeFileSync(treeFile, `capturedAt=${stamp} gate=${gateName}\n${(ps.stdout ?? '') + (ps.stderr ?? '')}`, 'utf8');
+    } catch (e) {
+      writeFileSync(treeFile, `capturedAt=${stamp} gate=${gateName}\nprocess-tree unavailable: ${String(e?.message ?? e)}`, 'utf8');
+    }
+    // ② 句柄枚举：handle64 路径由 env 注入；缺工具则记 unavailable（不联网下载，门内不依赖网络）。
+    const hFile = path.join(dir, 'lock-holders-handle-cache.txt');
+    const h64 = process.env.AGENT_IO_HANDLE64;
+    if (h64 && existsSync(h64)) {
+      try {
+        const h = spawnSync(h64, ['-accepteula', '-nobanner', 'cache.db'], {
+          encoding: 'utf8',
+          shell: false,
+          timeout: 15000,
+        });
+        writeFileSync(hFile, `capturedAt=${stamp} gate=${gateName}\n${(h.stdout ?? '') + (h.stderr ?? '')}`, 'utf8');
+      } catch (e) {
+        writeFileSync(hFile, `capturedAt=${stamp} gate=${gateName}\nhandle enum unavailable: ${String(e?.message ?? e)}`, 'utf8');
+      }
+    } else {
+      writeFileSync(hFile, `capturedAt=${stamp} gate=${gateName}\nhandle64 path not provided (AGENT_IO_HANDLE64 unset); unavailable`, 'utf8');
+    }
+  } catch {
+    /* 取证自身不许二次抛、不改门结论 */
+  }
+}
+
 /** 开跑前清掉上一轮日志（否则「从这条路径读到第一条失败」可能读到**上一次**跑的那一份）。 */
 export function clearGateLogs(root) {
   try {
@@ -1074,6 +1127,8 @@ function main() {
     //   现在的形状：摘要一行一门（`gateReading` 唯一实现）· 失败门的**完整输出**落盘 · 明细区印头几条失败原文。
     //   ★ 不调阈值的取舍：4000 是**拍出来的窗口**，抬到 40000 只是把下一次的洞挖深。
     if (r.state === 'FAIL') {
+      // ★ #188 锁争用归因：命中 locked/busy 时在主进程存活瞬间快照持库进程（进程树 + 句柄枚举）。
+      captureLockHolders(ROOT, g.name, r.out);
       const where = reading.logRel ?? '（落盘失败，见下）';
       const head = reading.failures.length
         ? `      ${reading.failures

@@ -618,6 +618,23 @@ export function openDb(dbFile: string = requireDbFile()): Database {
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = new DatabaseSync(dbFile);
   openRegistry.push({ tag: 'openDb', file: dbFile, db, openedAt: new Date().toISOString() });
+  /**
+   * ★★★ 2026-10-22：**等锁，别立刻抛** —— `database is locked` 的实测病灶
+   *
+   * 现场：本仓的 MCP server（`dist/src/presentation/mcp/server.js`）常驻，一直持有 `cache.db`；
+   * 而 `npm run verify` 的「实现夹具」也要开库 ⇒ 两个写者撞上 ⇒ `ERR_SQLITE_ERROR errcode=5`。
+   * ★ 后果不是"某次失败"，是**门会随机红** ⇒ 人会学会"重跑一次看" ⇒ 再往后 **FAIL 变成噪音**，
+   *   真 FAIL 也被忽略（这比假绿更坏：假绿能被"注入⇒必须红"抓出来，噪音不能）。
+   *
+   * 判据：`busy_timeout` 是 SQLite 原生的"等锁"机制 —— 把"瞬时争用"变成"排队"。
+   * ★ 它**只治瞬时争用**：如果锁被长事务占住，5 秒后照样抛（那时才是真问题，该找长事务）。
+   * ★ 为什么 5000ms：verify 里最长的一道门约 200ms（实测），5s 是 25 倍余量，不会掩盖真卡死。
+   *
+   * ★★ #188 ordering 修：`busy_timeout` 必须在 `journal_mode=WAL` **之前**武装 —— 否则切换
+   *   journal_mode / 首次 schema 对齐这几句 PRAGMA 跑在默认 timeout=0 下，撞上持锁者会立刻抛
+   *   `database is locked`，等锁窗口根本没生效。先武装等锁，再切 WAL。
+   */
+  db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA journal_mode = WAL');
   /**
    * ★★★ 2026-11-17：**temp_store = MEMORY** —— `unable to open database file` 的真因
@@ -638,19 +655,6 @@ export function openDb(dbFile: string = requireDbFile()): Database {
    *   若将来出现超大事务爆内存，正确做法是**分批提交**，不是回退到 FILE。
    */
   db.exec('PRAGMA temp_store = MEMORY');
-  /**
-   * ★★★ 2026-10-22：**等锁，别立刻抛** —— `database is locked` 的实测病灶
-   *
-   * 现场：本仓的 MCP server（`dist/src/presentation/mcp/server.js`）常驻，一直持有 `cache.db`；
-   * 而 `npm run verify` 的「实现夹具」也要开库 ⇒ 两个写者撞上 ⇒ `ERR_SQLITE_ERROR errcode=5`。
-   * ★ 后果不是"某次失败"，是**门会随机红** ⇒ 人会学会"重跑一次看" ⇒ 再往后 **FAIL 变成噪音**，
-   *   真 FAIL 也被忽略（这比假绿更坏：假绿能被"注入⇒必须红"抓出来，噪音不能）。
-   *
-   * 判据：`busy_timeout` 是 SQLite 原生的"等锁"机制 —— 把"瞬时争用"变成"排队"。
-   * ★ 它**只治瞬时争用**：如果锁被长事务占住，5 秒后照样抛（那时才是真问题，该找长事务）。
-   * ★ 为什么 5000ms：verify 里最长的一道门约 200ms（实测），5s 是 25 倍余量，不会掩盖真卡死。
-   */
-  db.exec('PRAGMA busy_timeout = 5000');
   db.exec('PRAGMA foreign_keys = ON');
   // ★★★ 2026-11-01（外部审计 P1）：**已是最新版本 ⇒ 一个字节都不写**（判据见 cacheSchemaIsCurrent）。
   //   写侧全部在下面这道 try 里；它失败的唯一常见原因是另一个进程正持着这个 cache.db，
@@ -779,10 +783,24 @@ export function getProjectCacheDb(projectRoot: string): Database {
   return db;
 }
 
+/**
+ * 关库前尝试把 WAL 回写主库并截断（#188 连接生命周期清理）。
+ * 探测门/测试隔离收尾时显式关库；不 checkpoint 直接 close 会留下 -wal/-shm 残留，
+ * 下一轮冷启走 WAL recovery 竞态窗口。busy/失败一律吞掉——持锁占住时保留 WAL，close 释放句柄即可。
+ */
+function checkpointBeforeClose(db: Database): void {
+  try {
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+  } catch {
+    /* 被持锁占用则保留 WAL，不阻塞关闭 */
+  }
+}
+
 /** 关闭全部项目缓存连接（测试隔离用；生产进程退出时 OS 回收即可） */
 export function closeAllProjectCacheDbs(): void {
   for (const db of projectCachePool.values()) {
     try {
+      checkpointBeforeClose(db);
       db.close();
     } catch {
       /* 已关闭 */
@@ -798,6 +816,7 @@ export function closeProjectCacheDb(projectRoot: string): void {
   const db = projectCachePool.get(key);
   if (db) {
     try {
+      checkpointBeforeClose(db);
       db.close();
     } catch {
       /* 已关闭 */

@@ -453,6 +453,16 @@ if (!MODE_SURFACE) {
   console.log(`${surfaceFails.length ? '✗' : '·'} 开销棘轮 = ${surfaceFails.length}${surfaceFails.length ? '  →  ' + surfaceFails.join(' / ') : ''}`);
   console.log('★ 本模式只量工具面固定开销（byte/工具数）；坏签名守卫 / 孤立集在 semantic 模式门。');
 }
+// ★ #188 连接生命周期：本门父进程经 handler 只读支开了项目库（hasLiveIndex → getProjectCacheDb），
+//   此前直接 process.exit 未 close ⇒ -wal/-shm 残留（实测主文件 4096B + -shm 163840B + -wal ~77MB），
+//   下一轮冷启走 WAL recovery 竞态窗口。收尾显式 checkpoint + close 全部项目库连接、释放句柄；
+//   失败吞掉，不改退出码。这是确定的资源清理 wiring 修，不是 retry 补丁。
+try {
+  const dbMod = await import(pathToFileURL(path.join(distRoot, 'src/infrastructure/index/db.js')).href);
+  dbMod.closeAllProjectCacheDbs();
+} catch {
+  /* 无项目库连接或模块不可用：不阻塞退出 */
+}
 // ★ 退出码只取本 mode 的失败集合：semantic = 坏签名 + 语义棘轮；surface = 开销棘轮。两车道门各判各的。
 const exitCode = MODE_SURFACE ? (surfaceFails.length ? 1 : 0) : bad.length || semanticFails.length ? 1 : 0;
 process.exit(exitCode);
