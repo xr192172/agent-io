@@ -21,6 +21,8 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -28,12 +30,34 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
 const { classifyThrowsExpectation, judgeExpectations } = await import(
-  pathToFileURL(path.join(ROOT, 'dist/src/application/design/intent/expectations.js')).href
+  '../src/application/design/intent/expectations.js'
 );
+const { ensureProjectIndex } = await import('../src/infrastructure/index/index_freshness.js');
+const { closeProjectCacheDb } = await import('../src/infrastructure/index/db.js');
+
+/**
+ * ★ #188 测试隔离：被测函数 `src/domain/rate.ts#rateOf` 零依赖 ⇒ 临时工程只复制这一份，
+ * 不拿主仓根当 project_dir（项目库跟 project_dir 走，避免 worker 与 judge-all 争写主仓 WAL）。
+ */
+function makePilotProject(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bc-throws-'));
+  fs.mkdirSync(path.join(root, 'src', 'domain'), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, 'src', 'domain', 'rate.ts'), path.join(root, 'src', 'domain', 'rate.ts'));
+  return root;
+}
+
+function dropPilotProject(root: string): void {
+  try {
+    closeProjectCacheDb(root);
+  } catch {
+    /* 没有库 / 已关 */
+  }
+  fs.rmSync(root, { recursive: true, force: true });
+}
 
 /** 判一条 behavior-cases，返回该条的四态 */
-async function verdictOf(expectation) {
-  const rep = await judgeExpectations(ROOT, [{ id: 'throws-probe', expectation }]);
+async function verdictOf(expectation, root: string) {
+  const rep = await judgeExpectations(root, [{ id: 'throws-probe', expectation }]);
   const it = rep.items[0];
   // ★ 分母必须现算且在场：每次只判一条，checked 必须恰好是 1（不许"什么都没判"也叫过）
   assert.equal(rep.checked, 1, `分母必须是 1，实得 ${rep.checked}`);
@@ -66,26 +90,53 @@ test('① 纯函数：throws: 前缀的三态', () => {
 });
 
 test('② 预期抛错且命中 ⇒ pass（旧口径下这条是 fail）', async () => {
-  const r = await verdictOf(exp([{ given: [{ n: -1, d: 2, question: Q }], expect: 'throws:必须是非负整数' }]));
-  assert.equal(r.verdict, 'pass', r.detail);
+  const root = makePilotProject();
+  try {
+    await ensureProjectIndex(root);
+    const r = await verdictOf(exp([{ given: [{ n: -1, d: 2, question: Q }], expect: 'throws:必须是非负整数' }]), root);
+    assert.equal(r.verdict, 'pass', r.detail);
+  } finally {
+    dropPilotProject(root);
+  }
 });
 
 test('③ 不抛错 ⇒ fail（错误实现必须被抓住）', async () => {
-  const r = await verdictOf(exp([{ given: [{ n: 1, d: 2, question: Q }], expect: 'throws:必须是非负整数' }]));
-  assert.equal(r.verdict, 'fail', r.detail);
-  assert.match(r.detail, /行为差异/);
+  const root = makePilotProject();
+  try {
+    await ensureProjectIndex(root);
+    const r = await verdictOf(exp([{ given: [{ n: 1, d: 2, question: Q }], expect: 'throws:必须是非负整数' }]), root);
+    assert.equal(r.verdict, 'fail', r.detail);
+    assert.match(r.detail, /行为差异/);
+  } finally {
+    dropPilotProject(root);
+  }
 });
 
 test('④ 抛了但文本不符 ⇒ fail（不是"只要抛就算过"）', async () => {
-  const r = await verdictOf(exp([{ given: [{ n: -1, d: 2, question: Q }], expect: 'throws:完全不同的错误文本' }]));
-  assert.equal(r.verdict, 'fail', r.detail);
-  assert.match(r.detail, /期望抛错含/);
+  const root = makePilotProject();
+  try {
+    await ensureProjectIndex(root);
+    const r = await verdictOf(exp([{ given: [{ n: -1, d: 2, question: Q }], expect: 'throws:完全不同的错误文本' }]), root);
+    assert.equal(r.verdict, 'fail', r.detail);
+    assert.match(r.detail, /期望抛错含/);
+  } finally {
+    dropPilotProject(root);
+  }
 });
 
 test('⑤ 没执行（符号不存在）⇒ unsupported，不许伪装成 pass/fail', async () => {
-  const r = await verdictOf({
-    ...exp([{ given: [], expect: 'throws:x' }]),
-    symbol: '__no_such_symbol__',
-  });
-  assert.equal(r.verdict, 'unsupported', r.detail);
+  const root = makePilotProject();
+  try {
+    await ensureProjectIndex(root);
+    const r = await verdictOf(
+      {
+        ...exp([{ given: [], expect: 'throws:x' }]),
+        symbol: '__no_such_symbol__',
+      },
+      root,
+    );
+    assert.equal(r.verdict, 'unsupported', r.detail);
+  } finally {
+    dropPilotProject(root);
+  }
 });

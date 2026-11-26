@@ -11,19 +11,50 @@
  *   ④ `apply:false` 与旧 `diagnose_loop(apply:false)` 的差异 = **迁移边界**：旧版会顺带出补丁+diff，
  *      现在是**只诊断**；本测试把这条边界写成断言，防止有人以为"补丁预演还在"。
  *
- * ★ 为什么用**本仓 root** 当 project_dir：诊断会在项目下建 `.agent-io/cache.db` 并把 feature 登记进
- *   共享 `project_registry`；用临时目录会在注册表里留下"不可达登记"（实测污染过 16 条，用
- *   `scripts/registry_repair.mjs` 才清掉）。用真根 ⇒ 零新增登记。
+ * ★ #188 测试隔离：被测项目落**临时镜像工程**（整棵 src 副本 + node_modules junction），不拿主仓根当 project_dir。
+ *   项目库跟 project_dir 走（项目本地）；用主仓根 ⇒ worker 写主仓 cache.db，与 judge-all 跨进程争写同一 WAL。
+ *   旧注释顾虑"临时目录在注册表里留不可达登记"在隔离 HOME（AGENT_IO_HOME 注入临时目录）下不成立：
+ *   共享 projects.json 落隔离 HOME，跑完整棵删掉 ⇒ 真册零新增登记。
  */
-import { test } from 'node:test';
+import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { META_TOOLS } from '../src/application/meta/index.js';
+import { ensureProjectIndex } from '../src/infrastructure/index/index_freshness.js';
+import { closeProjectCacheDb } from '../src/infrastructure/index/db.js';
 
-const ROOT = process.cwd();
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/** 临时镜像工程根（before 钩子里建好，after 钩子里连库带目录清掉） */
+let PROJ: string;
+
+function makeMirrorProject(): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'diag-entry-'));
+  fs.cpSync(path.join(REPO, 'src'), path.join(root, 'src'), { recursive: true });
+  const nm = path.join(REPO, 'node_modules');
+  if (fs.existsSync(nm)) fs.symlinkSync(nm, path.join(root, 'node_modules'), 'junction');
+  return root;
+}
+
+before(async () => {
+  PROJ = makeMirrorProject();
+  await ensureProjectIndex(PROJ);
+});
+
+after(() => {
+  try {
+    closeProjectCacheDb(PROJ);
+  } catch {
+    /* 没有库 / 已关 */
+  }
+  fs.rmSync(PROJ, { recursive: true, force: true });
+});
+
 const SYMPTOM = "TypeError: Cannot read properties of undefined (reading 'touched') at src/application/meta/index.ts:310";
 
 type Env = { text: string; isError?: boolean; touched?: unknown };
@@ -33,7 +64,7 @@ const entry = (name: string) => {
   return d;
 };
 const call = async (name: string, args: Record<string, unknown>): Promise<Env> =>
-  (await entry(name).handler({ project_dir: ROOT, symptom: SYMPTOM, ...args } as never)) as unknown as Env;
+  (await entry(name).handler({ project_dir: PROJ, symptom: SYMPTOM, ...args } as never)) as unknown as Env;
 
 /** 取几个**必须不被改动**的源文件的哈希（只读路径与失败闭环都不许动它们） */
 const PROBE_FILES = [
@@ -42,7 +73,7 @@ const PROBE_FILES = [
   'src/infrastructure/analysis/diagnosis/diagnose.ts',
 ];
 const hashes = (): string =>
-  PROBE_FILES.map((f) => crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, f))).digest('hex')).join(':');
+  PROBE_FILES.map((f) => crypto.createHash('sha256').update(fs.readFileSync(path.join(PROJ, f))).digest('hex')).join(':');
 
 test('P1-diagnose-entry · ① 只读路径：不产出 touched、不改任何源文件（apply 缺省与显式 false 都算）', async () => {
   const before = hashes();

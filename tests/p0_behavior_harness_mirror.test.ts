@@ -71,24 +71,39 @@ function linkRepoNodeModules(projectDir: string): void {
   fs.symlinkSync(src, path.join(projectDir, 'node_modules'), 'junction');
 }
 
+/**
+ * ★ #188 测试隔离：建**镜像临时工程**（整棵 src 副本 + node_modules junction），不拿主仓根当 project_dir。
+ * 项目库跟 project_dir 走（项目本地）；用主仓根 ⇒ worker 写主仓 cache.db，与 judge-all 跨进程争写同一 WAL。
+ * 调用方必须在 finally 里 `dropTree(proj)` 收尾。
+ */
+function makeMirrorProject(): string {
+  const proj = tmpDir('mirror');
+  fs.cpSync(path.join(ROOT, 'src'), path.join(proj, 'src'), { recursive: true });
+  linkRepoNodeModules(proj);
+  return proj;
+}
+
 test('① 正例：project_registry.ts#normRoot 的 behavior-cases 判 pass（夹具能加载跨目录闭包）', async () => {
-  const rep = await judgeExpectations(ROOT, [
-    { node_id: 'probe-normRoot', node_label: 'probe', expectation: NORM_ROOT_EXPECTATION },
-  ]);
-  const item = rep.items[0];
-  assert.equal(
-    item.verdict,
-    'pass',
-    `normRoot 的行为判据没绿 ⇒ 夹具还是加载不了目标（detail=${item.detail}）`,
-  );
-  assert.match(item.detail, /1\/1 case 一致/, `判据没真跑满 case：${item.detail}`);
+  const proj = makeMirrorProject();
+  try {
+    const rep = await judgeExpectations(proj, [
+      { node_id: 'probe-normRoot', node_label: 'probe', expectation: NORM_ROOT_EXPECTATION },
+    ]);
+    const item = rep.items[0];
+    assert.equal(
+      item.verdict,
+      'pass',
+      `normRoot 的行为判据没绿 ⇒ 夹具还是加载不了目标（detail=${item.detail}）`,
+    );
+    assert.match(item.detail, /1\/1 case 一致/, `判据没真跑满 case：${item.detail}`);
+  } finally {
+    dropTree(proj);
+  }
 });
 
 test('② 反例：把 normRoot 的尾斜杠剥离改坏（临时副本，不提交）⇒ 同一条判据变 fail', async () => {
-  const proj = tmpDir('mut');
+  const proj = makeMirrorProject();
   try {
-    fs.cpSync(path.join(ROOT, 'src'), path.join(proj, 'src'), { recursive: true });
-    linkRepoNodeModules(proj);
     const target = path.join(proj, 'src', 'infrastructure', 'project_registry.ts');
     const before = fs.readFileSync(target, 'utf8');
     const after = before.replace("    .replace(/\\/+$/, '');\n", ';\n');

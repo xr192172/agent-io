@@ -13,9 +13,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { indexIntegrity } from '../src/application/meta/integrity/index_integrity.ts';
-import { getProjectCacheDb, closeAllProjectCacheDbs } from '../src/infrastructure/index/db.ts';
+import { getProjectCacheDb, closeAllProjectCacheDbs, closeProjectCacheDb } from '../src/infrastructure/index/db.ts';
+import { ensureProjectIndex } from '../src/infrastructure/index/index_freshness.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function makeProj(): { dir: string; dispose: () => void } {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'idxvis-'));
@@ -92,9 +96,16 @@ test('② 把测试文件补进索引 ⇒ 读数归 0、告警消失（鉴别力
   }
 });
 
-test('③ 真仓：读数与"文件名形态"口径一致（跑不出来的话必须是 0 而不是 undefined）', async () => {
-  const r = await indexIntegrity({ project_dir: process.cwd() });
-  const t = r.counts.test_objects;
+test('③ 临时工程：读数与"文件名形态"口径一致（跑不出来的话必须是 0 而不是 undefined）', async () => {
+  // ★ #188 测试隔离：不拿主仓根当 project_dir（只读扫描也会开主仓连接持句柄，与 judge-all 争用）。
+  //   断言只钉差集口径自洽（on_disk≥indexed · missing=min(20,gap)），不钉具体条数 ⇒ 临时镜像工程可复现。
+  const proj = fs.mkdtempSync(path.join(os.tmpdir(), 'idxvis-real-'));
+  try {
+    fs.cpSync(path.join(ROOT, 'src'), path.join(proj, 'src'), { recursive: true });
+    fs.cpSync(path.join(ROOT, 'tests'), path.join(proj, 'tests'), { recursive: true });
+    await ensureProjectIndex(proj);
+    const r = await indexIntegrity({ project_dir: proj });
+    const t = r.counts.test_objects;
   assert.equal(typeof t.on_disk, 'number', 'on_disk 必须在场（不是 undefined）');
   assert.equal(typeof t.indexed, 'number');
   assert.ok(Array.isArray(t.missing));
@@ -104,7 +115,11 @@ test('③ 真仓：读数与"文件名形态"口径一致（跑不出来的话�
   //   批 10 新增 1 个测试文件把缺口从 20 推到 21 ⇒ 旧断言当场红（本批唯一一个"新增红"，见交付书 §2.5）。
   //   修法是**按实现口径断言**，不是把上界放宽：`missing.length === min(20, 缺口)`，且缺口 > 0 时 missing 不许空。
   const gap = t.on_disk - t.indexed;
-  assert.ok(gap >= 0, `on_disk (${t.on_disk}) 不该小于 indexed (${t.indexed})`);
-  assert.equal(t.missing.length, Math.min(20, gap), '差集必须按**实现口径**自洽（missing 最多列 20 条）');
-  if (gap > 0) assert.ok(t.missing.length > 0, '有缺口就必须点名（不许"有漏扫但列表是空的"）');
+    assert.ok(gap >= 0, `on_disk (${t.on_disk}) 不该小于 indexed (${t.indexed})`);
+    assert.equal(t.missing.length, Math.min(20, gap), '差集必须按**实现口径**自洽（missing 最多列 20 条）');
+    if (gap > 0) assert.ok(t.missing.length > 0, '有缺口就必须点名（不许"有漏扫但列表是空的"）');
+  } finally {
+    closeProjectCacheDb(proj);
+    fs.rmSync(proj, { recursive: true, force: true });
+  }
 });

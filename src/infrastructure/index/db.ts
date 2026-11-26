@@ -880,3 +880,11 @@ export function closeProjectCacheDb(projectRoot: string): void {
     if (ri >= 0) openRegistry.splice(ri, 1);
   }
 }
+
+/**
+ * 列出当前池化仍持有的项目库根（解析后的绝对路径；#188 乙护栏句柄快照用）。
+ * 只读快照：不关库、不查句柄；worker 退出前由 teardown helper 落盘，主进程据此点名漏关主仓库的用例。
+ */
+export function listOpenProjectCacheRoots(): string[] {
+  return [...projectCachePool.keys()];
+}

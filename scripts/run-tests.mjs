@@ -231,6 +231,11 @@ function testDataHome(rel, slot = 0) {
   return INJECT_VAR === 'AGENT_IO_HOME' ? path.join(dir, 'home') : dir;
 }
 
+/** 单 worker 的句柄快照文件（乙护栏：退出前写开放项目库根；主进程据此点名漏关主仓库者）。 */
+function openSnapshotPath(rel, slot = 0) {
+  return path.join(RUN_HOME_ROOT, `w${slot}`, rel.replace(/[^\w.-]/g, '_'), 'open-db-snapshot.json');
+}
+
 /**
  * 测试文件清单（`tests/` 下**递归**的 `*.test.ts`；`tests/helpers/` 是夹具、不是用例）。
  *
@@ -498,7 +503,12 @@ function runOne(rel, slot = 0) {
     //   ⇒ 本机任何 `npm test` 都恒红，而用例其实全绿（假红：红在口径，不在被测代码）。
     //   ⇒ 修法不是"再写一套 spec 解析"（那会让门的口径跟着 Node 版本漂，且是第二把尺），
     //     而是**要 TAP**：`--test-reporter tap` 在仓基线 Node 22 与本机 Node 24 上都存在。
-    const childEnv = scrubNpmLifecycle({ ...process.env, [INJECT_VAR]: testDataHome(rel, slot) });
+    const snapFile = openSnapshotPath(rel, slot);
+    const childEnv = scrubNpmLifecycle({
+      ...process.env,
+      [INJECT_VAR]: testDataHome(rel, slot),
+      [OPEN_SNAPSHOT_VAR]: snapFile,
+    });
     const teardownHelper = pathToFileURL(path.join(ROOT, 'tests', 'helpers', 'test-project-db-teardown.ts')).href;
     const child = spawn(
       process.execPath,
@@ -527,7 +537,9 @@ function runOne(rel, slot = 0) {
       if (settled) return;
       settled = true;
       const out = `${so}${se}${truncated ? `\n★ 单流输出超过 ${CAP} 字节，已截断（完整输出没保留）` : ''}${extra}`;
-      resolve({ rel, ms: Date.now() - t0, status, out, ...tapCounts(out), failures: failuresOf(out) });
+      // ★ 句柄快照：worker 退出前写的开放项目库根；主进程据此点名漏关主仓库的用例（仅持句柄也 surface）。
+      const openRoots = readOpenSnapshot(snapFile);
+      resolve({ rel, ms: Date.now() - t0, status, out, ...tapCounts(out), failures: failuresOf(out), openRoots });
     };
     // ★ spawn 自己失败（ENOENT / EACCES）⇒ status=null ⇒ 下游按"没跑起来"判红，不折成 0
     child.on('error', (e) => finish(null, `\n★ 起不来：${e?.message ?? String(e)}`));
@@ -605,19 +617,26 @@ function fingerprint(file) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// ★★★ #188 乙护栏：主仓项目库（`<ROOT>/.agent-io/cache.db*`）跑前/跑后指纹。
+// ★★★ #188 乙护栏：主仓项目库（`<ROOT>/.agent-io/cache.db*`）跑前/跑后指纹 + 句柄快照。
 //
 // 病：项目库按 project_dir 落项目本地；某用例若以主仓根为 project_dir，worker 就会打开并写主仓
 // cache.db/-wal/-shm，与同 runner 判据门跨进程争写同一 WAL（单写者）⇒ `database is locked`。
 // 本护栏是**观测**口径（不改路径解析）：跑前/跑后各拍一次主仓 db 三件套指纹，判真写 ⇒ 门红点名
 // 是哪次测试触的主仓库。判脏口径（避免把只读打开误判成写）：
-//   · `cache.db`：存在性翻转 / 体积变化 ⇒ 脏（真写库或建库）；
+//   · `cache.db`：存在性翻转 / 体积变化 / **mtime 抖动** ⇒ 脏（小读写被 checkpoint 回写后 size 可能不变，
+//     mtime 是更敏感的写帧信号；只读打开不动 mtime）；
 //   · `cache.db-wal`：存在且 **size > 0** ⇒ 脏（有未 checkpoint 的写帧）；size 0 边车是只读打开副产物；
+//     存在期间 mtime 抖动 ⇒ 脏（又落了一帧写再被截断）；
 //   · `cache.db-shm`：只读打开也会建 32KB 共享内存边车，不单独判脏（仅记录）。
+//   · **句柄快照**：worker 退出前把仍持有的项目库根写进 `AGENT_IO_OPEN_DB_SNAPSHOT` 文件；主进程读到
+//     开放根含主仓 ROOT ⇒ 漏关主仓库连接（仅持句柄也点名），不依赖 size/mtime 显形。
 // ════════════════════════════════════════════════════════════════════════
 const REPO_DB_FILES = ['cache.db', 'cache.db-wal', 'cache.db-shm'];
+const OPEN_SNAPSHOT_VAR = 'AGENT_IO_OPEN_DB_SNAPSHOT';
+/** 主仓根的池化键（与 db.ts `path.resolve(projectRoot)` 同一归一化）；句柄快照据此比对。 */
+const REPO_ROOT_KEY = path.resolve(ROOT);
 
-/** 主仓项目库三件套指纹（exists+size；不读内容，避免大 WAL 全量哈希 IO）。不存在 ⇒ exists:false。 */
+/** 主仓项目库三件套指纹（exists+size+mtime；不读内容，避免大 WAL 全量哈希 IO）。不存在 ⇒ exists:false。 */
 function repoDbFingerprint() {
   const dir = path.join(ROOT, DATA_DIR_NAME);
   const out = {};
@@ -632,13 +651,23 @@ function repoDbFingerprint() {
   return out;
 }
 
-/** 前后指纹判脏 ⇒ 返回第一个真写的文件名；干净 ⇒ null。口径见上方段注（shm 不单独判；wal 仅 >0 帧判）。 */
+/** 前后指纹判脏 ⇒ 返回第一个真写的文件名；干净 ⇒ null。口径见上方段注（shm 不单独判；wal 仅 >0 帧/mtime 抖动判）。 */
 function repoDbChanged(before, after) {
   const dbB = before['cache.db'], dbA = after['cache.db'];
-  if (dbB.exists !== dbA.exists || dbB.size !== dbA.size) return 'cache.db';
-  const wA = after['cache.db-wal'];
-  if (wA.exists && wA.size > 0) return 'cache.db-wal';
+  if (dbB.exists !== dbA.exists || dbB.size !== dbA.size || (dbA.exists && dbB.mtime !== dbA.mtime)) return 'cache.db';
+  const wB = before['cache.db-wal'], wA = after['cache.db-wal'];
+  if (wA.exists && (wA.size > 0 || wB.mtime !== wA.mtime)) return 'cache.db-wal';
   return null;
+}
+
+/** 读 worker 句柄快照：开放的项目库根清单；读不到 ⇒ 空数组（不据此夸大成写脏）。 */
+function readOpenSnapshot(snapFile) {
+  try {
+    const j = JSON.parse(readFileSync(snapFile, 'utf8'));
+    return Array.isArray(j.roots) ? j.roots.map((r) => path.resolve(String(r))) : [];
+  } catch {
+    return [];
+  }
 }
 
 const filesAll = testFiles();
@@ -893,7 +922,14 @@ if (PARALLEL) {
   });
   files.forEach((f, i) => {
     if (stats[i].err || stats[i].n === 0) reportStaticFail(f, stats[i]);
-    else reportRun(f, stats[i], results[i]);
+    else {
+      const rr = results[i];
+      // ★ 句柄快照 per-file 独立（不像写帧指纹要确定顺序）⇒ 并行档也能点名漏关主仓库者。
+      if (rr && (rr.openRoots ?? []).includes(REPO_ROOT_KEY)) {
+        repoDbPolluters.push({ rel: `tests/${f}`, file: 'open-handles', openRoots: rr.openRoots });
+      }
+      reportRun(f, stats[i], rr);
+    }
   });
 } else {
   // ── 串行档（默认）：**逐字保持**原行为 —— 跑一个、判一个、当场打印一行 ──
@@ -919,6 +955,10 @@ if (PARALLEL) {
     if (repoHit) {
       repoDbPolluters.push({ rel, file: repoHit, before: repoDbCursor[repoHit], after: repoNow[repoHit] });
       repoDbCursor = repoNow;
+    }
+    // ★ 句柄快照：worker 退出前仍持有主仓连接（漏关）⇒ 点名；仅持句柄不写也会参与并发争用。
+    if ((r.openRoots ?? []).includes(REPO_ROOT_KEY)) {
+      repoDbPolluters.push({ rel, file: 'open-handles', openRoots: r.openRoots });
     }
     reportRun(f, stat, r);
   }
@@ -976,15 +1016,19 @@ if (!REAL.ok) {
   );
 }
 
-// ★ #188 乙护栏收口：主仓项目库前后指纹比对（exists+size；变了 ⇒ 门红，观测不改路径）。
+// ★ #188 乙护栏收口：主仓项目库前后指纹比对（exists+size+mtime）+ 句柄快照；变了/漏关 ⇒ 门红，观测不改路径。
 const repoDbAfter = repoDbFingerprint();
-repoDbClean = repoDbChanged(repoDbBefore, repoDbAfter) === null;
+const repoWriteHit = repoDbChanged(repoDbBefore, repoDbAfter);
+const heldRepoPolluters = repoDbPolluters.filter((p) => p.file === 'open-handles');
+const writePolluters = repoDbPolluters.filter((p) => p.file !== 'open-handles');
+// ★ 真写（size/mtime/wal 帧变）⇒ fail-closed 红；仅持句柄（纯只读）⇒ warning 点名，不进红判。
+repoDbClean = repoWriteHit === null;
 if (!repoDbClean) {
   const repoWho = PARALLEL
-    ? `    ★ **并行模式（--jobs ${jobs}）无法点名触主仓库的测试** —— 逐文件切指纹要有确定顺序。\n` +
+    ? `    ★ **并行模式（--jobs ${jobs}）无法点名触写主仓库的测试** —— 逐文件切指纹要有确定顺序。\n` +
       `      ⇒ 请用 \`node scripts/run-tests.mjs --jobs 1\` 复跑点名（逐文件归因）。`
-    : `    ★ 是哪一次测试触的主仓库（逐步比对，第一次变的那一刻）：\n` +
-      repoDbPolluters.map((p) => `      · ${p.rel}：${p.file} ${JSON.stringify(p.before)} → ${JSON.stringify(p.after)}`).join('\n');
+    : `    ★ 是哪一次测试触写的主仓库（逐步比对，第一次变的那一刻）：\n` +
+      writePolluters.map((p) => `      · ${p.rel}：${p.file} ${JSON.stringify(p.before)} → ${JSON.stringify(p.after)}`).join('\n');
   say(
     `${C.r}✗ 主仓项目库护栏红：测试 worker 触写了主仓 \`${DATA_DIR_NAME}/cache.db*\` —— 会与同 runner 判据门争写同一 WAL（#188 锁竞争根因）${C.x}\n` +
       `    目录：${path.join(ROOT, DATA_DIR_NAME)}\n` +
@@ -993,7 +1037,14 @@ if (!repoDbClean) {
       `\n    ★ 怎么办：该用例改用临时工程做 project_dir（别拿主仓根当被测项目），收尾 closeProjectCacheDb；项目库不得落主仓。`,
   );
 } else {
-  say(`${C.g}✓ 主仓项目库护栏：cache.db* 前后一致 ⇒ 这轮测试没触主仓项目库${C.x}`);
+  say(`${C.g}✓ 主仓项目库护栏：cache.db* 前后一致 ⇒ 这轮测试没触写主仓项目库${C.x}`);
+}
+// ★ 仅持句柄（无写帧）：warning 点名，不阻塞门绿；后续把这些只读用例也搬临时工程后此清单归空。
+if (heldRepoPolluters.length > 0) {
+  say(
+    `${C.y}★ 句柄观测：以下 worker 开了主仓项目库连接但无写帧（纯只读持句柄，未进红判）：${C.x}\n` +
+      heldRepoPolluters.map((p) => `      · ${p.rel}：开放根 ${JSON.stringify(p.openRoots)}`).join('\n'),
+  );
 }
 if (files.length === 0) {
   say(`${C.r}0 个测试文件 ⇒ 红（tests/*.test.ts 一个都没匹配上：要么被删空了，要么目录/命名变了）${C.x}`);
