@@ -9,6 +9,8 @@
  * · **只读**：不 claim / 不 takeover / 不 renew / 不写盘；`grants` 恒为 `'none'`；建议不持久化。
  * · 活性不伪造：没有可靠进程探针 ⇒ 进程观察恒 `unknown`，不凭 pid / TTL 判 alive/dead。
  * · done/void 只展示历史，**绝不建议自动重启**；当前代际已有活跃 Attempt ⇒ 不重复派工。
+ * · **失败重试边界（B-M2）**：最近 Attempt `failed` ⇒ 只给「按日志/回执定位失败点后**人工定向重跑**」建议；
+ *   本工具**不自动重试、不自动重派 Attempt**（重试属人工决策；自动重试会绕过 fresh 证据与上下文校验）。
  * · 旧代际只标 stale/superseded，恢复不重新附着；续作必须建议既有 claim/takeover。
  * · **活性不重附**：没有可靠实时 alive 证据（首切片恒 unknown）时，中断 Attempt 只给只读检查动作
  *   （`inspect_pending_attempt`）—— 不重附旧进程、不判死、不重复派工；只有未来拿到可靠 alive
