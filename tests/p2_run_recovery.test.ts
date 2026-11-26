@@ -691,3 +691,66 @@ test('P2-19 F9 write_log 对账按 actor 分桶：他人署名归历史缺口，
     assert.ok(report.gaps.some((g) => /unmapped|无卡|write_log 对账/.test(g)), '无卡写仅 write_log 对账的限制进 gaps');
   });
 });
+
+test('P2-20 B-M3 清卡（release 回候选）后首 op 失败：旧 interrupted 账不挂当前活跃，新失败独立成账不冒充既有账', async () => {
+  await withCase(({ home, project, feature }) => {
+    seedCard(home, feature, project); // claimed / ACTOR / g1
+    // 旧代际活跃 Run：开工无收尾（interrupted），上下文校验通过
+    startAttempt(project, execCtx({ home, project, feature }), 'a-released-1', {
+      command: 'npm test',
+      cwd: project,
+    });
+
+    // 模拟清卡（releaseTask 落账后态）：回 candidate、owner / claimed_at 清空；读集 / 证据留卡上作历史事实。
+    const dslPath = path.join(project, '.agent-io', 'design', `${feature}.dsl.json`);
+    const dsl = JSON.parse(fs.readFileSync(dslPath, 'utf-8'));
+    const card = dsl.todos.find((t: { id: string }) => t.id === NODE);
+    assert.ok(card, '夹具卡必须在册');
+    card.state = 'candidate';
+    card.owner = null;
+    card.claimed_at = null;
+    card.prepared_snapshot = null;
+    fs.writeFileSync(dslPath, JSON.stringify(dsl, null, 2), 'utf-8');
+
+    // 清卡后恢复：旧 interrupted Run 与当前卡 owner/代际不符 ⇒ stale，不进当前活跃档
+    const report = recoverRun({ project_dir: project, feature, node_id: NODE });
+    assert.equal(report.task!.state, 'candidate', '清卡后回候选态');
+    assert.equal(report.task!.owner, null, '清卡后 owner 清空');
+    assert.equal(report.active_run, null, '旧 interrupted Run 清卡后不得挂当前代际活跃');
+    // 下一步只能是「对账旧代际 / 领卡」档：不得挂旧活跃只读检查，也不得把旧 interrupted 当新鲜失败要修
+    assert.notEqual(report.next_action.action, 'inspect_pending_attempt', '旧账不挂当前活跃 ⇒ 不给只读检查续接');
+    assert.notEqual(report.next_action.action, 'fix', '旧 interrupted 不是新鲜失败 ⇒ 不进失败修复档');
+    assert.ok(
+      ['reconcile_stale', 'claim_takeover'].includes(report.next_action.action),
+      `清卡后下一步应是对账旧代际 / 领卡，实际=${report.next_action.action}`,
+    );
+    assert.ok(
+      !report.next_action.suggestions.some((s) => /续接该 Attempt 的现场|重附旧进程/.test(s)),
+      '提示不得冒充旧进行中账',
+    );
+
+    // 旧账仍在事件流可查，但标 stale；旧 Attempt 留审计展示（视图层派生历史 active_attempt，
+    // 但主流程只认 currentRun ⇒ 不进当前活跃档，见上方 report.active_run=null）。
+    assert.equal(report.runs.length, 1, '旧账仍在历史事件流');
+    const staleRun = report.runs[0];
+    assert.equal(staleRun.stale, true, '旧 Run 与清卡后当前卡 owner/代际不符 ⇒ stale');
+    assert.equal(staleRun.current, false);
+    const oldAttempt = staleRun.attempts.find((a) => a.attempt_ref === 'a-released-1');
+    assert.ok(oldAttempt, '旧 Attempt 留审计展示');
+    assert.equal(oldAttempt.outcome, 'interrupted');
+
+    // 首 op 失败：清卡后新会话带 actor 跑一次失败验证（exit 1）⇒ 新 Attempt 独立成账；
+    // 候选态不持租 ⇒ 上下文校验不通过，不冒当前活跃；失败不并入旧 stale Run。
+    writePackage(project, 1);
+    const fail = runTests({ project_dir: project, execution: execCtx({ home, project, feature }) });
+    assert.equal(fail.success, false, '首 op 失败（exit 1）');
+    const after = recoverRun({ project_dir: project, feature, node_id: NODE });
+    const failedAttempts = after.runs.flatMap((r) => r.attempts).filter((a) => a.outcome === 'failed');
+    assert.ok(failedAttempts.length >= 1, '首 op 失败独立落一条 failed Attempt');
+    assert.equal(after.active_run, null, '未校验挂租的失败 Attempt 不冒当前代际活跃');
+    assert.ok(
+      after.runs.filter((r) => r.current).every((r) => r.active_attempt == null),
+      '当前代际 Run 不挂任何活跃 Attempt（旧 interrupted 与新失败都未校验挂租）',
+    );
+  });
+});
