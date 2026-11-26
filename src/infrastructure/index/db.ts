@@ -13,6 +13,7 @@
 import { DATA_DIR_NAME } from '../data_dir.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { getStorageRoot } from '../storage.js';
 // ★★★ 2026-10-26（T-#4 / 用户选 A）：索引路径走 `roots.ts` 的唯一解析器
@@ -89,6 +90,57 @@ function dbFileOf(db: Database): string | null {
 }
 
 /**
+ * 撞锁瞬间全系统 node 进程树快照（win32 CIM；PID/PPID/CommandLine）。
+ * ★ #188 归因：收尾时刻枚举挂在 verify 主进程层、子进程已退采不到；此处在 beginBatch
+ *   catch 瞬间（抛锁进程仍存活）采，才能指认并发争写的外部进程。只读观测，失败吞掉。
+ */
+function snapshotNodeProcessTree(): Record<string, unknown> {
+  if (process.platform !== 'win32') return { available: false, reason: 'non-win32' };
+  try {
+    const ps = spawnSync(
+      'pwsh',
+      [
+        '-NoProfile',
+        '-Command',
+        "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId,ParentProcessId,CommandLine | Format-List",
+      ],
+      { encoding: 'utf8', shell: false, timeout: 10000 },
+    );
+    return { available: true, status: ps.status, stdout: ps.stdout ?? '', stderr: ps.stderr ?? '' };
+  } catch (e) {
+    return { available: false, reason: String((e as Error)?.message ?? e) };
+  }
+}
+
+/**
+ * 撞锁瞬间持目标库句柄进程枚举（handle64，路径由 `AGENT_IO_HANDLE64` 注入；CI 前置下载）。
+ * 只读观测；工具缺/非 win32/取证抛错一律吞掉，不改判定。
+ */
+function snapshotHandleEnum(dbFile: string | null): Record<string, unknown> {
+  if (process.platform !== 'win32') return { available: false, reason: 'non-win32' };
+  const h64 = process.env.AGENT_IO_HANDLE64;
+  if (!h64) return { available: false, reason: 'AGENT_IO_HANDLE64 unset' };
+  let exists = false;
+  try {
+    exists = fs.existsSync(h64);
+  } catch {
+    exists = false;
+  }
+  if (!exists) return { available: false, reason: `handle64 path missing: ${h64}` };
+  const needle = dbFile ? path.basename(dbFile) : 'cache.db';
+  try {
+    const h = spawnSync(h64, ['-accepteula', '-nobanner', needle], {
+      encoding: 'utf8',
+      shell: false,
+      timeout: 10000,
+    });
+    return { available: true, tool: h64, needle, status: h.status, stdout: h.stdout ?? '', stderr: h.stderr ?? '' };
+  } catch (e) {
+    return { available: false, reason: String((e as Error)?.message ?? e) };
+  }
+}
+
+/**
  * 抛锁 / 开库异常诊断快照（只读观测）。落 JSON 到 verify-last；不吞原错、不改判定。
  * @param db 抛错连接（可为 null：openDb 尚未拿到实例时）
  * @param label 抛错位置标签（beginBatch / openDb …）
@@ -146,6 +198,8 @@ export function captureLockDiagnostics(db: Database | null, label: string, err?:
         : null,
       openDbCount: openRegistry.length,
       instances,
+      processTree: snapshotNodeProcessTree(),
+      handleEnum: snapshotHandleEnum(dbFile),
       error: err
         ? { message: String((err as Error)?.message ?? err), errcode: (err as { errcode?: number })?.errcode ?? null }
         : null,
